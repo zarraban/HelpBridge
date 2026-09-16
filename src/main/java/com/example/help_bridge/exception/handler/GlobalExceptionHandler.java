@@ -55,7 +55,7 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.toMap(
                         FieldError::getField,
                         error -> error.getDefaultMessage() != null ? error.getDefaultMessage() : "Invalid value",
-                        (existing, replacement) -> existing
+                        (existing, _) -> existing
                 ));
 
         problemDetail.setProperty("errors", errors);
@@ -108,7 +108,7 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.toMap(
                         violation -> violation.getPropertyPath().toString(),
                         ConstraintViolation::getMessage,
-                        (existing, replacement) -> existing
+                        (existing, _) -> existing
                 ));
 
         Map<String, String> cleanErrors = new HashMap<>();
@@ -137,7 +137,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ProblemDetail handleNotReadable(HttpMessageNotReadableException ex) {
+    public ProblemDetail handleNotReadable() {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST,
                 "Malformed JSON request body"
