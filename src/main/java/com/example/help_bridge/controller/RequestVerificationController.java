@@ -1,6 +1,6 @@
 package com.example.help_bridge.controller;
 
-import com.example.help_bridge.dto.RequestVerificationDto.RequestAdminReviewRequest;
+import com.example.help_bridge.dto.RequestVerificationDto;
 import com.example.help_bridge.service.RequestVerificationService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +19,7 @@ public class RequestVerificationController {
     @PatchMapping("/{id}/verify")
     public ResponseEntity<Void> verifyRequest(
             @PathVariable Long id,
-            @RequestBody @Valid RequestAdminReviewRequest reviewRequest) {
+            @RequestBody @Valid RequestVerificationDto reviewRequest) {
 
         verificationService.reviewRequest(id, reviewRequest);
         return ResponseEntity.noContent().build();

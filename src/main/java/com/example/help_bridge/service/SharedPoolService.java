@@ -1,6 +1,6 @@
 package com.example.help_bridge.service;
 
-import com.example.help_bridge.dto.SharedPoolResponseDto.PoolRequestItemResponse;
+import com.example.help_bridge.dto.SharedPoolResponseDto;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -16,11 +16,11 @@ public class SharedPoolService {
         this.requestService = requestService;
     }
 
-    public List<PoolRequestItemResponse> getSharedPool() {
+    public List<SharedPoolResponseDto> getSharedPool() {
         LocalDate now = LocalDate.now();
 
         return requestService.getSharedPool().stream()
-                .map(r -> new PoolRequestItemResponse(
+                .map(r -> new SharedPoolResponseDto(
                         r.id(),
                         r.assistanceType(),
                         r.amount(),

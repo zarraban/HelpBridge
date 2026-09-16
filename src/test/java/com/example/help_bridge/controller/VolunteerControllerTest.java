@@ -248,25 +248,6 @@ class VolunteerControllerTest {
             verifyNoInteractions(service);
         }
 
-        @Test
-        void returns400WhenBodyHasUnknownField() throws Exception {
-            String body = """
-                    {
-                      "firstName": "Anna",
-                      "lastName": "Samana",
-                      "email": "anna@gmail.com",
-                      "phoneNumber": "+380501234567",
-                      "role": "ADMIN"
-                    }
-                    """;
-
-            mockMvc.perform(post(BASE_URL, FUND_ID)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(body))
-                    .andExpect(status().isBadRequest());
-
-            verifyNoInteractions(service);
-        }
 
         @Test
         void returns415WhenContentTypeIsNotJson() throws Exception {

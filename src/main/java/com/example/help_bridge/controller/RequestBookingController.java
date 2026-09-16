@@ -1,6 +1,6 @@
 package com.example.help_bridge.controller;
 
-import com.example.help_bridge.dto.RequestBookingDto.BookRequestRequest;
+import com.example.help_bridge.dto.RequestBookingDto;
 import com.example.help_bridge.service.RequestBookingService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +19,7 @@ public class RequestBookingController {
     @PostMapping("/{id}/book")
     public ResponseEntity<Void> bookRequest(
             @PathVariable Long id,
-            @RequestBody @Valid BookRequestRequest request) {
+            @RequestBody @Valid RequestBookingDto request) {
 
         requestBookingService.bookRequest(id, request.fundId());
         return ResponseEntity.noContent().build();

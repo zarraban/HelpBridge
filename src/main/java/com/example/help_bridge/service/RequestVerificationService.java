@@ -1,6 +1,6 @@
 package com.example.help_bridge.service;
 
-import com.example.help_bridge.dto.RequestVerificationDto.RequestAdminReviewRequest;
+import com.example.help_bridge.dto.RequestVerificationDto;
 import com.example.help_bridge.model.RequestStatus;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +13,7 @@ public class RequestVerificationService {
         this.requestService = requestService;
     }
 
-    public void reviewRequest(Long id, RequestAdminReviewRequest reviewRequest) {
+    public void reviewRequest(Long id, RequestVerificationDto reviewRequest) {
         requestService.getById(id);
 
         if (Boolean.TRUE.equals(reviewRequest.approved())) {
