@@ -30,7 +30,7 @@ public class FundraiserController {
         return ResponseEntity.ok(Collections.emptyList());
     }
 
-    @GetMapping
+    @PostMapping
     public ResponseEntity<SendMailingResponse> sendMailToDonors(
             @RequestBody @Valid SendMailingRequest request
             ){
