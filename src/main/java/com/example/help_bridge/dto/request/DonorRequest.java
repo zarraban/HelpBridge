@@ -6,19 +6,19 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record DonorRequest(
-        @NotBlank
-        @Size(min = 2, max = 100)
+        @NotBlank(message = "First name cannot be blank")
+        @Size(min = 2, max = 100, message = "First name must be between 2 and 100 characters")
         String firstName,
 
-        @NotBlank
-        @Size(min = 2, max = 100)
+        @NotBlank(message = "Last name cannot be blank")
+        @Size(min = 2, max = 100, message = "Last name must be between 2 and 100 characters")
         String lastName,
 
-        @NotBlank
-        @Email
+        @NotBlank(message = "Email cannot be blank")
+        @Email(message = "Email must be valid")
         String email,
 
-        @Pattern(regexp = "^\\+?[0-9]{10,15}$")
+        @Pattern(regexp = "^\\+?[0-9]{10,15}$", message = "Phone must be a valid phone number")
         String phone
 ) {
 }
