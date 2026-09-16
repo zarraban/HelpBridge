@@ -1,5 +1,7 @@
 package com.example.help_bridge.dto.response;
 
+import com.example.help_bridge.entity.enums.MailingStatus;
+
 import java.time.LocalDateTime;
 
 public record SendMailingResponse(
