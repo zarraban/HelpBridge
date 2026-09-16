@@ -39,7 +39,7 @@ public class EvidenceController {
     }
 
     // only fund representative can delete evidences(even if they contain mistakes)
-    @DeleteMapping("/evidences/evidences/{id}")
+    @DeleteMapping("/evidences/{id}")
     public ResponseEntity<String> deleteEvidenceById(
             @PathVariable("id") Long evidenceId
     ) {

@@ -21,9 +21,9 @@ public class FundraiserController {
     public FundraiserController(FundraiserService fundraiserService){
         this.fundraiserService = fundraiserService;
     }
-    @GetMapping("/id")
-    public ResponseEntity<FundraiserResponse> getFundraiserById(){
-        return ResponseEntity.ok(fundraiserService.getFundraiserById());
+    @GetMapping("/{id}")
+    public ResponseEntity<FundraiserResponse> getFundraiserById(@PathVariable("id") Long id){
+        return ResponseEntity.ok(fundraiserService.getFundraiserById(id));
     }
 
     // TODO add field which will be used to sort by
@@ -36,8 +36,7 @@ public class FundraiserController {
         return ResponseEntity.ok(fundraiserService.getAllFundraisers(sort, page, size));
     }
 
-    // Notice: Having a request body in a GET mapping is unusual, you may want to change it to POST
-    @GetMapping("/mail") // Changed to /mail to avoid ambiguity with getAllFundraisers since both were mapped to @GetMapping
+    @PostMapping("/mail")
     public ResponseEntity<SendMailingResponse> sendMailToDonors(
             @RequestBody @Valid SendMailingRequest request
             ){

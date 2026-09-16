@@ -10,7 +10,7 @@ import java.util.List;
 @Service
 public class FundraiserService {
 
-    public FundraiserResponse getFundraiserById() {
+    public FundraiserResponse getFundraiserById(Long id) {
         return null;
     }
 

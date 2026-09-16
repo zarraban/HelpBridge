@@ -29,11 +29,13 @@ class FundraiserControllerTest {
     private final FundraiserResponse response = mock(FundraiserResponse.class);
     @Test
     void getFundraiserById_shouldInvokeService() {
-        when(fundraiserService.getFundraiserById()).thenReturn(response);
+        Long id = 1L;
+        FundraiserResponse response = mock(FundraiserResponse.class);
+        when(fundraiserService.getFundraiserById(id)).thenReturn(response);
 
-        ResponseEntity<FundraiserResponse> result = fundraiserController.getFundraiserById();
+        ResponseEntity<FundraiserResponse> result = fundraiserController.getFundraiserById(id);
 
-        verify(fundraiserService, times(1)).getFundraiserById();
+        verify(fundraiserService, times(1)).getFundraiserById(id);
         assertEquals(HttpStatus.OK, result.getStatusCode());
         assertEquals(response, result.getBody());
     }
