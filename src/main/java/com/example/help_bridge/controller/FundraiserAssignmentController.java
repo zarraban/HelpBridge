@@ -7,7 +7,9 @@ import com.example.help_bridge.dto.response.AssignVolunteerResponse;
 import com.example.help_bridge.dto.response.CompleteAssignmentResponse;
 import com.example.help_bridge.dto.response.FundraiserAssignmentResponse;
 import com.example.help_bridge.dto.response.ReturnAssignmentResponse;
+import com.example.help_bridge.service.FundraiserAssignmentService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -20,13 +22,18 @@ import java.util.List;
 @Validated
 public class FundraiserAssignmentController {
 
+    private final FundraiserAssignmentService assignmentService;
+
+    public FundraiserAssignmentController(FundraiserAssignmentService assignmentService){
+        this.assignmentService = assignmentService;
+    }
 
     @PatchMapping("/fundraiser-assignments/{assignmentId}/complete")
     public ResponseEntity<CompleteAssignmentResponse> completeAssignment(
             @PathVariable(value = "assignmentId") Long assignmentId,
             @RequestBody @Valid CompleteAssignmentRequest completeAssignmentRequest
             ){
-        return ResponseEntity.ok(null);
+        return ResponseEntity.ok(assignmentService.completeAssignment(assignmentId, completeAssignmentRequest));
     }
 
     @PatchMapping("/fundraiser-assignments/{assignmentId}/return")
@@ -34,7 +41,7 @@ public class FundraiserAssignmentController {
             @PathVariable(value = "assignmentId") Long assignmentId,
             @RequestBody @Valid ReturnAssignmentRequest returnAssignmentRequest
     ){
-        return ResponseEntity.ok(null);
+        return ResponseEntity.ok(assignmentService.returnAssignment(assignmentId, returnAssignmentRequest));
     }
 
     @PostMapping("/fundraisers/{fundraiserId}/assignments")
@@ -42,24 +49,21 @@ public class FundraiserAssignmentController {
             @PathVariable(value = "fundraiserId") Long fundraiserId,
             @RequestBody @Valid AssignVolunteerRequest assignVolunteerRequest
     ){
-        return ResponseEntity.ok(null);
+        return ResponseEntity.ok(assignmentService.assignVolunteerToFund(fundraiserId, assignVolunteerRequest));
     }
 
     @GetMapping("/fundraisers/{fundraiserId}/assignments")
     public ResponseEntity<List<FundraiserAssignmentResponse>> fundraiserAssignments(
             @PathVariable(value = "fundraiserId") Long fundraiserId
     ){
-        return ResponseEntity.ok(null);
+        return ResponseEntity.ok(assignmentService.getFundraiserAssignments(fundraiserId));
     }
 
     @GetMapping("/volunteers/{volunteerId}/assignments")
     public ResponseEntity<List<FundraiserAssignmentResponse>> volunteersAssignments(
             @PathVariable(value = "volunteerId") Long volunteerId
     ){
-        return ResponseEntity.ok(null);
+        return ResponseEntity.ok(assignmentService.getVolunteerAssignments(volunteerId));
     }
-
-
-
 
 }

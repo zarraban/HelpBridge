@@ -2,12 +2,13 @@ package com.example.help_bridge.controller;
 
 import com.example.help_bridge.dto.request.DonorRequest;
 import com.example.help_bridge.dto.response.DonorResponse;
+import com.example.help_bridge.service.DonorService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
 import java.util.List;
 
 // TODO When using Thymeleaf will be converted to @Controller
@@ -16,18 +17,24 @@ import java.util.List;
 @Validated
 public class DonorController {
 
+    private final DonorService donorService;
+
+    public DonorController(DonorService donorService){
+        this.donorService = donorService;
+    }
+
     @PostMapping
     public ResponseEntity<DonorResponse> addNewDonor(
             @RequestBody @Valid DonorRequest request
     ) {
-        return ResponseEntity.ok(null);
+        return ResponseEntity.ok(donorService.addNewDonor(request));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<DonorResponse> getDonorById(
             @PathVariable("id") Long donorId
     ) {
-        return ResponseEntity.ok(null);
+        return ResponseEntity.ok(donorService.getDonorById(donorId));
     }
 
     @GetMapping
@@ -36,7 +43,7 @@ public class DonorController {
             @RequestParam(value = "page", defaultValue = "1") Long page,
             @RequestParam(value = "size", defaultValue = "5") Long size
     ) {
-        return ResponseEntity.ok(Collections.emptyList());
+        return ResponseEntity.ok(donorService.getAllDonors(sort, page, size));
     }
 
     @PatchMapping("/{id}")
@@ -44,17 +51,16 @@ public class DonorController {
             @PathVariable("id") Long donorId,
             @RequestBody @Valid DonorRequest request
     ) {
-        return ResponseEntity.ok(null);
+        return ResponseEntity.ok(donorService.updateDonorFields(donorId, request));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<DonorResponse> deleteDonorById(
             @PathVariable("id") Long donorId
     ) {
-
         // 404 - if there is no such entity to delete
         // 204 - if we have deleted successfully the record
-        return ResponseEntity.ok(null);
+        return ResponseEntity.ok(donorService.deleteDonorById(donorId));
     }
 
 }
