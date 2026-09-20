@@ -1,7 +1,7 @@
 package com.example.help_bridge.volunteer.service;
 
-import com.example.help_bridge.volunteer.dto.VolunteerRequest;
-import com.example.help_bridge.volunteer.dto.VolunteerResponse;
+import com.example.help_bridge.volunteer.dto.request.VolunteerRequest;
+import com.example.help_bridge.volunteer.dto.response.VolunteerResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

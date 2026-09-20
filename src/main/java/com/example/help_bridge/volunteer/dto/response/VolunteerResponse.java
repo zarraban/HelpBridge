@@ -1,4 +1,4 @@
-package com.example.help_bridge.volunteer.dto;
+package com.example.help_bridge.volunteer.dto.response;
 
 import java.util.UUID;
 

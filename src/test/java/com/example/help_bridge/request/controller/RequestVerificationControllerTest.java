@@ -1,6 +1,6 @@
 package com.example.help_bridge.request.controller;
 
-import com.example.help_bridge.request.dto.RequestVerificationDto;
+import com.example.help_bridge.request.dto.request.RequestVerificationDto;
 import com.example.help_bridge.request.service.RequestVerificationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

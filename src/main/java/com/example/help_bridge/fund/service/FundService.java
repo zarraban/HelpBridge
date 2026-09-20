@@ -1,8 +1,8 @@
 package com.example.help_bridge.fund.service;
 
-import com.example.help_bridge.fund.dto.FundCreateRequest;
-import com.example.help_bridge.fund.dto.FundResponse;
-import com.example.help_bridge.fund.dto.FundStatusUpdateRequest;
+import com.example.help_bridge.fund.dto.request.FundCreateRequest;
+import com.example.help_bridge.fund.dto.response.FundResponse;
+import com.example.help_bridge.fund.dto.request.FundStatusUpdateRequest;
 import com.example.help_bridge.fund.entity.Fund;
 import com.example.help_bridge.fund.entity.FundStatus;
 import org.springframework.stereotype.Service;

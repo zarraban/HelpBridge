@@ -1,4 +1,4 @@
-package com.example.help_bridge.fund.dto;
+package com.example.help_bridge.fund.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

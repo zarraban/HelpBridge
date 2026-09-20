@@ -1,7 +1,7 @@
 package com.example.help_bridge.volunteer.controller;
 
-import com.example.help_bridge.volunteer.dto.VolunteerStatisticsRequest;
-import com.example.help_bridge.volunteer.dto.VolunteerStatisticsResponse;
+import com.example.help_bridge.volunteer.dto.request.VolunteerStatisticsRequest;
+import com.example.help_bridge.volunteer.dto.response.VolunteerStatisticsResponse;
 import com.example.help_bridge.volunteer.service.VolunteerStatisticsService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;

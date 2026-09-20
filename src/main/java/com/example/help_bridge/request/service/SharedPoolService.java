@@ -1,6 +1,6 @@
 package com.example.help_bridge.request.service;
 
-import com.example.help_bridge.request.dto.SharedPoolResponseDto;
+import com.example.help_bridge.request.dto.response.SharedPoolResponseDto;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;

@@ -1,6 +1,6 @@
 package com.example.help_bridge.request.controller;
 
-import com.example.help_bridge.request.dto.RequestBookingDto;
+import com.example.help_bridge.request.dto.request.RequestBookingDto;
 import com.example.help_bridge.request.service.RequestBookingService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

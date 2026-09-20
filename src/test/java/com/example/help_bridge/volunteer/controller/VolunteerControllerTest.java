@@ -1,7 +1,7 @@
 package com.example.help_bridge.volunteer.controller;
 
-import com.example.help_bridge.volunteer.dto.VolunteerRequest;
-import com.example.help_bridge.volunteer.dto.VolunteerResponse;
+import com.example.help_bridge.volunteer.dto.request.VolunteerRequest;
+import com.example.help_bridge.volunteer.dto.response.VolunteerResponse;
 import com.example.help_bridge.volunteer.service.VolunteerService;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

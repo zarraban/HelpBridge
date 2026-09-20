@@ -1,4 +1,4 @@
-package com.example.help_bridge.request.dto;
+package com.example.help_bridge.request.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 

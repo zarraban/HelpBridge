@@ -1,8 +1,8 @@
 package com.example.help_bridge.fund.controller;
 
-import com.example.help_bridge.fund.dto.FundCreateRequest;
-import com.example.help_bridge.fund.dto.FundResponse;
-import com.example.help_bridge.fund.dto.FundStatusUpdateRequest;
+import com.example.help_bridge.fund.dto.request.FundCreateRequest;
+import com.example.help_bridge.fund.dto.response.FundResponse;
+import com.example.help_bridge.fund.dto.request.FundStatusUpdateRequest;
 import com.example.help_bridge.fund.service.FundService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;

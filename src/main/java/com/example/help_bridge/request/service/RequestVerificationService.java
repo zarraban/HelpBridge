@@ -1,6 +1,6 @@
 package com.example.help_bridge.request.service;
 
-import com.example.help_bridge.request.dto.RequestVerificationDto;
+import com.example.help_bridge.request.dto.request.RequestVerificationDto;
 import com.example.help_bridge.request.entity.RequestStatus;
 import org.springframework.stereotype.Service;
 

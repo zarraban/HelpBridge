@@ -1,4 +1,4 @@
-package com.example.help_bridge.fund.dto;
+package com.example.help_bridge.fund.dto.response;
 import com.example.help_bridge.fund.entity.FundStatus;
 import java.util.Map;
 

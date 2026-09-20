@@ -1,4 +1,4 @@
-package com.example.help_bridge.request.dto;
+package com.example.help_bridge.request.dto.response;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

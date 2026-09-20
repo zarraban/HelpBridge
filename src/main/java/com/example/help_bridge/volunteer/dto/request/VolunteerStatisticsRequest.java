@@ -1,4 +1,4 @@
-package com.example.help_bridge.volunteer.dto;
+package com.example.help_bridge.volunteer.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;

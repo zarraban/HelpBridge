@@ -1,7 +1,7 @@
 package com.example.help_bridge.request.controller;
 
-import com.example.help_bridge.request.dto.RequestDto.CreateRequestRequest;
-import com.example.help_bridge.request.dto.RequestDto.RequestResponse;
+import com.example.help_bridge.request.dto.request.RequestDto.CreateRequestRequest;
+import com.example.help_bridge.request.dto.request.RequestDto.RequestResponse;
 import com.example.help_bridge.request.service.RequestService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;

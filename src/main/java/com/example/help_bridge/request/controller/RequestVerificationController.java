@@ -1,6 +1,6 @@
 package com.example.help_bridge.request.controller;
 
-import com.example.help_bridge.request.dto.RequestVerificationDto;
+import com.example.help_bridge.request.dto.request.RequestVerificationDto;
 import com.example.help_bridge.request.service.RequestVerificationService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;

@@ -1,7 +1,7 @@
 package com.example.help_bridge.request.service;
 
-import com.example.help_bridge.request.dto.RequestDto.CreateRequestRequest;
-import com.example.help_bridge.request.dto.RequestDto.RequestResponse;
+import com.example.help_bridge.request.dto.request.RequestDto.CreateRequestRequest;
+import com.example.help_bridge.request.dto.request.RequestDto.RequestResponse;
 import com.example.help_bridge.request.entity.RequestStatus;
 import org.springframework.stereotype.Service;
 

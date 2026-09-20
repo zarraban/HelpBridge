@@ -1,4 +1,4 @@
-package com.example.help_bridge.fund.dto;
+package com.example.help_bridge.fund.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
