@@ -82,7 +82,7 @@ class FundControllerTest {
                     "phoneNumber": "+380971111111",
                     "corpEmail": "test@fund.com",
                     "website": "https://fund.com",
-                    "socialMediaUrl": {
+                    "socialMediaUrls": {
                         "facebook": "https://facebook.com/fund"
                     }
                 }
@@ -93,7 +93,7 @@ class FundControllerTest {
         mockMvc.perform(post(URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonRequest))
-                .andExpect(status().isCreated()); // Змінено на isCreated()
+                .andExpect(status().isCreated());
     }
 
     @Test

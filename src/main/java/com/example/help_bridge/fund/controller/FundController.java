@@ -1,6 +1,7 @@
 package com.example.help_bridge.fund.controller;
 
 import com.example.help_bridge.fund.dto.request.FundCreateRequest;
+import com.example.help_bridge.fund.dto.request.FundDescriptUpdateRequest;
 import com.example.help_bridge.fund.dto.response.FundResponse;
 import com.example.help_bridge.fund.dto.request.FundStatusUpdateRequest;
 import com.example.help_bridge.fund.service.FundService;
@@ -21,11 +22,13 @@ public class FundController {
     private final FundService service;
 
     public FundController(FundService service) {
+
         this.service = service;
     }
 
     @GetMapping
     public ResponseEntity<List<FundResponse>> getAllFunds() {
+
         return ResponseEntity.ok(service.getAllFunds());
     }
 
@@ -54,5 +57,13 @@ public class FundController {
     public ResponseEntity<Void> deleteFundById(@PathVariable(value = "id") @NotNull Long id) {
         service.deleteFundById(id);
         return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{id}/description")
+    public ResponseEntity<FundResponse> updateFundDescription(
+            @PathVariable(value = "id") @NotNull Long id,
+            @RequestBody @Valid FundDescriptUpdateRequest request
+    ) {
+        return ResponseEntity.ok(service.updateFundDescription(id, request));
     }
 }

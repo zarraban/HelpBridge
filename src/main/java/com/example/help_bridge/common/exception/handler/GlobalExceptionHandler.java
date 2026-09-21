@@ -1,5 +1,7 @@
 package com.example.help_bridge.common.exception.handler;
 
+import com.example.help_bridge.fund.exception.FundNotFoundException;
+import com.example.help_bridge.fund.exception.InvalidFundStatusTransitionException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
@@ -144,6 +146,30 @@ public class GlobalExceptionHandler {
         );
         problemDetail.setTitle("Malformed Request");
         problemDetail.setType(URI.create("https://api.example.com/errors/malformed-request"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler(FundNotFoundException.class)
+    public ProblemDetail handleFundNotFound(FundNotFoundException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                ex.getMessage()
+        );
+        problemDetail.setTitle("Fund Not Found");
+        problemDetail.setType(URI.create("https://api.example.com/errors/fund-not-found"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler(InvalidFundStatusTransitionException.class)
+    public ProblemDetail handleInvalidFundStatusTransition(InvalidFundStatusTransitionException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                ex.getMessage()
+        );
+        problemDetail.setTitle("Invalid Fund Status Transition");
+        problemDetail.setType(URI.create("https://api.example.com/errors/invalid-fund-status-transition"));
         problemDetail.setProperty("timestamp", Instant.now());
         return problemDetail;
     }
