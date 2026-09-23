@@ -2,13 +2,13 @@ package com.example.help_bridge.notification.entity;
 
 import lombok.Data;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class MailingTask {
     private Long id;
     
-    // Store emails as a comma-separated string
-    private String targetEmails; 
+    private List<String> targetEmails;
     
     private String subject;
     private String messageBody;
