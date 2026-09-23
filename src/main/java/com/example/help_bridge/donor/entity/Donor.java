@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 @Data
 public class Donor {
     private Long id;
+    private Long fundraiserId;
     private String firstName;
     private String lastName;
     private String email;

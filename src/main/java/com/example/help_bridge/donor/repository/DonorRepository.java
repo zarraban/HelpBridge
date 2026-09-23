@@ -6,6 +6,7 @@ import java.util.Optional;
 
 public interface DonorRepository {
     List<Donor> findAll();
+    List<Donor> findByFundraiserId(Long fundraiserId);
     Optional<Donor> findById(Long id);
     Donor save(Donor donor);
     void deleteById(Long id);

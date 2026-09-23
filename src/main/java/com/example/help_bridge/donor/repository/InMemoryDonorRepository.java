@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 @Repository
 public class InMemoryDonorRepository implements DonorRepository {
@@ -19,6 +20,13 @@ public class InMemoryDonorRepository implements DonorRepository {
     @Override
     public List<Donor> findAll() {
         return new ArrayList<>(storage.values());
+    }
+
+    @Override
+    public List<Donor> findByFundraiserId(Long fundraiserId) {
+        return storage.values().stream()
+                .filter(donor -> fundraiserId.equals(donor.getFundraiserId()))
+                .collect(Collectors.toList());
     }
 
     @Override
