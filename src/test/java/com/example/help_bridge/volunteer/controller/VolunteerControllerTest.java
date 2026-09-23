@@ -35,8 +35,8 @@ class VolunteerControllerTest {
 
     private static final String BASE_URL = "/api/funds/{fundId}/volunteers";
 
-    private static final UUID FUND_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
-    private static final UUID VOLUNTEER_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
+    private static final Long FUND_ID = 1L;
+    private static final Long VOLUNTEER_ID = 3L;
 
     private static final String VALID_BODY = """
             {
@@ -56,7 +56,7 @@ class VolunteerControllerTest {
     @MockitoBean
     private VolunteerService service;
 
-    private static VolunteerResponse volunteer(UUID id) {
+    private static VolunteerResponse volunteer(Long id) {
         return new VolunteerResponse(id, FUND_ID, "Anna", "Samana", "anna@gmail.com", "+380501234567");
     }
 
@@ -65,7 +65,7 @@ class VolunteerControllerTest {
 
         @Test
         void returns200WithVolunteerList() throws Exception {
-            UUID secondId = UUID.randomUUID();
+            Long secondId = 4L;
             when(service.getFundVolunteers(FUND_ID))
                     .thenReturn(List.of(volunteer(VOLUNTEER_ID), volunteer(secondId)));
 
@@ -73,9 +73,9 @@ class VolunteerControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                     .andExpect(jsonPath("$", hasSize(2)))
-                    .andExpect(jsonPath("$[0].id").value(VOLUNTEER_ID.toString()))
-                    .andExpect(jsonPath("$[0].fundId").value(FUND_ID.toString()))
-                    .andExpect(jsonPath("$[1].id").value(secondId.toString()));
+                    .andExpect(jsonPath("$[0].id").value(VOLUNTEER_ID))
+                    .andExpect(jsonPath("$[0].fundId").value(FUND_ID))
+                    .andExpect(jsonPath("$[1].id").value(secondId));
         }
 
         @Test
@@ -98,8 +98,8 @@ class VolunteerControllerTest {
             mockMvc.perform(get(BASE_URL + "/{volunteerId}", FUND_ID, VOLUNTEER_ID))
                     .andExpect(status().isOk())
                     .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(jsonPath("$.id").value(VOLUNTEER_ID.toString()))
-                    .andExpect(jsonPath("$.fundId").value(FUND_ID.toString()))
+                    .andExpect(jsonPath("$.id").value(VOLUNTEER_ID))
+                    .andExpect(jsonPath("$.fundId").value(FUND_ID))
                     .andExpect(jsonPath("$.firstName").value("Anna"))
                     .andExpect(jsonPath("$.lastName").value("Samana"))
                     .andExpect(jsonPath("$.email").value("anna@gmail.com"))
@@ -107,9 +107,34 @@ class VolunteerControllerTest {
         }
 
         @Test
-        void returns400WhenVolunteerIdIsNotUuid() throws Exception {
-            mockMvc.perform(get(BASE_URL + "/{volunteerId}", FUND_ID, "not-a-uuid"))
-                    .andExpect(status().isBadRequest());
+        void returns400WhenVolunteerIdIsNotLong() throws Exception {
+            mockMvc.perform(get(BASE_URL + "/{volunteerId}", FUND_ID, UUID.randomUUID().toString()))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                    .andExpect(jsonPath("$.title").value("Type Mismatch"))
+                    .andExpect(jsonPath("$.detail").value("Parameter 'volunteerId' has invalid value"));
+
+            verifyNoInteractions(service);
+        }
+
+        @Test
+        void returns400WhenVolunteerIdExceedsLongRange() throws Exception {
+            mockMvc.perform(get(BASE_URL + "/{volunteerId}", FUND_ID, "9223372036854775808"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                    .andExpect(jsonPath("$.title").value("Type Mismatch"))
+                    .andExpect(jsonPath("$.detail").value("Parameter 'volunteerId' has invalid value"));
+
+            verifyNoInteractions(service);
+        }
+
+        @Test
+        void returns400WhenFundIdIsNotLong() throws Exception {
+            mockMvc.perform(get(BASE_URL + "/{volunteerId}", UUID.randomUUID().toString(), VOLUNTEER_ID))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                    .andExpect(jsonPath("$.title").value("Type Mismatch"))
+                    .andExpect(jsonPath("$.detail").value("Parameter 'fundId' has invalid value"));
 
             verifyNoInteractions(service);
         }
@@ -120,7 +145,7 @@ class VolunteerControllerTest {
 
         @Test
         void returns201WithLocationHeaderAndBody() throws Exception {
-            UUID createdId = UUID.randomUUID();
+            Long createdId = 7L;
             when(service.addVolunteer(FUND_ID, VALID_REQUEST)).thenReturn(volunteer(createdId));
 
             mockMvc.perform(post(BASE_URL, FUND_ID)
@@ -129,7 +154,7 @@ class VolunteerControllerTest {
                     .andExpect(status().isCreated())
                     .andExpect(header().string("Location",
                             "http://localhost/api/funds/" + FUND_ID + "/volunteers/" + createdId))
-                    .andExpect(jsonPath("$.id").value(createdId.toString()))
+                    .andExpect(jsonPath("$.id").value(createdId))
                     .andExpect(jsonPath("$.email").value("anna@gmail.com"));
 
             verify(service).addVolunteer(FUND_ID, VALID_REQUEST);
@@ -271,7 +296,7 @@ class VolunteerControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(VALID_BODY))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(VOLUNTEER_ID.toString()))
+                    .andExpect(jsonPath("$.id").value(VOLUNTEER_ID))
                     .andExpect(jsonPath("$.firstName").value("Anna"));
 
             verify(service).updateVolunteer(FUND_ID, VOLUNTEER_ID, VALID_REQUEST);

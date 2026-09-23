@@ -26,7 +26,7 @@ class VolunteerStatisticsControllerTest {
 
     private static final String URL = "/api/volunteers/{volunteerId}/statistics";
 
-    private static final UUID VOLUNTEER_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
+    private static final Long VOLUNTEER_ID = 3L;
     private static final LocalDate FROM = LocalDate.of(2026, 1, 1);
     private static final LocalDate TO = LocalDate.of(2026, 9, 1);
 
@@ -47,7 +47,7 @@ class VolunteerStatisticsControllerTest {
                         .param("to", "2026-09-01"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.volunteerId").value(VOLUNTEER_ID.toString()))
+                .andExpect(jsonPath("$.volunteerId").value(VOLUNTEER_ID))
                 .andExpect(jsonPath("$.from").value("2026-01-01"))
                 .andExpect(jsonPath("$.to").value("2026-09-01"))
                 .andExpect(jsonPath("$.closedFundraisersCount").value(7));
@@ -103,11 +103,14 @@ class VolunteerStatisticsControllerTest {
     }
 
     @Test
-    void returns400WhenVolunteerIdIsNotUuid() throws Exception {
-        mockMvc.perform(get(URL, "123")
+    void returns400WhenVolunteerIdIsNotLong() throws Exception {
+        mockMvc.perform(get(URL, UUID.randomUUID())
                         .param("from", "2026-01-01")
                         .param("to", "2026-09-01"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Type Mismatch"))
+                .andExpect(jsonPath("$.detail").value("Parameter 'volunteerId' has invalid value"));
 
         verifyNoInteractions(service);
     }
