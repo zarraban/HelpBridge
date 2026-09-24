@@ -20,7 +20,6 @@ import java.util.List;
 public class FundController {
 
     private final FundService service;
-
     public FundController(FundService service) {
 
         this.service = service;

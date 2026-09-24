@@ -9,4 +9,5 @@ public interface FundRepository {
     Optional<Fund> findById(Long id);
     Fund save(Fund fund);
     void deleteById(Long id);
+    boolean existsByEdrpou(String edrpou);
 }

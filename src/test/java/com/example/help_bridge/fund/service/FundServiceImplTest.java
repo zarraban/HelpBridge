@@ -7,6 +7,7 @@ import com.example.help_bridge.fund.dto.response.FundResponse;
 import com.example.help_bridge.fund.entity.Fund;
 import com.example.help_bridge.fund.entity.FundStatus;
 import com.example.help_bridge.fund.event.FundStatusChangedEvent;
+import com.example.help_bridge.fund.exception.DuplicateFundException;
 import com.example.help_bridge.fund.exception.FundNotFoundException;
 import com.example.help_bridge.fund.exception.InvalidFundStatusTransitionException;
 import com.example.help_bridge.fund.repository.FundRepository;
@@ -168,5 +169,21 @@ class FundServiceImplTest {
                 .isInstanceOf(FundNotFoundException.class);
 
         verify(fundRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void createFund_throwsDuplicate_whenEdrpouExists() {
+        when(fundRepository.existsByEdrpou("12345678")).thenReturn(true);
+
+        FundCreateRequest request = new FundCreateRequest(
+                "Daria", "Chorna", "Help Bridge", "12345678",
+                "UA123456", "Kyiv, 1", "Kyiv, 2", "+0670000000",
+                "info@helpbridge.ua", "https://helpbridge.ua", null
+        );
+
+        assertThatThrownBy(() -> fundService.createFund(request))
+                .isInstanceOf(DuplicateFundException.class);
+
+        verify(fundRepository, never()).save(any());
     }
 }

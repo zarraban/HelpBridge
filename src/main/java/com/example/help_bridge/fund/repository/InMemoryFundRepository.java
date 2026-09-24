@@ -36,4 +36,10 @@ public class InMemoryFundRepository implements FundRepository{
     public  void deleteById(Long id){
         storage.remove(id);
     }
+
+    @Override
+    public boolean existsByEdrpou(String edrpou) {
+        return storage.values().stream()
+                .anyMatch(fund -> fund.getEdrpou().equals(edrpou));
+    }
 }

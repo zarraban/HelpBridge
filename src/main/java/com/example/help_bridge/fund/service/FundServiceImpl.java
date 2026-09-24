@@ -7,6 +7,7 @@ import com.example.help_bridge.fund.dto.response.FundResponse;
 import com.example.help_bridge.fund.entity.Fund;
 import com.example.help_bridge.fund.entity.FundStatus;
 import com.example.help_bridge.fund.event.FundStatusChangedEvent;
+import com.example.help_bridge.fund.exception.DuplicateFundException;
 import com.example.help_bridge.fund.exception.FundNotFoundException;
 import com.example.help_bridge.fund.exception.InvalidFundStatusTransitionException;
 import com.example.help_bridge.fund.repository.FundRepository;
@@ -47,6 +48,9 @@ public class FundServiceImpl implements FundService {
 
     @Override
     public FundResponse createFund(FundCreateRequest request) {
+        if (fundRepository.existsByEdrpou(request.edrpou())) {
+            throw new DuplicateFundException(request.edrpou());
+        }
         Fund fund = mapRequestDtoToFund(request);
         fund.setStatus(FundStatus.PENDING_APPROVAL);
         Fund saved = fundRepository.save(fund);
@@ -54,7 +58,6 @@ public class FundServiceImpl implements FundService {
     }
 
     @Override
-    @Transactional
     public FundResponse updateFundStatus(Long id, FundStatusUpdateRequest request) {
         Fund fund = getFundOrThrow(id);
         FundStatus currentStatus = fund.getStatus();
