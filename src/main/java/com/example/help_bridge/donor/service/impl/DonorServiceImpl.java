@@ -21,15 +21,7 @@ public class DonorServiceImpl implements DonorService {
 
     @Override
     public DonorResponse addNewDonor(DonorRequest request) {
-        Donor donor = new Donor();
-        donor.setFundraiserId(request.fundraiserId());
-        donor.setFirstName(request.firstName());
-        donor.setLastName(request.lastName());
-        donor.setEmail(request.email());
-        donor.setPhone(request.phone());
-        donor.setCreatedAt(LocalDateTime.now());
-        
-        Donor saved = donorRepository.save(donor);
+        Donor saved = donorRepository.save(mapToEntity(request));
         return mapToResponse(saved);
     }
 
@@ -84,5 +76,17 @@ public class DonorServiceImpl implements DonorService {
                 donor.getPhone(),
                 donor.getCreatedAt()
         );
+    }
+
+    private Donor mapToEntity(DonorRequest donorRequest){
+        Donor donor = new Donor();
+        donor.setId(donor.getId());
+        donor.setFirstName(donorRequest.firstName());
+        donor.setLastName(donorRequest.lastName());
+        donor.setEmail(donorRequest.email());
+        donor.setPhone(donorRequest.phone());
+        donor.setFundraiserId(donorRequest.fundraiserId());
+        donor.setCreatedAt(LocalDateTime.now());
+        return donor;
     }
 }
