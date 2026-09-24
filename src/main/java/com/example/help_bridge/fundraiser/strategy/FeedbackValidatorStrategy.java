@@ -1,6 +1,6 @@
 package com.example.help_bridge.fundraiser.strategy;
 
-import com.example.help_bridge.common.exception.InvalidEvidenceException;
+import com.example.help_bridge.fundraiser.exception.InvalidEvidenceException;
 import com.example.help_bridge.fundraiser.entity.Evidence;
 import org.springframework.stereotype.Component;
 

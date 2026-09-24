@@ -1,7 +1,7 @@
 package com.example.help_bridge.fundraiser.service.impl;
 
-import com.example.help_bridge.common.exception.AssignmentNotFoundException;
-import com.example.help_bridge.common.exception.InvalidAssignmentStateException;
+import com.example.help_bridge.fundraiser.exception.AssignmentNotFoundException;
+import com.example.help_bridge.fundraiser.exception.InvalidAssignmentStateException;
 import com.example.help_bridge.fundraiser.dto.request.CompleteAssignmentRequest;
 import com.example.help_bridge.fundraiser.entity.AssignmentStatus;
 import com.example.help_bridge.fundraiser.entity.Fundraiser;

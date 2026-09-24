@@ -1,7 +1,7 @@
 package com.example.help_bridge.fundraiser.service.impl;
 
-import com.example.help_bridge.common.exception.FundraiserNotFoundException;
-import com.example.help_bridge.common.exception.InvalidEvidenceException;
+import com.example.help_bridge.fundraiser.exception.FundraiserNotFoundException;
+import com.example.help_bridge.fundraiser.exception.InvalidEvidenceException;
 import com.example.help_bridge.fundraiser.dto.request.AddEvidenceRequest;
 import com.example.help_bridge.fundraiser.dto.response.EvidenceResponse;
 import com.example.help_bridge.fundraiser.entity.Evidence;

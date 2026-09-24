@@ -1,6 +1,6 @@
 package com.example.help_bridge.fundraiser.service.impl;
 
-import com.example.help_bridge.common.exception.FundraiserNotFoundException;
+import com.example.help_bridge.fundraiser.exception.FundraiserNotFoundException;
 import com.example.help_bridge.fundraiser.dto.request.SendMailingRequest;
 import com.example.help_bridge.fundraiser.dto.response.EvidenceResponse;
 import com.example.help_bridge.fundraiser.dto.response.FundraiserResponse;

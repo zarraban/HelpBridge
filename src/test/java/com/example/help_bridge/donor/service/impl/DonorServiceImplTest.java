@@ -1,6 +1,6 @@
 package com.example.help_bridge.donor.service.impl;
 
-import com.example.help_bridge.common.exception.DonorNotFoundException;
+import com.example.help_bridge.donor.exception.DonorNotFoundException;
 import com.example.help_bridge.donor.dto.request.DonorRequest;
 import com.example.help_bridge.donor.dto.response.DonorResponse;
 import com.example.help_bridge.donor.entity.Donor;

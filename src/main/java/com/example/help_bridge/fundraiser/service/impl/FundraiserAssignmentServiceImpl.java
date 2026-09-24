@@ -19,9 +19,9 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
-import com.example.help_bridge.common.exception.AssignmentNotFoundException;
-import com.example.help_bridge.common.exception.FundraiserNotFoundException;
-import com.example.help_bridge.common.exception.InvalidAssignmentStateException;
+import com.example.help_bridge.fundraiser.exception.AssignmentNotFoundException;
+import com.example.help_bridge.fundraiser.exception.FundraiserNotFoundException;
+import com.example.help_bridge.fundraiser.exception.InvalidAssignmentStateException;
 
 @Service
 @RequiredArgsConstructor

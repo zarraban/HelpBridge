@@ -3,7 +3,9 @@ package com.example.help_bridge.notification.listener;
 import com.example.help_bridge.donor.service.DonorService;
 import com.example.help_bridge.fundraiser.event.MassMailingRequestedEvent;
 import com.example.help_bridge.notification.service.NotificationService;
+import org.springframework.context.event.EventListener;
 import org.springframework.modulith.events.ApplicationModuleListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -20,7 +22,9 @@ public class NotificationEventListener {
         this.notificationService = notificationService;
     }
 
-    @ApplicationModuleListener
+//    @ApplicationModuleListener
+    @EventListener
+    @Async
     public void onMassMailRequested(MassMailingRequestedEvent event) {
         System.out.println("MassMailingRequestedEvent handling started");
         List<String> emailToSent = donorService.getDonorsByFundraiserId(event.fundraiserId())

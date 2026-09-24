@@ -1,6 +1,10 @@
 package com.example.help_bridge.common.exception.handler;
 
-import com.example.help_bridge.common.exception.*;
+import com.example.help_bridge.donor.exception.DonorNotFoundException;
+import com.example.help_bridge.fundraiser.exception.AssignmentNotFoundException;
+import com.example.help_bridge.fundraiser.exception.FundraiserNotFoundException;
+import com.example.help_bridge.fundraiser.exception.InvalidAssignmentStateException;
+import com.example.help_bridge.fundraiser.exception.InvalidEvidenceException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
