@@ -1,4 +1,4 @@
-package com.example.help_bridge.fundraiser.entity;
+package com.example.help_bridge.notification.entity;
 
 public enum MailingStatus {
     QUEUED,
