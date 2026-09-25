@@ -42,4 +42,9 @@ public class FundraiserController {
             ){
         return ResponseEntity.ok(fundraiserService.sendMailToDonors(request));
     }
+    @PostMapping("/{id}/close")
+    public ResponseEntity<Void> closeFundraiser(@PathVariable("id") Long id) {
+        fundraiserService.closeFundraiser(id);
+        return ResponseEntity.noContent().build();
+    }
 }

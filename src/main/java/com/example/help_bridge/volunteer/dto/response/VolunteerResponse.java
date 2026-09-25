@@ -1,10 +1,8 @@
 package com.example.help_bridge.volunteer.dto.response;
 
-import java.util.UUID;
-
 public record VolunteerResponse(
-        UUID id,
-        UUID fundId,
+        Long id,
+        Long fundId,
         String firstName,
         String lastName,
         String email,

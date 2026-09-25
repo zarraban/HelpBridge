@@ -2,6 +2,13 @@ package com.example.help_bridge.common.exception.handler;
 
 import com.example.help_bridge.fund.exception.FundNotFoundException;
 import com.example.help_bridge.fund.exception.InvalidFundStatusTransitionException;
+import com.example.help_bridge.donor.exception.DonorNotFoundException;
+import com.example.help_bridge.fundraiser.exception.AssignmentNotFoundException;
+import com.example.help_bridge.fundraiser.exception.FundraiserNotFoundException;
+import com.example.help_bridge.fundraiser.exception.InvalidAssignmentStateException;
+import com.example.help_bridge.fundraiser.exception.InvalidEvidenceException;
+import com.example.help_bridge.volunteer.exception.DuplicateVolunteerException;
+import com.example.help_bridge.volunteer.exception.VolunteerNotFoundException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
@@ -150,18 +157,37 @@ public class GlobalExceptionHandler {
         return problemDetail;
     }
 
-    @ExceptionHandler(FundNotFoundException.class)
-    public ProblemDetail handleFundNotFound(FundNotFoundException ex) {
+    @ExceptionHandler({
+            FundraiserNotFoundException.class,
+            DonorNotFoundException.class,
+            AssignmentNotFoundException.class,
+            VolunteerNotFoundException.class,
+            FundNotFoundException.class
+    })
+    public ProblemDetail handleNotFoundDomainExceptions(RuntimeException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
                 HttpStatus.NOT_FOUND,
                 ex.getMessage()
         );
-        problemDetail.setTitle("Fund Not Found");
-        problemDetail.setType(URI.create("https://api.example.com/errors/fund-not-found"));
+        problemDetail.setTitle("Resource Not Found");
+        problemDetail.setType(URI.create("https://api.example.com/errors/not-found"));
         problemDetail.setProperty("timestamp", Instant.now());
         return problemDetail;
     }
 
+    @ExceptionHandler(InvalidAssignmentStateException.class)
+    public ProblemDetail handleInvalidStateException(InvalidAssignmentStateException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                ex.getMessage()
+        );
+      
+        problemDetail.setTitle("Invalid State Transition");
+        problemDetail.setType(URI.create("https://api.example.com/errors/invalid-state"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+  
     @ExceptionHandler(InvalidFundStatusTransitionException.class)
     public ProblemDetail handleInvalidFundStatusTransition(InvalidFundStatusTransitionException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
@@ -170,6 +196,30 @@ public class GlobalExceptionHandler {
         );
         problemDetail.setTitle("Invalid Fund Status Transition");
         problemDetail.setType(URI.create("https://api.example.com/errors/invalid-fund-status-transition"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler(DuplicateVolunteerException.class)
+    public ProblemDetail handleDuplicateResourceException(DuplicateVolunteerException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                ex.getMessage()
+        );
+        problemDetail.setTitle("Resource Already Exists");
+        problemDetail.setType(URI.create("https://api.example.com/errors/duplicate-resource"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler(InvalidEvidenceException.class)
+    public ProblemDetail handleInvalidEvidenceException(InvalidEvidenceException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage()
+        );
+        problemDetail.setTitle("Invalid Evidence");
+        problemDetail.setType(URI.create("https://api.example.com/errors/invalid-evidence"));
         problemDetail.setProperty("timestamp", Instant.now());
         return problemDetail;
     }
