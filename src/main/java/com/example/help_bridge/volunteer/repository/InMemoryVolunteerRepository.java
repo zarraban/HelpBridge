@@ -38,7 +38,7 @@ public class InMemoryVolunteerRepository implements VolunteerRepository {
         return storage.values().stream()
                 .filter(v ->
                         v.getFundId().equals(fundId)
-                        && v.getEmail().equals(email))
+                        && v.getEmail().equalsIgnoreCase(email))
                 .findFirst();
     }
 
@@ -74,7 +74,7 @@ public class InMemoryVolunteerRepository implements VolunteerRepository {
         return storage.values().stream()
                 .anyMatch(v ->
                         v.getFundId().equals(fundId)
-                        && v.getEmail().equals(email));
+                        && v.getEmail().equalsIgnoreCase(email));
     }
 
     @Override

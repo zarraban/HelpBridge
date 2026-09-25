@@ -16,6 +16,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 @Service
@@ -46,11 +47,12 @@ public class VolunteerServiceImpl implements VolunteerService {
 
     @Override
     public VolunteerResponse registerVolunteer(RegisterVolunteerCommand command) {
-        Optional<Volunteer> byEmail = repository.findByEmail(command.fundId(), command.email());
+        String email = normalizeEmail(command.email());
+        Optional<Volunteer> byEmail = repository.findByEmail(command.fundId(), email);
         Optional<Volunteer> byPhone = repository.findByPhoneNumber(command.fundId(), command.phoneNumber());
 
         byEmail.filter(Volunteer::isActive).ifPresent(v -> {
-            throw new DuplicateVolunteerException("Volunteer with email '" + command.email() + "' already exists");
+            throw new DuplicateVolunteerException("Volunteer with email '" + email + "' already exists");
         });
         byPhone.filter(Volunteer::isActive).ifPresent(v -> {
             throw new DuplicateVolunteerException("Volunteer with phone number '" + command.phoneNumber() + "' already exists");
@@ -71,7 +73,7 @@ public class VolunteerServiceImpl implements VolunteerService {
 
         volunteer.setFirstName(command.firstName());
         volunteer.setLastName(command.lastName());
-        volunteer.setEmail(command.email());
+        volunteer.setEmail(email);
         volunteer.setPhoneNumber(command.phoneNumber());
         volunteer.setStatus(VolunteerStatus.ACTIVE);
 
@@ -88,10 +90,11 @@ public class VolunteerServiceImpl implements VolunteerService {
         Volunteer volunteer = repository.findById(command.fundId(), command.id())
                 .orElseThrow(() -> new VolunteerNotFoundException("Volunteer with ID '" + command.id() + "' not found"));
 
-        repository.findByEmail(command.fundId(), command.email())
+        String email = normalizeEmail(command.email());
+        repository.findByEmail(command.fundId(), email)
                 .filter(other -> !other.getId().equals(volunteer.getId()))
                 .ifPresent(other -> {
-                    throw new DuplicateVolunteerException("Volunteer with email '" + command.email() + "' already exists");
+                    throw new DuplicateVolunteerException("Volunteer with email '" + email + "' already exists");
                 });
         repository.findByPhoneNumber(command.fundId(), command.phoneNumber())
                 .filter(other -> !other.getId().equals(volunteer.getId()))
@@ -99,12 +102,12 @@ public class VolunteerServiceImpl implements VolunteerService {
                     throw new DuplicateVolunteerException("Volunteer with phone number '" + command.phoneNumber() + "' already exists");
                 });
 
-        boolean emailChanged = !volunteer.getEmail().equals(command.email());
+        boolean emailChanged = !volunteer.getEmail().equals(email);
         boolean phoneChanged = !volunteer.getPhoneNumber().equals(command.phoneNumber());
 
         volunteer.setFirstName(command.firstName());
         volunteer.setLastName(command.lastName());
-        volunteer.setEmail(command.email());
+        volunteer.setEmail(email);
         volunteer.setPhoneNumber(command.phoneNumber());
 
         Volunteer saved = repository.save(volunteer);
@@ -113,26 +116,24 @@ public class VolunteerServiceImpl implements VolunteerService {
             eventPublisher.publishEvent(new VolunteerUpdatedEmailEvent(saved.getFirstName(), saved.getEmail()));
         }
         if (phoneChanged) {
-            eventPublisher.publishEvent(new VolunteerUpdatedPhoneNumberEvent(saved.getFirstName(), saved.getPhoneNumber()));
+            eventPublisher.publishEvent(new VolunteerUpdatedPhoneNumberEvent(saved.getFirstName(), saved.getPhoneNumber(), saved.getEmail()));
         }
         return toResponse(saved);
     }
 
     @Override
     public void removeVolunteer(Long fundId, Long volunteerId) {
-        if (!repository.existsById(fundId, volunteerId)) {
-            throw new VolunteerNotFoundException("Volunteer with ID '" + volunteerId + "' not found");
-        }
-
-        Optional<Volunteer> removingVolunteer = repository.findById(fundId, volunteerId);
-        removingVolunteer.ifPresent(volunteer ->
-                eventPublisher.publishEvent(new VolunteerRemovedEvent(
-                        volunteer.getFirstName(),
-                        volunteer.getEmail())
-                )
-        );
+        Volunteer volunteer = repository.findById(fundId, volunteerId)
+                .orElseThrow(() -> new VolunteerNotFoundException("Volunteer with ID '" + volunteerId + "' not found"));
 
         repository.deleteById(fundId, volunteerId);
+
+        eventPublisher.publishEvent(new VolunteerRemovedEvent(volunteer.getFirstName(), volunteer.getEmail()));
+    }
+
+    // Email не залежить від регістру — зберігаємо й порівнюємо в нижньому регістрі
+    private static String normalizeEmail(String email) {
+        return email.toLowerCase(Locale.ROOT);
     }
 
     private VolunteerResponse toResponse(Volunteer v) {
