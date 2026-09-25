@@ -1,7 +1,10 @@
 package com.example.help_bridge.volunteer.controller;
 
-import com.example.help_bridge.volunteer.dto.request.VolunteerRequest;
+import com.example.help_bridge.volunteer.command.RegisterVolunteerCommand;
+import com.example.help_bridge.volunteer.command.UpdateVolunteerCommand;
 import com.example.help_bridge.volunteer.dto.response.VolunteerResponse;
+import com.example.help_bridge.volunteer.exception.DuplicateVolunteerException;
+import com.example.help_bridge.volunteer.exception.VolunteerNotFoundException;
 import com.example.help_bridge.volunteer.service.VolunteerService;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -16,10 +19,9 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -35,8 +37,8 @@ class VolunteerControllerTest {
 
     private static final String BASE_URL = "/api/funds/{fundId}/volunteers";
 
-    private static final UUID FUND_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
-    private static final UUID VOLUNTEER_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
+    private static final Long FUND_ID = 1L;
+    private static final Long VOLUNTEER_ID = 3L;
 
     private static final String VALID_BODY = """
             {
@@ -47,8 +49,12 @@ class VolunteerControllerTest {
             }
             """;
 
-    private static final VolunteerRequest VALID_REQUEST =
-            new VolunteerRequest("Anna", "Samana", "anna@gmail.com", "+380501234567");
+    // Команди — record, тож порівняння за полями перевіряє, як контролер зібрав команду з URL і тіла
+    private static final RegisterVolunteerCommand REGISTER_COMMAND =
+            new RegisterVolunteerCommand(FUND_ID, "Anna", "Samana", "anna@gmail.com", "+380501234567");
+
+    private static final UpdateVolunteerCommand UPDATE_COMMAND =
+            new UpdateVolunteerCommand(VOLUNTEER_ID, FUND_ID, "Anna", "Samana", "anna@gmail.com", "+380501234567");
 
     @Autowired
     private MockMvc mockMvc;
@@ -56,7 +62,7 @@ class VolunteerControllerTest {
     @MockitoBean
     private VolunteerService service;
 
-    private static VolunteerResponse volunteer(UUID id) {
+    private static VolunteerResponse volunteer(Long id) {
         return new VolunteerResponse(id, FUND_ID, "Anna", "Samana", "anna@gmail.com", "+380501234567");
     }
 
@@ -65,7 +71,7 @@ class VolunteerControllerTest {
 
         @Test
         void returns200WithVolunteerList() throws Exception {
-            UUID secondId = UUID.randomUUID();
+            Long secondId = 4L;
             when(service.getFundVolunteers(FUND_ID))
                     .thenReturn(List.of(volunteer(VOLUNTEER_ID), volunteer(secondId)));
 
@@ -73,9 +79,9 @@ class VolunteerControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                     .andExpect(jsonPath("$", hasSize(2)))
-                    .andExpect(jsonPath("$[0].id").value(VOLUNTEER_ID.toString()))
-                    .andExpect(jsonPath("$[0].fundId").value(FUND_ID.toString()))
-                    .andExpect(jsonPath("$[1].id").value(secondId.toString()));
+                    .andExpect(jsonPath("$[0].id").value(VOLUNTEER_ID))
+                    .andExpect(jsonPath("$[0].fundId").value(FUND_ID))
+                    .andExpect(jsonPath("$[1].id").value(secondId));
         }
 
         @Test
@@ -98,8 +104,8 @@ class VolunteerControllerTest {
             mockMvc.perform(get(BASE_URL + "/{volunteerId}", FUND_ID, VOLUNTEER_ID))
                     .andExpect(status().isOk())
                     .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(jsonPath("$.id").value(VOLUNTEER_ID.toString()))
-                    .andExpect(jsonPath("$.fundId").value(FUND_ID.toString()))
+                    .andExpect(jsonPath("$.id").value(VOLUNTEER_ID))
+                    .andExpect(jsonPath("$.fundId").value(FUND_ID))
                     .andExpect(jsonPath("$.firstName").value("Anna"))
                     .andExpect(jsonPath("$.lastName").value("Samana"))
                     .andExpect(jsonPath("$.email").value("anna@gmail.com"))
@@ -107,9 +113,46 @@ class VolunteerControllerTest {
         }
 
         @Test
-        void returns400WhenVolunteerIdIsNotUuid() throws Exception {
-            mockMvc.perform(get(BASE_URL + "/{volunteerId}", FUND_ID, "not-a-uuid"))
-                    .andExpect(status().isBadRequest());
+        void returns404WhenVolunteerNotFound() throws Exception {
+            when(service.getFundVolunteer(FUND_ID, VOLUNTEER_ID))
+                    .thenThrow(new VolunteerNotFoundException("Volunteer with ID '3' not found"));
+
+            mockMvc.perform(get(BASE_URL + "/{volunteerId}", FUND_ID, VOLUNTEER_ID))
+                    .andExpect(status().isNotFound())
+                    .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                    .andExpect(jsonPath("$.status").value(404))
+                    .andExpect(jsonPath("$.detail").value("Volunteer with ID '3' not found"));
+        }
+
+        @Test
+        void returns400WhenVolunteerIdIsNotLong() throws Exception {
+            mockMvc.perform(get(BASE_URL + "/{volunteerId}", FUND_ID, UUID.randomUUID().toString()))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                    .andExpect(jsonPath("$.title").value("Type Mismatch"))
+                    .andExpect(jsonPath("$.detail").value("Parameter 'volunteerId' has invalid value"));
+
+            verifyNoInteractions(service);
+        }
+
+        @Test
+        void returns400WhenVolunteerIdExceedsLongRange() throws Exception {
+            mockMvc.perform(get(BASE_URL + "/{volunteerId}", FUND_ID, "9223372036854775808"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                    .andExpect(jsonPath("$.title").value("Type Mismatch"))
+                    .andExpect(jsonPath("$.detail").value("Parameter 'volunteerId' has invalid value"));
+
+            verifyNoInteractions(service);
+        }
+
+        @Test
+        void returns400WhenFundIdIsNotLong() throws Exception {
+            mockMvc.perform(get(BASE_URL + "/{volunteerId}", UUID.randomUUID().toString(), VOLUNTEER_ID))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                    .andExpect(jsonPath("$.title").value("Type Mismatch"))
+                    .andExpect(jsonPath("$.detail").value("Parameter 'fundId' has invalid value"));
 
             verifyNoInteractions(service);
         }
@@ -120,8 +163,8 @@ class VolunteerControllerTest {
 
         @Test
         void returns201WithLocationHeaderAndBody() throws Exception {
-            UUID createdId = UUID.randomUUID();
-            when(service.addVolunteer(FUND_ID, VALID_REQUEST)).thenReturn(volunteer(createdId));
+            Long createdId = 7L;
+            when(service.registerVolunteer(REGISTER_COMMAND)).thenReturn(volunteer(createdId));
 
             mockMvc.perform(post(BASE_URL, FUND_ID)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -129,10 +172,10 @@ class VolunteerControllerTest {
                     .andExpect(status().isCreated())
                     .andExpect(header().string("Location",
                             "http://localhost/api/funds/" + FUND_ID + "/volunteers/" + createdId))
-                    .andExpect(jsonPath("$.id").value(createdId.toString()))
+                    .andExpect(jsonPath("$.id").value(createdId))
                     .andExpect(jsonPath("$.email").value("anna@gmail.com"));
 
-            verify(service).addVolunteer(FUND_ID, VALID_REQUEST);
+            verify(service).registerVolunteer(REGISTER_COMMAND);
         }
 
         @Test
@@ -239,6 +282,21 @@ class VolunteerControllerTest {
         }
 
         @Test
+        void returns409WhenVolunteerAlreadyExists() throws Exception {
+            when(service.registerVolunteer(REGISTER_COMMAND))
+                    .thenThrow(new DuplicateVolunteerException("Volunteer with email 'anna@gmail.com' already exists"));
+
+            mockMvc.perform(post(BASE_URL, FUND_ID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(VALID_BODY))
+                    .andExpect(status().isConflict())
+                    .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                    .andExpect(jsonPath("$.status").value(409))
+                    .andExpect(jsonPath("$.detail").value("Volunteer with email 'anna@gmail.com' already exists"))
+                    .andExpect(header().doesNotExist("Location"));
+        }
+
+        @Test
         void returns400WhenJsonIsMalformed() throws Exception {
             mockMvc.perform(post(BASE_URL, FUND_ID)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -265,16 +323,16 @@ class VolunteerControllerTest {
 
         @Test
         void returns200WithUpdatedVolunteer() throws Exception {
-            when(service.updateVolunteer(FUND_ID, VOLUNTEER_ID, VALID_REQUEST)).thenReturn(volunteer(VOLUNTEER_ID));
+            when(service.updateVolunteer(UPDATE_COMMAND)).thenReturn(volunteer(VOLUNTEER_ID));
 
             mockMvc.perform(put(BASE_URL + "/{volunteerId}", FUND_ID, VOLUNTEER_ID)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(VALID_BODY))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(VOLUNTEER_ID.toString()))
+                    .andExpect(jsonPath("$.id").value(VOLUNTEER_ID))
                     .andExpect(jsonPath("$.firstName").value("Anna"));
 
-            verify(service).updateVolunteer(FUND_ID, VOLUNTEER_ID, VALID_REQUEST);
+            verify(service).updateVolunteer(UPDATE_COMMAND);
         }
 
         @Test
@@ -286,6 +344,53 @@ class VolunteerControllerTest {
                     .andExpect(jsonPath("$.title").value("Validation Error"));
 
             verifyNoInteractions(service);
+        }
+
+        @Test
+        void returns400WhenEmailAndPhoneAreInvalid() throws Exception {
+            String body = """
+                    {
+                      "firstName": "Anna",
+                      "lastName": "Samana",
+                      "email": "not-an-email",
+                      "phoneNumber": "0501234567"
+                    }
+                    """;
+
+            mockMvc.perform(put(BASE_URL + "/{volunteerId}", FUND_ID, VOLUNTEER_ID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors.email").value("Enter correct email address"))
+                    .andExpect(jsonPath("$.errors.phoneNumber").value("Phone number must match +380XXXXXXXXX"));
+
+            verifyNoInteractions(service);
+        }
+
+        @Test
+        void returns404WhenVolunteerNotFound() throws Exception {
+            when(service.updateVolunteer(UPDATE_COMMAND))
+                    .thenThrow(new VolunteerNotFoundException("Volunteer with ID '3' not found"));
+
+            mockMvc.perform(put(BASE_URL + "/{volunteerId}", FUND_ID, VOLUNTEER_ID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(VALID_BODY))
+                    .andExpect(status().isNotFound())
+                    .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                    .andExpect(jsonPath("$.detail").value("Volunteer with ID '3' not found"));
+        }
+
+        @Test
+        void returns409WhenContactsBelongToAnotherVolunteer() throws Exception {
+            when(service.updateVolunteer(UPDATE_COMMAND))
+                    .thenThrow(new DuplicateVolunteerException("Volunteer with phone number '+380501234567' already exists"));
+
+            mockMvc.perform(put(BASE_URL + "/{volunteerId}", FUND_ID, VOLUNTEER_ID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(VALID_BODY))
+                    .andExpect(status().isConflict())
+                    .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                    .andExpect(jsonPath("$.detail").value("Volunteer with phone number '+380501234567' already exists"));
         }
     }
 
@@ -299,6 +404,17 @@ class VolunteerControllerTest {
                     .andExpect(content().string(""));
 
             verify(service).removeVolunteer(FUND_ID, VOLUNTEER_ID);
+        }
+
+        @Test
+        void returns404WhenVolunteerNotFound() throws Exception {
+            doThrow(new VolunteerNotFoundException("Volunteer with ID '3' not found"))
+                    .when(service).removeVolunteer(FUND_ID, VOLUNTEER_ID);
+
+            mockMvc.perform(delete(BASE_URL + "/{volunteerId}", FUND_ID, VOLUNTEER_ID))
+                    .andExpect(status().isNotFound())
+                    .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                    .andExpect(jsonPath("$.detail").value("Volunteer with ID '3' not found"));
         }
     }
 
@@ -323,7 +439,7 @@ class VolunteerControllerTest {
                             .content(VALID_BODY))
                     .andExpect(status().isMethodNotAllowed());
 
-            verify(service, never()).updateVolunteer(eq(FUND_ID), any(), any());
+            verifyNoInteractions(service);
         }
     }
 }

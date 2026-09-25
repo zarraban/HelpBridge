@@ -1,6 +1,6 @@
-package com.example.help_bridge.volunteer.dto.response;
+package com.example.help_bridge.volunteer.command;
 
-public record VolunteerResponse(
+public record UpdateVolunteerCommand(
         Long id,
         Long fundId,
         String firstName,

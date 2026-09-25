@@ -1,5 +1,7 @@
 package com.example.help_bridge.volunteer.controller;
 
+import com.example.help_bridge.volunteer.command.RegisterVolunteerCommand;
+import com.example.help_bridge.volunteer.command.UpdateVolunteerCommand;
 import com.example.help_bridge.volunteer.dto.request.VolunteerRequest;
 import com.example.help_bridge.volunteer.dto.response.VolunteerResponse;
 import com.example.help_bridge.volunteer.service.VolunteerService;
@@ -10,7 +12,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/funds/{fundId}/volunteers")
@@ -23,24 +24,31 @@ public class VolunteerController {
     }
 
     @GetMapping
-    public ResponseEntity<List<VolunteerResponse>> getAllFundVolunteers(@PathVariable UUID fundId) {
+    public ResponseEntity<List<VolunteerResponse>> getAllFundVolunteers(@PathVariable Long fundId) {
         return ResponseEntity.ok(service.getFundVolunteers(fundId));
     }
 
     @GetMapping("/{volunteerId}")
     public ResponseEntity<VolunteerResponse> getFundVolunteerById(
-            @PathVariable UUID fundId,
-            @PathVariable UUID volunteerId
+            @PathVariable Long fundId,
+            @PathVariable Long volunteerId
     ) {
         return ResponseEntity.ok(service.getFundVolunteer(fundId, volunteerId));
     }
 
     @PostMapping
     public ResponseEntity<VolunteerResponse> addVolunteer(
-            @PathVariable UUID fundId,
+            @PathVariable Long fundId,
             @RequestBody @Valid VolunteerRequest request
     ) {
-        VolunteerResponse created = service.addVolunteer(fundId, request);
+        RegisterVolunteerCommand command = new RegisterVolunteerCommand(
+                fundId,
+                request.firstName(),
+                request.lastName(),
+                request.email(),
+                request.phoneNumber()
+        );
+        VolunteerResponse created = service.registerVolunteer(command);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
                 .buildAndExpand(created.id())
@@ -50,17 +58,25 @@ public class VolunteerController {
 
     @PutMapping("/{volunteerId}")
     public ResponseEntity<VolunteerResponse> updateVolunteer(
-            @PathVariable UUID fundId,
-            @PathVariable UUID volunteerId,
+            @PathVariable Long fundId,
+            @PathVariable Long volunteerId,
             @RequestBody @Valid VolunteerRequest request
     ) {
-        return ResponseEntity.ok(service.updateVolunteer(fundId, volunteerId, request));
+        UpdateVolunteerCommand command = new UpdateVolunteerCommand(
+                volunteerId,
+                fundId,
+                request.firstName(),
+                request.lastName(),
+                request.email(),
+                request.phoneNumber()
+        );
+        return ResponseEntity.ok(service.updateVolunteer(command));
     }
 
     @DeleteMapping("/{volunteerId}")
     public ResponseEntity<Void> removeVolunteer(
-            @PathVariable UUID fundId,
-            @PathVariable UUID volunteerId
+            @PathVariable Long fundId,
+            @PathVariable Long volunteerId
     ) {
         service.removeVolunteer(fundId, volunteerId);
         return ResponseEntity.noContent().build();
