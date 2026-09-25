@@ -45,6 +45,6 @@ public record FundCreateRequest(
         @Pattern(regexp = "^(https?://).+", message = "Website must start with http:// or https://")
         String website,
 
-        Map<String, String> socialMediaUrl
+        Map<String, String> socialMediaUrls
 ) {
 }

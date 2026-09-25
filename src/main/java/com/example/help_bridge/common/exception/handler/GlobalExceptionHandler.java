@@ -1,5 +1,7 @@
 package com.example.help_bridge.common.exception.handler;
 
+import com.example.help_bridge.fund.exception.FundNotFoundException;
+import com.example.help_bridge.fund.exception.InvalidFundStatusTransitionException;
 import com.example.help_bridge.donor.exception.DonorNotFoundException;
 import com.example.help_bridge.fundraiser.exception.AssignmentNotFoundException;
 import com.example.help_bridge.fundraiser.exception.FundraiserNotFoundException;
@@ -159,7 +161,8 @@ public class GlobalExceptionHandler {
             FundraiserNotFoundException.class,
             DonorNotFoundException.class,
             AssignmentNotFoundException.class,
-            VolunteerNotFoundException.class
+            VolunteerNotFoundException.class,
+            FundNotFoundException.class
     })
     public ProblemDetail handleNotFoundDomainExceptions(RuntimeException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
@@ -178,8 +181,21 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT,
                 ex.getMessage()
         );
+      
         problemDetail.setTitle("Invalid State Transition");
         problemDetail.setType(URI.create("https://api.example.com/errors/invalid-state"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+  
+    @ExceptionHandler(InvalidFundStatusTransitionException.class)
+    public ProblemDetail handleInvalidFundStatusTransition(InvalidFundStatusTransitionException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                ex.getMessage()
+        );
+        problemDetail.setTitle("Invalid Fund Status Transition");
+        problemDetail.setType(URI.create("https://api.example.com/errors/invalid-fund-status-transition"));
         problemDetail.setProperty("timestamp", Instant.now());
         return problemDetail;
     }

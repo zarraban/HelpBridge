@@ -34,14 +34,14 @@ class FundControllerTest {
     private FundResponse createSampleResponse() {
         return new FundResponse(
                 1L,
-                "Ivan",
-                "Ivanov",
+                "Daria",
+                "Chorna",
                 "Help Fund",
                 "12345678",
-                "Bank Details",
+                "0670000000",
+                "Bank detail",
                 "Registered Address",
-                "Actual Address",
-                "+380991234567",
+                "+Actual address",
                 "test@fund.com",
                 "https://fund.com",
                 Map.of("facebook", "https://facebook.com/fund"),
@@ -82,7 +82,7 @@ class FundControllerTest {
                     "phoneNumber": "+380971111111",
                     "corpEmail": "test@fund.com",
                     "website": "https://fund.com",
-                    "socialMediaUrl": {
+                    "socialMediaUrls": {
                         "facebook": "https://facebook.com/fund"
                     }
                 }
@@ -93,7 +93,7 @@ class FundControllerTest {
         mockMvc.perform(post(URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonRequest))
-                .andExpect(status().isCreated()); // Змінено на isCreated()
+                .andExpect(status().isCreated());
     }
 
     @Test
