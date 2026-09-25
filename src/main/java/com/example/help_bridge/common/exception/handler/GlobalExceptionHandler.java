@@ -1,5 +1,10 @@
 package com.example.help_bridge.common.exception.handler;
 
+import com.example.help_bridge.donor.exception.DonorNotFoundException;
+import com.example.help_bridge.fundraiser.exception.AssignmentNotFoundException;
+import com.example.help_bridge.fundraiser.exception.FundraiserNotFoundException;
+import com.example.help_bridge.fundraiser.exception.InvalidAssignmentStateException;
+import com.example.help_bridge.fundraiser.exception.InvalidEvidenceException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
@@ -144,6 +149,46 @@ public class GlobalExceptionHandler {
         );
         problemDetail.setTitle("Malformed Request");
         problemDetail.setType(URI.create("https://api.example.com/errors/malformed-request"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler({
+            FundraiserNotFoundException.class,
+            DonorNotFoundException.class,
+            AssignmentNotFoundException.class
+    })
+    public ProblemDetail handleNotFoundDomainExceptions(RuntimeException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                ex.getMessage()
+        );
+        problemDetail.setTitle("Resource Not Found");
+        problemDetail.setType(URI.create("https://api.example.com/errors/not-found"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler(InvalidAssignmentStateException.class)
+    public ProblemDetail handleInvalidStateException(InvalidAssignmentStateException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                ex.getMessage()
+        );
+        problemDetail.setTitle("Invalid State Transition");
+        problemDetail.setType(URI.create("https://api.example.com/errors/invalid-state"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler(InvalidEvidenceException.class)
+    public ProblemDetail handleInvalidEvidenceException(InvalidEvidenceException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage()
+        );
+        problemDetail.setTitle("Invalid Evidence");
+        problemDetail.setType(URI.create("https://api.example.com/errors/invalid-evidence"));
         problemDetail.setProperty("timestamp", Instant.now());
         return problemDetail;
     }
