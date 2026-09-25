@@ -2,7 +2,7 @@ package com.example.help_bridge.volunteer.controller;
 
 import com.example.help_bridge.volunteer.dto.request.VolunteerRequest;
 import com.example.help_bridge.volunteer.dto.response.VolunteerResponse;
-import com.example.help_bridge.volunteer.service.VolunteerService;
+import com.example.help_bridge.volunteer.service.VolunteerServiceImpl;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,7 +54,7 @@ class VolunteerControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private VolunteerService service;
+    private VolunteerServiceImpl service;
 
     private static VolunteerResponse volunteer(Long id) {
         return new VolunteerResponse(id, FUND_ID, "Anna", "Samana", "anna@gmail.com", "+380501234567");
@@ -146,7 +146,7 @@ class VolunteerControllerTest {
         @Test
         void returns201WithLocationHeaderAndBody() throws Exception {
             Long createdId = 7L;
-            when(service.addVolunteer(FUND_ID, VALID_REQUEST)).thenReturn(volunteer(createdId));
+            when(service.registerVolunteer(FUND_ID, VALID_REQUEST)).thenReturn(volunteer(createdId));
 
             mockMvc.perform(post(BASE_URL, FUND_ID)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -157,7 +157,7 @@ class VolunteerControllerTest {
                     .andExpect(jsonPath("$.id").value(createdId))
                     .andExpect(jsonPath("$.email").value("anna@gmail.com"));
 
-            verify(service).addVolunteer(FUND_ID, VALID_REQUEST);
+            verify(service).registerVolunteer(FUND_ID, VALID_REQUEST);
         }
 
         @Test

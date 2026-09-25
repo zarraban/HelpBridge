@@ -1,5 +1,7 @@
 package com.example.help_bridge.volunteer.controller;
 
+import com.example.help_bridge.volunteer.command.RegisterVolunteerCommand;
+import com.example.help_bridge.volunteer.command.UpdateVolunteerCommand;
 import com.example.help_bridge.volunteer.dto.request.VolunteerRequest;
 import com.example.help_bridge.volunteer.dto.response.VolunteerResponse;
 import com.example.help_bridge.volunteer.service.VolunteerService;
@@ -39,7 +41,14 @@ public class VolunteerController {
             @PathVariable Long fundId,
             @RequestBody @Valid VolunteerRequest request
     ) {
-        VolunteerResponse created = service.addVolunteer(fundId, request);
+        RegisterVolunteerCommand command = new RegisterVolunteerCommand(
+                fundId,
+                request.firstName(),
+                request.lastName(),
+                request.email(),
+                request.phoneNumber()
+        );
+        VolunteerResponse created = service.registerVolunteer(command);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
                 .buildAndExpand(created.id())
@@ -53,7 +62,15 @@ public class VolunteerController {
             @PathVariable Long volunteerId,
             @RequestBody @Valid VolunteerRequest request
     ) {
-        return ResponseEntity.ok(service.updateVolunteer(fundId, volunteerId, request));
+        UpdateVolunteerCommand command = new UpdateVolunteerCommand(
+                volunteerId,
+                fundId,
+                request.firstName(),
+                request.lastName(),
+                request.email(),
+                request.phoneNumber()
+        );
+        return ResponseEntity.ok(service.updateVolunteer(command));
     }
 
     @DeleteMapping("/{volunteerId}")
