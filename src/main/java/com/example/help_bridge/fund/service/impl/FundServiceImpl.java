@@ -1,4 +1,4 @@
-package com.example.help_bridge.fund.service;
+package com.example.help_bridge.fund.service.impl;
 
 import com.example.help_bridge.fund.dto.request.FundCreateRequest;
 import com.example.help_bridge.fund.dto.request.FundDescriptUpdateRequest;
@@ -11,10 +11,10 @@ import com.example.help_bridge.fund.exception.DuplicateFundException;
 import com.example.help_bridge.fund.exception.FundNotFoundException;
 import com.example.help_bridge.fund.exception.InvalidFundStatusTransitionException;
 import com.example.help_bridge.fund.repository.FundRepository;
+import com.example.help_bridge.fund.service.FundService;
 import com.example.help_bridge.fund.strategy.FundStatusTransitionHandler;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
