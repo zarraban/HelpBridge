@@ -11,6 +11,7 @@ import com.example.help_bridge.fund.exception.DuplicateFundException;
 import com.example.help_bridge.fund.exception.FundNotFoundException;
 import com.example.help_bridge.fund.exception.InvalidFundStatusTransitionException;
 import com.example.help_bridge.fund.repository.FundRepository;
+import com.example.help_bridge.fund.service.impl.FundServiceImpl;
 import com.example.help_bridge.fund.strategy.FundStatusTransitionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
