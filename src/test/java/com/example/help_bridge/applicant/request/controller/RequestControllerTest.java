@@ -5,13 +5,19 @@ import com.example.help_bridge.request.dto.request.RequestDto.CreateRequestReque
 import com.example.help_bridge.request.dto.request.RequestDto.RequestResponse;
 import com.example.help_bridge.request.entity.RequestStatus;
 import com.example.help_bridge.request.service.RequestService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -31,6 +37,19 @@ class RequestControllerTest {
 
     @InjectMocks
     private RequestController requestController;
+
+    @BeforeEach
+    void setUp() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setScheme("http");
+        request.setServerName("localhost");
+        request.setServerPort(8080);
+        request.setRequestURI("/requests");
+
+        RequestContextHolder.setRequestAttributes(
+                new ServletRequestAttributes(request)
+        );
+    }
 
     private CreateRequestRequest validRequest() {
         return new CreateRequestRequest(
