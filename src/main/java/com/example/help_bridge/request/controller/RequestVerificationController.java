@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/admin/requests")
+@RequestMapping("/api/v1/requests")
 public class RequestVerificationController {
 
     private final RequestVerificationService verificationService;
@@ -16,7 +16,7 @@ public class RequestVerificationController {
         this.verificationService = verificationService;
     }
 
-    @PatchMapping("/{id}/verify")
+    @PatchMapping("/{id}/verification")
     public ResponseEntity<Void> verifyRequest(
             @PathVariable Long id,
             @RequestBody @Valid RequestVerificationDto reviewRequest) {

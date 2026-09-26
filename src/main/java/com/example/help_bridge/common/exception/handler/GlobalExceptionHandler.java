@@ -9,6 +9,9 @@ import com.example.help_bridge.fundraiser.exception.InvalidAssignmentStateExcept
 import com.example.help_bridge.fundraiser.exception.InvalidEvidenceException;
 import com.example.help_bridge.volunteer.exception.DuplicateVolunteerException;
 import com.example.help_bridge.volunteer.exception.VolunteerNotFoundException;
+import com.example.help_bridge.request.exception.RequestNotFoundException;
+import com.example.help_bridge.request.exception.InvalidRequestStateException;
+import com.example.help_bridge.request.exception.FundNotApprovedException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
@@ -162,7 +165,8 @@ public class GlobalExceptionHandler {
             DonorNotFoundException.class,
             AssignmentNotFoundException.class,
             VolunteerNotFoundException.class,
-            FundNotFoundException.class
+            FundNotFoundException.class,
+            RequestNotFoundException.class
     })
     public ProblemDetail handleNotFoundDomainExceptions(RuntimeException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
@@ -181,13 +185,13 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT,
                 ex.getMessage()
         );
-      
+
         problemDetail.setTitle("Invalid State Transition");
         problemDetail.setType(URI.create("https://api.example.com/errors/invalid-state"));
         problemDetail.setProperty("timestamp", Instant.now());
         return problemDetail;
     }
-  
+
     @ExceptionHandler(InvalidFundStatusTransitionException.class)
     public ProblemDetail handleInvalidFundStatusTransition(InvalidFundStatusTransitionException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
@@ -220,6 +224,18 @@ public class GlobalExceptionHandler {
         );
         problemDetail.setTitle("Invalid Evidence");
         problemDetail.setType(URI.create("https://api.example.com/errors/invalid-evidence"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler({InvalidRequestStateException.class, FundNotApprovedException.class})
+    public ProblemDetail handleRequestConflictExceptions(RuntimeException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                ex.getMessage()
+        );
+        problemDetail.setTitle("Invalid Request State");
+        problemDetail.setType(URI.create("https://api.example.com/errors/invalid-request-state"));
         problemDetail.setProperty("timestamp", Instant.now());
         return problemDetail;
     }
