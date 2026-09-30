@@ -61,7 +61,7 @@ public class RequestServiceImpl implements RequestService {
     public List<RequestResponse> getSharedPool() {
         return requestRepository.findAllByStatusWithDetails(RequestStatus.NEW).stream()
                 .sorted(Comparator
-                        .comparing((Request r) -> !r.isHot())
+                        .comparing((Request r) -> !r.isExpired())
                         .thenComparing(Request::getDeadline))
                 .map(RequestMapper::toResponse)
                 .toList();

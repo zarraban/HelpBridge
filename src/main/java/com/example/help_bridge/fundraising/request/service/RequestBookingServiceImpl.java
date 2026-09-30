@@ -1,6 +1,7 @@
 package com.example.help_bridge.fundraising.request.service;
 
 import com.example.help_bridge.fundraising.fund.entity.Fund;
+import com.example.help_bridge.fundraising.fund.entity.FundStatus;
 import com.example.help_bridge.fundraising.fund.exception.FundNotFoundException;
 import com.example.help_bridge.fundraising.fund.repository.FundRepository;
 import com.example.help_bridge.fundraising.request.dto.request.RequestDto.RequestResponse;
@@ -32,25 +33,20 @@ public class RequestBookingServiceImpl implements RequestBookingService {
 
     @Override
     public RequestResponse bookRequest(Long requestId, Long fundId) {
-        Request request = requestRepository.findById(requestId)
+        Request request = requestRepository.findByIdWithDetails(requestId)
                 .orElseThrow(() -> new RequestNotFoundException(requestId));
         Fund fund = fundRepository.findById(fundId)
                 .orElseThrow(() -> new FundNotFoundException(fundId));
 
-        if (!isFundApproved(fund)) {
+        if (fund.getStatus() != FundStatus.APPROVED) {
             throw new FundNotApprovedException(fundId);
         }
 
         request.transitionTo(RequestStatus.IN_PROGRESS);
         request.setFund(fund);
-        Request saved = requestRepository.save(request);
 
         eventPublisher.publishEvent(new RequestBookedEvent(requestId, fundId));
 
-        return RequestMapper.toResponse(saved);
-    }
-
-    private boolean isFundApproved(Fund fund) {
-        return true;
+        return RequestMapper.toResponse(request);
     }
 }
