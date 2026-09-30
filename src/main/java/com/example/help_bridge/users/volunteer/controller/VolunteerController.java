@@ -46,7 +46,7 @@ public class VolunteerController {
                 request.firstName(),
                 request.lastName(),
                 request.email(),
-                request.phoneNumber()
+                request.phone()
         );
         VolunteerResponse created = service.registerVolunteer(command);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -68,7 +68,7 @@ public class VolunteerController {
                 request.firstName(),
                 request.lastName(),
                 request.email(),
-                request.phoneNumber()
+                request.phone()
         );
         return ResponseEntity.ok(service.updateVolunteer(command));
     }
