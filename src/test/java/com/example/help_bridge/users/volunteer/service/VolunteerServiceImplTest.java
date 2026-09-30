@@ -1,5 +1,7 @@
 package com.example.help_bridge.users.volunteer.service;
 
+import com.example.help_bridge.fundraising.fund.entity.Fund;
+import com.example.help_bridge.fundraising.fund.exception.FundNotFoundException;
 import com.example.help_bridge.users.volunteer.command.RegisterVolunteerCommand;
 import com.example.help_bridge.users.volunteer.command.UpdateVolunteerCommand;
 import com.example.help_bridge.users.volunteer.dto.response.VolunteerResponse;
@@ -12,6 +14,7 @@ import com.example.help_bridge.users.volunteer.event.VolunteerUpdatedPhoneNumber
 import com.example.help_bridge.users.volunteer.exception.DuplicateVolunteerException;
 import com.example.help_bridge.users.volunteer.exception.VolunteerNotFoundException;
 import com.example.help_bridge.users.volunteer.repository.VolunteerRepository;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -29,7 +32,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -41,7 +43,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class VolunteerServiceImplTest {
 
-    // ╨Э╨░╨▓╨╝╨╕╤Б╨╜╨╛ ╤А╤Ц╨╖╨╜╤Ц ╨╖╨╜╨░╤З╨╡╨╜╨╜╤П, ╤Й╨╛╨▒ ╤В╨╡╤Б╤В╨╕ ╨╗╨╛╨▓╨╕╨╗╨╕ ╨┐╨╡╤А╨╡╨┐╨╗╤Г╤В╨░╨╜╤Ц id / fundId
     private static final Long FUND_ID = 1L;
     private static final Long VOLUNTEER_ID = 3L;
     private static final Long OTHER_VOLUNTEER_ID = 4L;
@@ -60,19 +61,29 @@ class VolunteerServiceImplTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private EntityManager entityManager;
+
     private VolunteerServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new VolunteerServiceImpl(repository, eventPublisher);
+        service = new VolunteerServiceImpl(repository, eventPublisher, entityManager);
+        lenient().when(entityManager.find(Fund.class, FUND_ID)).thenReturn(fund());
+    }
+
+    private static Fund fund() {
+        Fund fund = new Fund();
+        fund.setId(FUND_ID);
+        return fund;
     }
 
     private static Volunteer volunteer(Long id, VolunteerStatus status) {
-        return new Volunteer(id, FUND_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE, status);
+        return new Volunteer(id, fund(), FIRST_NAME, LAST_NAME, EMAIL, PHONE, status);
     }
 
     private static Volunteer volunteer(Long id, String email, String phone, VolunteerStatus status) {
-        return new Volunteer(id, FUND_ID, "Olena", "Koval", email, phone, status);
+        return new Volunteer(id, fund(), "Olena", "Koval", email, phone, status);
     }
 
     private static RegisterVolunteerCommand registerCommand() {
@@ -108,7 +119,7 @@ class VolunteerServiceImplTest {
 
         @Test
         void mapsEveryVolunteerOfFundToResponse() {
-            when(repository.findAllByFund(FUND_ID)).thenReturn(List.of(
+            when(repository.findAllByFundWithFund(FUND_ID, VolunteerStatus.ACTIVE)).thenReturn(List.of(
                     volunteer(VOLUNTEER_ID, VolunteerStatus.ACTIVE),
                     volunteer(OTHER_VOLUNTEER_ID, NEW_EMAIL, NEW_PHONE, VolunteerStatus.ACTIVE)));
 
@@ -122,7 +133,7 @@ class VolunteerServiceImplTest {
 
         @Test
         void returnsEmptyListWhenFundHasNoVolunteers() {
-            when(repository.findAllByFund(FUND_ID)).thenReturn(List.of());
+            when(repository.findAllByFundWithFund(FUND_ID, VolunteerStatus.ACTIVE)).thenReturn(List.of());
 
             assertTrue(service.getFundVolunteers(FUND_ID).isEmpty());
         }
@@ -133,7 +144,7 @@ class VolunteerServiceImplTest {
 
         @Test
         void returnsVolunteerWithCorrectIdAndFundId() {
-            when(repository.findById(FUND_ID, VOLUNTEER_ID))
+            when(repository.findByFundIdAndIdAndStatus(FUND_ID, VOLUNTEER_ID, VolunteerStatus.ACTIVE))
                     .thenReturn(Optional.of(volunteer(VOLUNTEER_ID, VolunteerStatus.ACTIVE)));
 
             VolunteerResponse response = service.getFundVolunteer(FUND_ID, VOLUNTEER_ID);
@@ -143,7 +154,7 @@ class VolunteerServiceImplTest {
 
         @Test
         void throwsNotFoundWhenVolunteerIsAbsent() {
-            when(repository.findById(FUND_ID, VOLUNTEER_ID)).thenReturn(Optional.empty());
+            when(repository.findByFundIdAndIdAndStatus(FUND_ID, VOLUNTEER_ID, VolunteerStatus.ACTIVE)).thenReturn(Optional.empty());
 
             assertThrows(VolunteerNotFoundException.class,
                     () -> service.getFundVolunteer(FUND_ID, VOLUNTEER_ID));
@@ -160,11 +171,11 @@ class VolunteerServiceImplTest {
             VolunteerResponse response = service.registerVolunteer(registerCommand());
 
             Volunteer saved = capturedSavedVolunteer();
-            assertEquals(FUND_ID, saved.getFundId());
+            assertEquals(FUND_ID, saved.getFund().getId());
             assertEquals(FIRST_NAME, saved.getFirstName());
             assertEquals(LAST_NAME, saved.getLastName());
             assertEquals(EMAIL, saved.getEmail());
-            assertEquals(PHONE, saved.getPhoneNumber());
+            assertEquals(PHONE, saved.getPhone());
             assertEquals(VolunteerStatus.ACTIVE, saved.getStatus());
 
             assertEquals(new VolunteerResponse(VOLUNTEER_ID, FUND_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE), response);
@@ -183,7 +194,7 @@ class VolunteerServiceImplTest {
 
         @Test
         void throwsDuplicateWhenActiveVolunteerHasSameEmail() {
-            when(repository.findByEmail(FUND_ID, EMAIL))
+            when(repository.findByFundIdAndEmailIgnoreCase(FUND_ID, EMAIL))
                     .thenReturn(Optional.of(volunteer(OTHER_VOLUNTEER_ID, VolunteerStatus.ACTIVE)));
 
             assertThrows(DuplicateVolunteerException.class, () -> service.registerVolunteer(registerCommand()));
@@ -206,7 +217,7 @@ class VolunteerServiceImplTest {
 
         @Test
         void throwsDuplicateWhenActiveVolunteerHasSameEmailInDifferentCase() {
-            when(repository.findByEmail(FUND_ID, EMAIL))
+            when(repository.findByFundIdAndEmailIgnoreCase(FUND_ID, EMAIL))
                     .thenReturn(Optional.of(volunteer(OTHER_VOLUNTEER_ID, VolunteerStatus.ACTIVE)));
 
             assertThrows(DuplicateVolunteerException.class, () -> service.registerVolunteer(
@@ -218,7 +229,7 @@ class VolunteerServiceImplTest {
 
         @Test
         void throwsDuplicateWhenActiveVolunteerHasSamePhoneNumber() {
-            when(repository.findByPhoneNumber(FUND_ID, PHONE))
+            when(repository.findByFundIdAndPhone(FUND_ID, PHONE))
                     .thenReturn(Optional.of(volunteer(OTHER_VOLUNTEER_ID, NEW_EMAIL, PHONE, VolunteerStatus.ACTIVE)));
 
             assertThrows(DuplicateVolunteerException.class, () -> service.registerVolunteer(registerCommand()));
@@ -229,9 +240,9 @@ class VolunteerServiceImplTest {
 
         @Test
         void throwsDuplicateWhenEmailIsFreeButPhoneBelongsToActiveVolunteerAndEmailToInactive() {
-            when(repository.findByEmail(FUND_ID, EMAIL))
+            when(repository.findByFundIdAndEmailIgnoreCase(FUND_ID, EMAIL))
                     .thenReturn(Optional.of(volunteer(VOLUNTEER_ID, EMAIL, NEW_PHONE, VolunteerStatus.INACTIVE)));
-            when(repository.findByPhoneNumber(FUND_ID, PHONE))
+            when(repository.findByFundIdAndPhone(FUND_ID, PHONE))
                     .thenReturn(Optional.of(volunteer(OTHER_VOLUNTEER_ID, NEW_EMAIL, PHONE, VolunteerStatus.ACTIVE)));
 
             assertThrows(DuplicateVolunteerException.class, () -> service.registerVolunteer(registerCommand()));
@@ -243,18 +254,18 @@ class VolunteerServiceImplTest {
         @Test
         void reactivatesInactiveVolunteerFoundByEmailInsteadOfCreatingNewOne() {
             Volunteer inactive = volunteer(VOLUNTEER_ID, EMAIL, NEW_PHONE, VolunteerStatus.INACTIVE);
-            when(repository.findByEmail(FUND_ID, EMAIL)).thenReturn(Optional.of(inactive));
+            when(repository.findByFundIdAndEmailIgnoreCase(FUND_ID, EMAIL)).thenReturn(Optional.of(inactive));
             saveReturnsArgument();
 
             VolunteerResponse response = service.registerVolunteer(registerCommand());
 
             Volunteer saved = capturedSavedVolunteer();
             assertEquals(VOLUNTEER_ID, saved.getId());
-            assertEquals(FUND_ID, saved.getFundId());
+            assertEquals(FUND_ID, saved.getFund().getId());
             assertEquals(VolunteerStatus.ACTIVE, saved.getStatus());
             assertEquals(FIRST_NAME, saved.getFirstName());
             assertEquals(LAST_NAME, saved.getLastName());
-            assertEquals(PHONE, saved.getPhoneNumber());
+            assertEquals(PHONE, saved.getPhone());
 
             assertEquals(new VolunteerResponse(VOLUNTEER_ID, FUND_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE), response);
             verify(eventPublisher).publishEvent(new VolunteerRegisteredEvent(FUND_ID, FIRST_NAME, EMAIL));
@@ -263,7 +274,7 @@ class VolunteerServiceImplTest {
         @Test
         void reactivatesInactiveVolunteerFoundByPhoneNumber() {
             Volunteer inactive = volunteer(VOLUNTEER_ID, NEW_EMAIL, PHONE, VolunteerStatus.INACTIVE);
-            when(repository.findByPhoneNumber(FUND_ID, PHONE)).thenReturn(Optional.of(inactive));
+            when(repository.findByFundIdAndPhone(FUND_ID, PHONE)).thenReturn(Optional.of(inactive));
             saveReturnsArgument();
 
             VolunteerResponse response = service.registerVolunteer(registerCommand());
@@ -280,8 +291,8 @@ class VolunteerServiceImplTest {
         @Test
         void reactivatesWhenEmailAndPhoneBelongToSameInactiveVolunteer() {
             Volunteer inactive = volunteer(VOLUNTEER_ID, VolunteerStatus.INACTIVE);
-            when(repository.findByEmail(FUND_ID, EMAIL)).thenReturn(Optional.of(inactive));
-            when(repository.findByPhoneNumber(FUND_ID, PHONE)).thenReturn(Optional.of(inactive));
+            when(repository.findByFundIdAndEmailIgnoreCase(FUND_ID, EMAIL)).thenReturn(Optional.of(inactive));
+            when(repository.findByFundIdAndPhone(FUND_ID, PHONE)).thenReturn(Optional.of(inactive));
             saveReturnsArgument();
 
             service.registerVolunteer(registerCommand());
@@ -293,12 +304,22 @@ class VolunteerServiceImplTest {
 
         @Test
         void throwsDuplicateWhenEmailAndPhoneBelongToDifferentInactiveVolunteers() {
-            when(repository.findByEmail(FUND_ID, EMAIL))
+            when(repository.findByFundIdAndEmailIgnoreCase(FUND_ID, EMAIL))
                     .thenReturn(Optional.of(volunteer(VOLUNTEER_ID, EMAIL, NEW_PHONE, VolunteerStatus.INACTIVE)));
-            when(repository.findByPhoneNumber(FUND_ID, PHONE))
+            when(repository.findByFundIdAndPhone(FUND_ID, PHONE))
                     .thenReturn(Optional.of(volunteer(OTHER_VOLUNTEER_ID, NEW_EMAIL, PHONE, VolunteerStatus.INACTIVE)));
 
             assertThrows(DuplicateVolunteerException.class, () -> service.registerVolunteer(registerCommand()));
+
+            verify(repository, never()).save(any());
+            verifyNoInteractions(eventPublisher);
+        }
+
+        @Test
+        void throwsFundNotFoundWhenFundDoesNotExist() {
+            when(entityManager.find(Fund.class, FUND_ID)).thenReturn(null);
+
+            assertThrows(FundNotFoundException.class, () -> service.registerVolunteer(registerCommand()));
 
             verify(repository, never()).save(any());
             verifyNoInteractions(eventPublisher);
@@ -326,7 +347,7 @@ class VolunteerServiceImplTest {
 
         @Test
         void throwsNotFoundWhenVolunteerIsAbsent() {
-            when(repository.findById(FUND_ID, VOLUNTEER_ID)).thenReturn(Optional.empty());
+            when(repository.findByFundIdAndIdAndStatus(FUND_ID, VOLUNTEER_ID, VolunteerStatus.ACTIVE)).thenReturn(Optional.empty());
 
             assertThrows(VolunteerNotFoundException.class,
                     () -> service.updateVolunteer(updateCommand(FIRST_NAME, NEW_EMAIL, PHONE)));
@@ -337,26 +358,26 @@ class VolunteerServiceImplTest {
 
         @Test
         void updatesExistingVolunteerKeepingIdFundAndStatus() {
-            when(repository.findById(FUND_ID, VOLUNTEER_ID)).thenReturn(Optional.of(existing));
+            when(repository.findByFundIdAndIdAndStatus(FUND_ID, VOLUNTEER_ID, VolunteerStatus.ACTIVE)).thenReturn(Optional.of(existing));
             saveReturnsArgument();
 
             VolunteerResponse response = service.updateVolunteer(updateCommand("Hanna", NEW_EMAIL, NEW_PHONE));
 
             Volunteer saved = capturedSavedVolunteer();
             assertEquals(VOLUNTEER_ID, saved.getId());
-            assertEquals(FUND_ID, saved.getFundId());
+            assertEquals(FUND_ID, saved.getFund().getId());
             assertEquals(VolunteerStatus.ACTIVE, saved.getStatus());
             assertEquals("Hanna", saved.getFirstName());
             assertEquals(NEW_EMAIL, saved.getEmail());
-            assertEquals(NEW_PHONE, saved.getPhoneNumber());
+            assertEquals(NEW_PHONE, saved.getPhone());
 
             assertEquals(new VolunteerResponse(VOLUNTEER_ID, FUND_ID, "Hanna", LAST_NAME, NEW_EMAIL, NEW_PHONE), response);
         }
 
         @Test
         void throwsDuplicateWhenEmailBelongsToAnotherVolunteer() {
-            when(repository.findById(FUND_ID, VOLUNTEER_ID)).thenReturn(Optional.of(existing));
-            when(repository.findByEmail(FUND_ID, NEW_EMAIL))
+            when(repository.findByFundIdAndIdAndStatus(FUND_ID, VOLUNTEER_ID, VolunteerStatus.ACTIVE)).thenReturn(Optional.of(existing));
+            when(repository.findByFundIdAndEmailIgnoreCase(FUND_ID, NEW_EMAIL))
                     .thenReturn(Optional.of(volunteer(OTHER_VOLUNTEER_ID, NEW_EMAIL, NEW_PHONE, VolunteerStatus.ACTIVE)));
 
             assertThrows(DuplicateVolunteerException.class,
@@ -368,10 +389,8 @@ class VolunteerServiceImplTest {
 
         @Test
         void throwsDuplicateWhenEmailBelongsToAnotherInactiveVolunteer() {
-            // ╨Э╨╡╨░╨║╤В╨╕╨▓╨╜╨╕╨╣ ╨╖╨░╨┐╨╕╤Б ╨▒╤Г╨┤╨╡ ╨▓╤Ц╨┤╨╜╨╛╨▓╨╗╨╡╨╜╨╛ ╨┐╤А╨╕ ╨┐╨╛╨▓╤В╨╛╤А╨╜╤Ц╨╣ ╤А╨╡╤Ф╤Б╤В╤А╨░╤Ж╤Ц╤Ч ╨╖╨░ ╤Ж╨╕╨╝ email,
-            // ╤В╨╛╨╝╤Г ╨╖╨░╨╣╨╝╨░╤В╨╕ ╨╣╨╛╨│╨╛ ╨║╨╛╨╜╤В╨░╨║╤В╨╕ ╨╜╨╡ ╨╝╨╛╨╢╨╜╨░
-            when(repository.findById(FUND_ID, VOLUNTEER_ID)).thenReturn(Optional.of(existing));
-            when(repository.findByEmail(FUND_ID, NEW_EMAIL))
+            when(repository.findByFundIdAndIdAndStatus(FUND_ID, VOLUNTEER_ID, VolunteerStatus.ACTIVE)).thenReturn(Optional.of(existing));
+            when(repository.findByFundIdAndEmailIgnoreCase(FUND_ID, NEW_EMAIL))
                     .thenReturn(Optional.of(volunteer(OTHER_VOLUNTEER_ID, NEW_EMAIL, NEW_PHONE, VolunteerStatus.INACTIVE)));
 
             assertThrows(DuplicateVolunteerException.class,
@@ -382,8 +401,8 @@ class VolunteerServiceImplTest {
 
         @Test
         void throwsDuplicateWhenEmailOfAnotherVolunteerDiffersOnlyInCase() {
-            when(repository.findById(FUND_ID, VOLUNTEER_ID)).thenReturn(Optional.of(existing));
-            when(repository.findByEmail(FUND_ID, NEW_EMAIL))
+            when(repository.findByFundIdAndIdAndStatus(FUND_ID, VOLUNTEER_ID, VolunteerStatus.ACTIVE)).thenReturn(Optional.of(existing));
+            when(repository.findByFundIdAndEmailIgnoreCase(FUND_ID, NEW_EMAIL))
                     .thenReturn(Optional.of(volunteer(OTHER_VOLUNTEER_ID, NEW_EMAIL, NEW_PHONE, VolunteerStatus.ACTIVE)));
 
             assertThrows(DuplicateVolunteerException.class,
@@ -395,7 +414,7 @@ class VolunteerServiceImplTest {
 
         @Test
         void changingOnlyEmailCaseIsNotEmailChange() {
-            when(repository.findById(FUND_ID, VOLUNTEER_ID)).thenReturn(Optional.of(existing));
+            when(repository.findByFundIdAndIdAndStatus(FUND_ID, VOLUNTEER_ID, VolunteerStatus.ACTIVE)).thenReturn(Optional.of(existing));
             saveReturnsArgument();
 
             VolunteerResponse response = service.updateVolunteer(updateCommand(FIRST_NAME, "ANNA@gmail.com", PHONE));
@@ -407,8 +426,8 @@ class VolunteerServiceImplTest {
 
         @Test
         void throwsDuplicateWhenPhoneNumberBelongsToAnotherVolunteer() {
-            when(repository.findById(FUND_ID, VOLUNTEER_ID)).thenReturn(Optional.of(existing));
-            when(repository.findByPhoneNumber(FUND_ID, NEW_PHONE))
+            when(repository.findByFundIdAndIdAndStatus(FUND_ID, VOLUNTEER_ID, VolunteerStatus.ACTIVE)).thenReturn(Optional.of(existing));
+            when(repository.findByFundIdAndPhone(FUND_ID, NEW_PHONE))
                     .thenReturn(Optional.of(volunteer(OTHER_VOLUNTEER_ID, NEW_EMAIL, NEW_PHONE, VolunteerStatus.ACTIVE)));
 
             assertThrows(DuplicateVolunteerException.class,
@@ -420,9 +439,8 @@ class VolunteerServiceImplTest {
 
         @Test
         void rejectedUpdateDoesNotModifyStoredVolunteer() {
-            // ╨а╨╡╨┐╨╛╨╖╨╕╤В╨╛╤А╤Ц╨╣ ╨┐╨╛╨▓╨╡╤А╤В╨░╤Ф ╨┐╨╛╤Б╨╕╨╗╨░╨╜╨╜╤П ╨╜╨░ ╨╖╨▒╨╡╤А╨╡╨╢╨╡╨╜╨╕╨╣ ╨╛╨▒'╤Ф╨║╤В тАФ ╤З╨░╤Б╤В╨║╨╛╨▓╨░ ╨╖╨╝╤Ц╨╜╨░ ╨┤╨╛ ╨▓╨╕╨╜╤П╤В╨║╤Г ╨╖╤Ц╨┐╤Б╤Г╨▓╨░╨╗╨░ ╨▒ ╨┤╨░╨╜╤Ц
-            when(repository.findById(FUND_ID, VOLUNTEER_ID)).thenReturn(Optional.of(existing));
-            when(repository.findByPhoneNumber(FUND_ID, NEW_PHONE))
+            when(repository.findByFundIdAndIdAndStatus(FUND_ID, VOLUNTEER_ID, VolunteerStatus.ACTIVE)).thenReturn(Optional.of(existing));
+            when(repository.findByFundIdAndPhone(FUND_ID, NEW_PHONE))
                     .thenReturn(Optional.of(volunteer(OTHER_VOLUNTEER_ID, NEW_EMAIL, NEW_PHONE, VolunteerStatus.ACTIVE)));
 
             assertThrows(DuplicateVolunteerException.class,
@@ -430,14 +448,14 @@ class VolunteerServiceImplTest {
 
             assertEquals(FIRST_NAME, existing.getFirstName());
             assertEquals(EMAIL, existing.getEmail());
-            assertEquals(PHONE, existing.getPhoneNumber());
+            assertEquals(PHONE, existing.getPhone());
         }
 
         @Test
         void keepingOwnEmailAndPhoneIsNotDuplicate() {
-            when(repository.findById(FUND_ID, VOLUNTEER_ID)).thenReturn(Optional.of(existing));
-            when(repository.findByEmail(FUND_ID, EMAIL)).thenReturn(Optional.of(existing));
-            when(repository.findByPhoneNumber(FUND_ID, PHONE)).thenReturn(Optional.of(existing));
+            when(repository.findByFundIdAndIdAndStatus(FUND_ID, VOLUNTEER_ID, VolunteerStatus.ACTIVE)).thenReturn(Optional.of(existing));
+            when(repository.findByFundIdAndEmailIgnoreCase(FUND_ID, EMAIL)).thenReturn(Optional.of(existing));
+            when(repository.findByFundIdAndPhone(FUND_ID, PHONE)).thenReturn(Optional.of(existing));
             saveReturnsArgument();
 
             VolunteerResponse response = service.updateVolunteer(updateCommand("Hanna", EMAIL, PHONE));
@@ -448,7 +466,7 @@ class VolunteerServiceImplTest {
 
         @Test
         void publishesNoEventsWhenContactsAreUnchanged() {
-            when(repository.findById(FUND_ID, VOLUNTEER_ID)).thenReturn(Optional.of(existing));
+            when(repository.findByFundIdAndIdAndStatus(FUND_ID, VOLUNTEER_ID, VolunteerStatus.ACTIVE)).thenReturn(Optional.of(existing));
             saveReturnsArgument();
 
             service.updateVolunteer(updateCommand("Hanna", EMAIL, PHONE));
@@ -458,7 +476,7 @@ class VolunteerServiceImplTest {
 
         @Test
         void publishesOnlyEmailEventAfterSavingWhenEmailChanged() {
-            when(repository.findById(FUND_ID, VOLUNTEER_ID)).thenReturn(Optional.of(existing));
+            when(repository.findByFundIdAndIdAndStatus(FUND_ID, VOLUNTEER_ID, VolunteerStatus.ACTIVE)).thenReturn(Optional.of(existing));
             saveReturnsArgument();
 
             service.updateVolunteer(updateCommand(FIRST_NAME, NEW_EMAIL, PHONE));
@@ -471,7 +489,7 @@ class VolunteerServiceImplTest {
 
         @Test
         void publishesOnlyPhoneEventAfterSavingWhenPhoneChanged() {
-            when(repository.findById(FUND_ID, VOLUNTEER_ID)).thenReturn(Optional.of(existing));
+            when(repository.findByFundIdAndIdAndStatus(FUND_ID, VOLUNTEER_ID, VolunteerStatus.ACTIVE)).thenReturn(Optional.of(existing));
             saveReturnsArgument();
 
             service.updateVolunteer(updateCommand(FIRST_NAME, EMAIL, NEW_PHONE));
@@ -484,7 +502,7 @@ class VolunteerServiceImplTest {
 
         @Test
         void publishesBothEventsWhenEmailAndPhoneChanged() {
-            when(repository.findById(FUND_ID, VOLUNTEER_ID)).thenReturn(Optional.of(existing));
+            when(repository.findByFundIdAndIdAndStatus(FUND_ID, VOLUNTEER_ID, VolunteerStatus.ACTIVE)).thenReturn(Optional.of(existing));
             saveReturnsArgument();
 
             service.updateVolunteer(updateCommand(FIRST_NAME, NEW_EMAIL, NEW_PHONE));
@@ -498,40 +516,33 @@ class VolunteerServiceImplTest {
     @Nested
     class RemoveVolunteer {
 
-        // lenient: ╤Б╨╡╤А╨▓╤Ц╤Б ╨╝╨╛╨╢╨╡ ╨┐╨╡╤А╨╡╨▓╤Ц╤А╤П╤В╨╕ ╤Ц╤Б╨╜╤Г╨▓╨░╨╜╨╜╤П ╤З╨╡╤А╨╡╨╖ existsById ╨░╨▒╨╛ ╨╛╨┤╤А╨░╨╖╤Г ╤З╨╡╤А╨╡╨╖ findById тАФ
-        // ╤В╨╡╤Б╤В ╨┐╨╡╤А╨╡╨▓╤Ц╤А╤П╤Ф ╨┐╨╛╨▓╨╡╨┤╤Ц╨╜╨║╤Г, ╨░ ╨╜╨╡ ╤Б╨┐╨╛╤Б╤Ц╨▒ ╨┐╨╛╤И╤Г╨║╤Г
-
         @Test
         void throwsNotFoundWhenVolunteerIsAbsent() {
-            lenient().when(repository.existsById(FUND_ID, VOLUNTEER_ID)).thenReturn(false);
-            lenient().when(repository.findById(FUND_ID, VOLUNTEER_ID)).thenReturn(Optional.empty());
+            when(repository.findByFundIdAndIdAndStatus(FUND_ID, VOLUNTEER_ID, VolunteerStatus.ACTIVE))
+                    .thenReturn(Optional.empty());
 
             assertThrows(VolunteerNotFoundException.class,
                     () -> service.removeVolunteer(FUND_ID, VOLUNTEER_ID));
 
-            verify(repository, never()).deleteById(any(), any());
+            verify(repository, never()).save(any());
             verifyNoInteractions(eventPublisher);
         }
 
         @Test
-        void deletesVolunteerAndThenPublishesRemovedEvent() {
-            // ╨Ь╨╛╨║ ╨┐╨╛╨▓╨╛╨┤╨╕╤В╤М╤Б╤П ╤П╨║ ╤Б╨┐╤А╨░╨▓╨╢╨╜╤Ц╨╣ ╤А╨╡╨┐╨╛╨╖╨╕╤В╨╛╤А╤Ц╨╣: ╨┐╤Ц╤Б╨╗╤П ╨╝'╤П╨║╨╛╨│╨╛ ╨▓╨╕╨┤╨░╨╗╨╡╨╜╨╜╤П
-            // ╨▓╨╛╨╗╨╛╨╜╤В╨╡╤А ╨▒╤Ц╨╗╤М╤И╨╡ ╨╜╨╡ ╨╖╨╜╨░╤Е╨╛╨┤╨╕╤В╤М╤Б╤П ╨╜╤Ц ╤З╨╡╤А╨╡╨╖ findById, ╨╜╤Ц ╤З╨╡╤А╨╡╨╖ existsById
+        void softDeletesVolunteerAndThenPublishesRemovedEvent() {
             Volunteer stored = volunteer(VOLUNTEER_ID, VolunteerStatus.ACTIVE);
-            lenient().when(repository.existsById(FUND_ID, VOLUNTEER_ID))
-                    .thenAnswer(inv -> stored.isActive());
-            lenient().when(repository.findById(FUND_ID, VOLUNTEER_ID))
-                    .thenAnswer(inv -> stored.isActive() ? Optional.of(stored) : Optional.empty());
-            doAnswer(inv -> {
-                stored.setStatus(VolunteerStatus.INACTIVE);
-                return null;
-            }).when(repository).deleteById(FUND_ID, VOLUNTEER_ID);
+            when(repository.findByFundIdAndIdAndStatus(FUND_ID, VOLUNTEER_ID, VolunteerStatus.ACTIVE))
+                    .thenReturn(Optional.of(stored));
+            saveReturnsArgument();
 
             service.removeVolunteer(FUND_ID, VOLUNTEER_ID);
 
-            // ╨Ф╨╛╨╝╨╡╨╜╨╜╨░ ╨┐╨╛╨┤╤Ц╤П ╤Д╤Ц╨║╤Б╤Г╤Ф ╤Д╨░╨║╤В, ╤Й╨╛ ╨▓╨╢╨╡ ╨▓╤Ц╨┤╨▒╤Г╨▓╤Б╤П, тАФ ╨┐╤Г╨▒╨╗╤Ц╨║╤Г╤Ф╤В╤М╤Б╤П ╨┐╤Ц╤Б╨╗╤П ╨╖╨╝╤Ц╨╜╨╕ ╤Б╤В╨░╨╜╤Г
+            Volunteer saved = capturedSavedVolunteer();
+            assertEquals(VOLUNTEER_ID, saved.getId());
+            assertEquals(VolunteerStatus.INACTIVE, saved.getStatus());
+
             InOrder inOrder = inOrder(repository, eventPublisher);
-            inOrder.verify(repository).deleteById(FUND_ID, VOLUNTEER_ID);
+            inOrder.verify(repository).save(stored);
             inOrder.verify(eventPublisher).publishEvent(new VolunteerRemovedEvent(FIRST_NAME, EMAIL));
         }
     }
