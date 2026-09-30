@@ -1,13 +1,19 @@
 package com.example.help_bridge.fundraising.request.dto.request;
 
+import com.example.help_bridge.fundraising.request.dto.request.RequestDocumentDto.DocumentResponse;
 import com.example.help_bridge.fundraising.request.entity.RequestStatus;
 import jakarta.validation.constraints.*;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 public class RequestDto {
 
     public record CreateRequestRequest(
+            Long userId,
+
             @NotBlank(message = "Assistance type is mandatory")
             String assistanceType,
 
@@ -31,7 +37,11 @@ public class RequestDto {
             String institutionName,
 
             @NotBlank(message = "Application number is mandatory")
-            String applicationNumber
+            String applicationNumber,
+
+            @NotNull(message = "Data processing consent is mandatory")
+            @AssertTrue(message = "Consent to data processing must be given")
+            Boolean dataProcessingConsent
     ) {}
 
     public record RequestResponse(
@@ -44,6 +54,8 @@ public class RequestDto {
             String institutionName,
             String applicationNumber,
             RequestStatus status,
-            boolean isHot
+            boolean isHot,
+            LocalDateTime createdAt,
+            List<DocumentResponse> documents
     ) {}
 }
