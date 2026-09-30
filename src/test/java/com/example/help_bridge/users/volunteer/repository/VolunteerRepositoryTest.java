@@ -38,11 +38,10 @@ class VolunteerRepositoryTest {
         otherFund = em.persist(fund("Fund B", "22222222"));
     }
 
+    // Fund має 8 обов'язкових колонок — бізнес-конструктор заповнює їх усі
     private static Fund fund(String name, String edrpou) {
-        Fund fund = new Fund();
-        fund.setFundName(name);
-        fund.setEdrpou(edrpou);
-        return fund;
+        return new Fund(name, edrpou, "UA123", "Київ", "Київ",
+                "+380441234567", "fund" + edrpou + "@gmail.com", "https://fund.org", null);
     }
 
     private Volunteer persist(Fund fund, String email, String phone, VolunteerStatus status) {

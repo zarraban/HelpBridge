@@ -12,6 +12,7 @@ import com.example.help_bridge.fundraising.request.exception.FundNotApprovedExce
 import com.example.help_bridge.fundraising.request.exception.InvalidRequestStateException;
 import com.example.help_bridge.fundraising.request.exception.RequestNotFoundException;
 import com.example.help_bridge.fundraising.request.repository.RequestRepository;
+import com.example.help_bridge.fundraising.request.service.RequestBookingServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -87,6 +87,12 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Містить @WebMvcTest і @AutoConfigureMockMvc (у Spring Boot 4 винесені в окремий модуль) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- Містить @DataJpaTest (у Spring Boot 4 він винесений в окремий модуль) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
