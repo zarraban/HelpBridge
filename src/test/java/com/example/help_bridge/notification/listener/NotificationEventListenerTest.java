@@ -1,8 +1,8 @@
 package com.example.help_bridge.notification.listener;
 
-import com.example.help_bridge.donor.dto.response.DonorResponse;
-import com.example.help_bridge.donor.service.DonorService;
-import com.example.help_bridge.fundraiser.event.MassMailingRequestedEvent;
+import com.example.help_bridge.users.donor.dto.response.DonorResponse;
+import com.example.help_bridge.users.donor.service.DonorService;
+import com.example.help_bridge.fundraising.fundraiser.event.MassMailingRequestedEvent;
 import com.example.help_bridge.notification.service.NotificationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
