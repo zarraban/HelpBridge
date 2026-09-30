@@ -45,11 +45,10 @@ class VolunteerControllerTest {
               "firstName": "Anna",
               "lastName": "Samana",
               "email": "anna@gmail.com",
-              "phoneNumber": "+380501234567"
+              "phone": "+380501234567"
             }
             """;
 
-    // ╨Ъ╨╛╨╝╨░╨╜╨┤╨╕ тАФ record, ╤В╨╛╨╢ ╨┐╨╛╤А╤Ц╨▓╨╜╤П╨╜╨╜╤П ╨╖╨░ ╨┐╨╛╨╗╤П╨╝╨╕ ╨┐╨╡╤А╨╡╨▓╤Ц╤А╤П╤Ф, ╤П╨║ ╨║╨╛╨╜╤В╤А╨╛╨╗╨╡╤А ╨╖╤Ц╨▒╤А╨░╨▓ ╨║╨╛╨╝╨░╨╜╨┤╤Г ╨╖ URL ╤Ц ╤В╤Ц╨╗╨░
     private static final RegisterVolunteerCommand REGISTER_COMMAND =
             new RegisterVolunteerCommand(FUND_ID, "Anna", "Samana", "anna@gmail.com", "+380501234567");
 
@@ -109,7 +108,7 @@ class VolunteerControllerTest {
                     .andExpect(jsonPath("$.firstName").value("Anna"))
                     .andExpect(jsonPath("$.lastName").value("Samana"))
                     .andExpect(jsonPath("$.email").value("anna@gmail.com"))
-                    .andExpect(jsonPath("$.phoneNumber").value("+380501234567"));
+                    .andExpect(jsonPath("$.phone").value("+380501234567"));
         }
 
         @Test
@@ -185,7 +184,7 @@ class VolunteerControllerTest {
                       "firstName": "",
                       "lastName": " ",
                       "email": "",
-                      "phoneNumber": ""
+                      "phone": ""
                     }
                     """;
 
@@ -200,7 +199,7 @@ class VolunteerControllerTest {
                     .andExpect(jsonPath("$.errors.firstName").exists())
                     .andExpect(jsonPath("$.errors.lastName").exists())
                     .andExpect(jsonPath("$.errors.email").exists())
-                    .andExpect(jsonPath("$.errors.phoneNumber").exists())
+                    .andExpect(jsonPath("$.errors.phone").exists())
                     .andExpect(jsonPath("$.timestamp").exists());
 
             verifyNoInteractions(service);
@@ -215,7 +214,7 @@ class VolunteerControllerTest {
                     .andExpect(jsonPath("$.errors.firstName").value("First name cannot be blank"))
                     .andExpect(jsonPath("$.errors.lastName").value("Last name cannot be blank"))
                     .andExpect(jsonPath("$.errors.email").value("Email cannot be blank"))
-                    .andExpect(jsonPath("$.errors.phoneNumber").value("Phone number cannot be blank"));
+                    .andExpect(jsonPath("$.errors.phone").value("Phone number cannot be blank"));
 
             verifyNoInteractions(service);
         }
@@ -227,7 +226,7 @@ class VolunteerControllerTest {
                       "firstName": "Anna",
                       "lastName": "Samana",
                       "email": "not-an-email",
-                      "phoneNumber": "+380501234567"
+                      "phone": "+380501234567"
                     }
                     """;
 
@@ -248,7 +247,7 @@ class VolunteerControllerTest {
                       "firstName": "Anna",
                       "lastName": "Samana",
                       "email": "anna@gmail.com",
-                      "phoneNumber": "0501234567"
+                      "phone": "0501234567"
                     }
                     """;
 
@@ -256,7 +255,7 @@ class VolunteerControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(body))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errors.phoneNumber").value("Phone number must match +380XXXXXXXXX"));
+                    .andExpect(jsonPath("$.errors.phone").value("Phone number must match +380XXXXXXXXX"));
 
             verifyNoInteractions(service);
         }
@@ -268,7 +267,7 @@ class VolunteerControllerTest {
                       "firstName": "%s",
                       "lastName": "Samana",
                       "email": "anna@gmail.com",
-                      "phoneNumber": "+380501234567"
+                      "phone": "+380501234567"
                     }
                     """.formatted("a".repeat(51));
 
@@ -353,7 +352,7 @@ class VolunteerControllerTest {
                       "firstName": "Anna",
                       "lastName": "Samana",
                       "email": "not-an-email",
-                      "phoneNumber": "0501234567"
+                      "phone": "0501234567"
                     }
                     """;
 
@@ -362,7 +361,7 @@ class VolunteerControllerTest {
                             .content(body))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errors.email").value("Enter correct email address"))
-                    .andExpect(jsonPath("$.errors.phoneNumber").value("Phone number must match +380XXXXXXXXX"));
+                    .andExpect(jsonPath("$.errors.phone").value("Phone number must match +380XXXXXXXXX"));
 
             verifyNoInteractions(service);
         }

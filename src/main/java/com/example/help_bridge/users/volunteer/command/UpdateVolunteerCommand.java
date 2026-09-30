@@ -6,6 +6,6 @@ public record UpdateVolunteerCommand(
         String firstName,
         String lastName,
         String email,
-        String phoneNumber
+        String phone
 ) {
 }

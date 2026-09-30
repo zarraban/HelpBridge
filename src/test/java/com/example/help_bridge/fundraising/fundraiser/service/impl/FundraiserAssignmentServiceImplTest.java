@@ -6,8 +6,8 @@ import com.example.help_bridge.fundraising.fundraiser.dto.request.CompleteAssign
 import com.example.help_bridge.fundraising.fundraiser.entity.AssignmentStatus;
 import com.example.help_bridge.fundraising.fundraiser.entity.Fundraiser;
 import com.example.help_bridge.fundraising.fundraiser.entity.FundraiserAssignment;
-import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserAssignmentRepository;
-import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserRepository;
+import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserAssignmentJpaRepository;
+import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserJpaRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,19 +23,19 @@ import static org.mockito.Mockito.*;
 class FundraiserAssignmentServiceImplTest {
 
     @Mock
-    private FundraiserAssignmentRepository assignmentRepository;
+    private FundraiserAssignmentJpaRepository assignmentJpaRepository;
 
     @Mock
-    private FundraiserRepository fundraiserRepository;
+    private FundraiserJpaRepository fundraiserJpaRepository;
 
     @InjectMocks
     private FundraiserAssignmentServiceImpl assignmentService;
 
     @Test
     void completeAssignment_shouldThrowAssignmentNotFoundException_whenAssignmentNotFound() {
-        when(assignmentRepository.findById(1L)).thenReturn(Optional.empty());
+        when(assignmentJpaRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(AssignmentNotFoundException.class, 
+        assertThrows(AssignmentNotFoundException.class,
             () -> assignmentService.completeAssignment(1L, new CompleteAssignmentRequest("comment")));
     }
 
@@ -43,9 +43,9 @@ class FundraiserAssignmentServiceImplTest {
     void completeAssignment_shouldThrowInvalidAssignmentStateException_whenAlreadyCompleted() {
         FundraiserAssignment assignment = new FundraiserAssignment();
         assignment.setStatus(AssignmentStatus.COMPLETED);
-        when(assignmentRepository.findById(1L)).thenReturn(Optional.of(assignment));
+        when(assignmentJpaRepository.findById(1L)).thenReturn(Optional.of(assignment));
 
-        assertThrows(InvalidAssignmentStateException.class, 
+        assertThrows(InvalidAssignmentStateException.class,
             () -> assignmentService.completeAssignment(1L, new CompleteAssignmentRequest("comment")));
     }
 
@@ -59,13 +59,13 @@ class FundraiserAssignmentServiceImplTest {
         Fundraiser fundraiser = new Fundraiser();
         fundraiser.setId(100L);
 
-        when(assignmentRepository.findById(1L)).thenReturn(Optional.of(assignment));
-        when(fundraiserRepository.findById(100L)).thenReturn(Optional.of(fundraiser));
+        when(assignmentJpaRepository.findById(1L)).thenReturn(Optional.of(assignment));
+        when(fundraiserJpaRepository.findById(100L)).thenReturn(Optional.of(fundraiser));
 
         assignmentService.completeAssignment(1L, new CompleteAssignmentRequest("comment"));
 
         assertEquals(AssignmentStatus.COMPLETED, assignment.getStatus());
         assertNotNull(assignment.getFinishedAt());
-        verify(assignmentRepository).save(assignment);
+        verify(assignmentJpaRepository).save(assignment);
     }
 }
