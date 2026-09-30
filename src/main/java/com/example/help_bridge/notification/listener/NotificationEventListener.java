@@ -1,12 +1,12 @@
 package com.example.help_bridge.notification.listener;
 
-import com.example.help_bridge.donor.service.DonorService;
-import com.example.help_bridge.fundraiser.event.MassMailingRequestedEvent;
+import com.example.help_bridge.users.donor.service.DonorService;
+import com.example.help_bridge.fundraising.fundraiser.event.MassMailingRequestedEvent;
 import com.example.help_bridge.notification.service.NotificationService;
-import com.example.help_bridge.volunteer.event.VolunteerRegisteredEvent;
-import com.example.help_bridge.volunteer.event.VolunteerRemovedEvent;
-import com.example.help_bridge.volunteer.event.VolunteerUpdatedEmailEvent;
-import com.example.help_bridge.volunteer.event.VolunteerUpdatedPhoneNumberEvent;
+import com.example.help_bridge.users.volunteer.event.VolunteerRegisteredEvent;
+import com.example.help_bridge.users.volunteer.event.VolunteerRemovedEvent;
+import com.example.help_bridge.users.volunteer.event.VolunteerUpdatedEmailEvent;
+import com.example.help_bridge.users.volunteer.event.VolunteerUpdatedPhoneNumberEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.scheduling.annotation.Async;
@@ -50,8 +50,8 @@ public class NotificationEventListener {
         System.out.println("VolunteerRegisteredEvent handling started");
         List<String> emailToSent = Arrays.asList(event.email());
         notificationService.scheduleEmails(emailToSent,
-                "Вітаємо у HelpBridge!",
-                ("Вітаємо, " + event.firstName() + "! Вас зареєстровано у фонді №" + event.fundId() + "!"));
+                "Р’С–С‚Р°С”РјРѕ Сѓ HelpBridge!",
+                ("Р’С–С‚Р°С”РјРѕ, " + event.firstName() + "! Р’Р°СЃ Р·Р°СЂРµС”СЃС‚СЂРѕРІР°РЅРѕ Сѓ С„РѕРЅРґС– в„–" + event.fundId() + "!"));
 
         System.out.println("VolunteerRegisteredEvent handling finished");
     }
@@ -62,8 +62,8 @@ public class NotificationEventListener {
         System.out.println("VolunteerRemovedEvent handling started");
         List<String> emailToSent = Arrays.asList(event.email());
         notificationService.scheduleEmails(emailToSent,
-                "Бувайте!",
-                ("Вітаємо, " + event.firstName() + ". Ваш акаунт деактивовано."));
+                "Р‘СѓРІР°Р№С‚Рµ!",
+                ("Р’С–С‚Р°С”РјРѕ, " + event.firstName() + ". Р’Р°С€ Р°РєР°СѓРЅС‚ РґРµР°РєС‚РёРІРѕРІР°РЅРѕ."));
 
         System.out.println("VolunteerRemovedEvent handling finished");
     }
@@ -74,8 +74,8 @@ public class NotificationEventListener {
         System.out.println("VolunteerUpdatedEmailEvent handling started");
         List<String> emailToSent = Arrays.asList(event.email());
         notificationService.scheduleEmails(emailToSent,
-                "Зміна пошти у HelpBridge!",
-                ("Вітаємо, " + event.firstName() + "! Перевіряємо вашу нову пошту цим листом!"));
+                "Р—РјС–РЅР° РїРѕС€С‚Рё Сѓ HelpBridge!",
+                ("Р’С–С‚Р°С”РјРѕ, " + event.firstName() + "! РџРµСЂРµРІС–СЂСЏС”РјРѕ РІР°С€Сѓ РЅРѕРІСѓ РїРѕС€С‚Сѓ С†РёРј Р»РёСЃС‚РѕРј!"));
 
         System.out.println("VolunteerUpdatedEmailEvent handling finished");
     }
@@ -86,8 +86,8 @@ public class NotificationEventListener {
         System.out.println("VolunteerUpdatedPhoneNumberEvent handling started");
         List<String> emailToSent = Arrays.asList(event.email());
         notificationService.scheduleEmails(emailToSent,
-                "Зміна пошти у HelpBridge!",
-                ("Вітаємо, " + event.firstName() + "! Перевіряємо вашу нову пошту цим листом!"));
+                "Р—РјС–РЅР° РїРѕС€С‚Рё Сѓ HelpBridge!",
+                ("Р’С–С‚Р°С”РјРѕ, " + event.firstName() + "! РџРµСЂРµРІС–СЂСЏС”РјРѕ РІР°С€Сѓ РЅРѕРІСѓ РїРѕС€С‚Сѓ С†РёРј Р»РёСЃС‚РѕРј!"));
 
         System.out.println("VolunteerUpdatedPhoneNumberEvent handling finished");
     }
