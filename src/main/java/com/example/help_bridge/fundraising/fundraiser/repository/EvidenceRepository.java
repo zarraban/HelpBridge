@@ -1,12 +1,13 @@
 package com.example.help_bridge.fundraising.fundraiser.repository;
 
 import com.example.help_bridge.fundraising.fundraiser.entity.Evidence;
-import java.util.List;
-import java.util.Optional;
+import org.springframework.data.repository.ListCrudRepository;
+import org.springframework.stereotype.Repository;
 
-public interface EvidenceRepository {
-    List<Evidence> findAll();
-    Optional<Evidence> findById(Long id);
-    Evidence save(Evidence evidence);
-    void deleteById(Long id);
+import java.util.List;
+
+@Repository
+public interface EvidenceRepository extends ListCrudRepository<Evidence, Long> {
+
+    List<Evidence> findAllByFundraiserIdOrderByCreatedAtAsc(Long fundraiserId);
 }
