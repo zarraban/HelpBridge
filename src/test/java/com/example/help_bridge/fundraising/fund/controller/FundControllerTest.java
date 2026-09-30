@@ -23,7 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(FundController.class)
 class FundControllerTest {
 
-    private static final String URL = "/funds";
+    private static final String URL = "/api/funds";
 
     @Autowired
     private MockMvc mockMvc;
@@ -34,8 +34,6 @@ class FundControllerTest {
     private FundResponse createSampleResponse() {
         return new FundResponse(
                 1L,
-                "Daria",
-                "Chorna",
                 "Help Fund",
                 "12345678",
                 "0670000000",
@@ -46,7 +44,8 @@ class FundControllerTest {
                 "https://fund.com",
                 Map.of("facebook", "https://facebook.com/fund"),
                 "Description",
-                FundStatus.PENDING_APPROVAL
+                FundStatus.PENDING_APPROVAL,
+                List.of()
         );
     }
 
@@ -116,6 +115,6 @@ class FundControllerTest {
     @Test
     void deleteFundById_ShouldReturn200() throws Exception {
         mockMvc.perform(delete(URL + "/{id}", 1L))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
     }
 }

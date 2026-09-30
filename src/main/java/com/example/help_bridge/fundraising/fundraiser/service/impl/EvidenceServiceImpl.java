@@ -5,18 +5,21 @@ import com.example.help_bridge.fundraising.fundraiser.exception.InvalidEvidenceE
 import com.example.help_bridge.fundraising.fundraiser.dto.request.AddEvidenceRequest;
 import com.example.help_bridge.fundraising.fundraiser.dto.response.EvidenceResponse;
 import com.example.help_bridge.fundraising.fundraiser.entity.Evidence;
+import com.example.help_bridge.fundraising.fundraiser.entity.Fundraiser;
 import com.example.help_bridge.fundraising.fundraiser.repository.EvidenceRepository;
 import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserRepository;
 import com.example.help_bridge.fundraising.fundraiser.service.EvidenceService;
 import com.example.help_bridge.fundraising.fundraiser.strategy.EvidenceValidatorStrategy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class EvidenceServiceImpl implements EvidenceService {
 
@@ -26,11 +29,11 @@ public class EvidenceServiceImpl implements EvidenceService {
 
     @Override
     public EvidenceResponse addEvidenceToFundraiser(Long fundraiserId, AddEvidenceRequest request) {
-        fundraiserRepository.findById(fundraiserId)
+        Fundraiser fundraiser = fundraiserRepository.findById(fundraiserId)
                 .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with ID " + fundraiserId + " not found"));
 
         Evidence evidence = new Evidence();
-        evidence.setFundraiserId(fundraiserId);
+        evidence.setFundraiser(fundraiser);
         evidence.setReceiptNumber(request.receiptNumber());
         evidence.setAttachmentUrl(request.attachmentUrl());
         evidence.setRecipientFeedback(request.recipientFeedback());
@@ -54,9 +57,9 @@ public class EvidenceServiceImpl implements EvidenceService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<EvidenceResponse> getEvidencesByFundraiserId(Long fundraiserId) {
-        return evidenceRepository.findAll().stream()
-                .filter(e -> e.getFundraiserId().equals(fundraiserId))
+        return evidenceRepository.findAllByFundraiserIdOrderByCreatedAtAsc(fundraiserId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -70,7 +73,7 @@ public class EvidenceServiceImpl implements EvidenceService {
     private EvidenceResponse mapToResponse(Evidence e) {
         return new EvidenceResponse(
                 e.getId(),
-                e.getFundraiserId(),
+                e.getFundraiser().getId(),
                 e.getReceiptNumber(),
                 e.getRecipientFeedback(),
                 e.getAttachmentUrl(),

@@ -5,6 +5,6 @@ public record RegisterVolunteerCommand(
         String firstName,
         String lastName,
         String email,
-        String phoneNumber
+        String phone
 ) {
 }

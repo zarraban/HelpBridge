@@ -10,8 +10,8 @@ import com.example.help_bridge.fundraising.fundraiser.dto.response.ReturnAssignm
 import com.example.help_bridge.fundraising.fundraiser.entity.AssignmentStatus;
 import com.example.help_bridge.fundraising.fundraiser.entity.Fundraiser;
 import com.example.help_bridge.fundraising.fundraiser.entity.FundraiserAssignment;
-import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserAssignmentRepository;
-import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserRepository;
+import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserAssignmentJpaRepository;
+import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserJpaRepository;
 import com.example.help_bridge.fundraising.fundraiser.service.FundraiserAssignmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,12 +27,12 @@ import com.example.help_bridge.fundraising.fundraiser.exception.InvalidAssignmen
 @RequiredArgsConstructor
 public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentService {
 
-    private final FundraiserAssignmentRepository assignmentRepository;
-    private final FundraiserRepository fundraiserRepository;
+    private final FundraiserAssignmentJpaRepository assignmentJpaRepository;
+    private final FundraiserJpaRepository FundraiserJpaRepository;
 
     @Override
     public CompleteAssignmentResponse completeAssignment(Long assignmentId, CompleteAssignmentRequest request) {
-        FundraiserAssignment assignment = assignmentRepository.findById(assignmentId)
+        FundraiserAssignment assignment = assignmentJpaRepository.findById(assignmentId)
                 .orElseThrow(() -> new AssignmentNotFoundException("Assignment with the specified ID was not found"));
         
         if (!assignment.getStatus().canTransitionTo(AssignmentStatus.COMPLETED)) {
@@ -41,9 +41,9 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
 
         assignment.setStatus(AssignmentStatus.COMPLETED);
         assignment.setFinishedAt(LocalDateTime.now());
-        assignmentRepository.save(assignment);
+        assignmentJpaRepository.save(assignment);
         
-        Fundraiser fundraiser = fundraiserRepository.findById(assignment.getFundraiserId())
+        Fundraiser fundraiser = FundraiserJpaRepository.findById(assignment.getFundraiserId())
                 .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with the specified ID was not found"));
                 
         int evidenceCount = fundraiser.getEvidences() == null ? 0 : fundraiser.getEvidences().size();
@@ -60,7 +60,7 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
 
     @Override
     public ReturnAssignmentResponse returnAssignment(Long assignmentId, ReturnAssignmentRequest request) {
-        FundraiserAssignment assignment = assignmentRepository.findById(assignmentId)
+        FundraiserAssignment assignment = assignmentJpaRepository.findById(assignmentId)
                 .orElseThrow(() -> new AssignmentNotFoundException("Assignment with the specified ID was not found"));
 
         if (!assignment.getStatus().canTransitionTo(AssignmentStatus.RETURNED)) {
@@ -70,7 +70,7 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
         assignment.setStatus(AssignmentStatus.RETURNED);
         assignment.setReturnReason(request.returnReason());
         assignment.setFinishedAt(LocalDateTime.now());
-        assignmentRepository.save(assignment);
+        assignmentJpaRepository.save(assignment);
         
         return new ReturnAssignmentResponse(
                 assignment.getId(), 
@@ -89,7 +89,7 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
         assignment.setStatus(AssignmentStatus.ACTIVE);
         assignment.setAssignedAt(LocalDateTime.now());
         
-        FundraiserAssignment saved = assignmentRepository.save(assignment);
+        FundraiserAssignment saved = assignmentJpaRepository.save(assignment);
         
         return new AssignVolunteerResponse(
                 saved.getId(), 
@@ -101,7 +101,7 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
 
     @Override
     public List<FundraiserAssignmentResponse> getFundraiserAssignments(Long fundraiserId) {
-        return assignmentRepository.findAll().stream()
+        return assignmentJpaRepository.findAll().stream()
                 .filter(a -> fundraiserId.equals(a.getFundraiserId()))
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -109,7 +109,7 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
 
     @Override
     public List<FundraiserAssignmentResponse> getVolunteerAssignments(Long volunteerId) {
-        return assignmentRepository.findAll().stream()
+        return assignmentJpaRepository.findAll().stream()
                 .filter(a -> volunteerId.equals(a.getVolunteerId()))
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
