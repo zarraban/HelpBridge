@@ -1,18 +1,29 @@
 package com.example.help_bridge.users.volunteer.repository;
 
 import com.example.help_bridge.users.volunteer.entity.Volunteer;
+import com.example.help_bridge.users.volunteer.entity.VolunteerStatus;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.ListCrudRepository;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
-public interface VolunteerRepository {
-    Volunteer save(Volunteer volunteer);
-    Optional<Volunteer> findById(Long fundId, Long id);
-    Optional<Volunteer> findByEmail(Long fundId, String email);
-    Optional<Volunteer> findByPhoneNumber(Long fundId, String phoneNumber);
-    List<Volunteer> findAllByFund(Long fundId);
-    boolean existsById(Long fundId, Long id);
-    boolean existsByEmail(Long fundId, String email);
-    boolean existsByPhoneNumber(Long fundId, String phoneNumber);
-    void deleteById(Long fundId, Long id);
+@Repository
+public interface VolunteerRepository extends ListCrudRepository<Volunteer, Long> {
+
+    Optional<Volunteer> findByFundIdAndIdAndStatus(Long fundId, Long id, VolunteerStatus status);
+
+    Optional<Volunteer> findByFundIdAndEmailIgnoreCase(Long fundId, String email);
+
+    Optional<Volunteer> findByFundIdAndPhone(Long fundId, String phone);
+
+    @Query("""
+            SELECT v FROM Volunteer v
+            JOIN FETCH v.fund f
+            WHERE f.id = :fundId AND v.status = :status
+            """)
+    List<Volunteer> findAllByFundWithFund(@Param("fundId") Long fundId,
+                                          @Param("status") VolunteerStatus status);
 }
