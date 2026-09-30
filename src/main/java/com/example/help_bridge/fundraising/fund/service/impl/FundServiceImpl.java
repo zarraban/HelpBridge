@@ -13,11 +13,14 @@ import com.example.help_bridge.fundraising.fund.exception.InvalidFundStatusTrans
 import com.example.help_bridge.fundraising.fund.repository.FundRepository;
 import com.example.help_bridge.fundraising.fund.service.FundService;
 import com.example.help_bridge.fundraising.fund.strategy.FundStatusTransitionHandler;
+import com.example.help_bridge.users.fundrepresentative.dto.response.FundRepresentativeFundResponse;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
+import com.example.help_bridge.users.fundrepresentative.entity.FundRepresentative;
+import com.example.help_bridge.users.fundrepresentative.exception.FundRepresentativeNotFoundException;
+import java.util.HashMap;
 import java.util.List;
-
 
 @Service
 public class FundServiceImpl implements FundService {
@@ -35,29 +38,31 @@ public class FundServiceImpl implements FundService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<FundResponse> getAllFunds() {
-        return fundRepository.findAll().stream()
+        return fundRepository.findAllWithRepresentatives().stream()
                 .map(this::mapFundToDto)
                 .toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public FundResponse getFundById(Long id) {
         return mapFundToDto(getFundOrThrow(id));
     }
 
     @Override
+    @Transactional
     public FundResponse createFund(FundCreateRequest request) {
         if (fundRepository.existsByEdrpou(request.edrpou())) {
             throw new DuplicateFundException(request.edrpou());
         }
-        Fund fund = mapRequestDtoToFund(request);
-        fund.setStatus(FundStatus.PENDING_APPROVAL);
-        Fund saved = fundRepository.save(fund);
+        Fund saved = fundRepository.save(mapRequestDtoToFund(request));
         return mapFundToDto(saved);
     }
 
     @Override
+    @Transactional
     public FundResponse updateFundStatus(Long id, FundStatusUpdateRequest request) {
         Fund fund = getFundOrThrow(id);
         FundStatus currentStatus = fund.getStatus();
@@ -68,41 +73,38 @@ public class FundServiceImpl implements FundService {
         }
 
         fund.setStatus(targetStatus);
-        Fund saved = fundRepository.save(fund);
 
         transitionHandlers.stream()
                 .filter(handler -> handler.supports(targetStatus))
-                .forEach(handler -> handler.handle(saved));
+                .forEach(handler -> handler.handle(fund));
 
-        eventPublisher.publishEvent(new FundStatusChangedEvent(saved.getId(), currentStatus, targetStatus));
+        eventPublisher.publishEvent(new FundStatusChangedEvent(fund.getId(), currentStatus, targetStatus));
 
-        return mapFundToDto(saved);
+        return mapFundToDto(fund);
     }
 
     @Override
+    @Transactional
     public FundResponse updateFundDescription(Long id, FundDescriptUpdateRequest request) {
         Fund fund = getFundOrThrow(id);
         fund.setDescription(request.description());
-        Fund saved = fundRepository.save(fund);
-        return mapFundToDto(saved);
+        return mapFundToDto(fund);
     }
 
     @Override
+    @Transactional
     public void deleteFundById(Long id) {
-        getFundOrThrow(id);
-        fundRepository.deleteById(id);
+         fundRepository.delete(getFundOrThrow(id));
     }
 
     private Fund getFundOrThrow(Long id) {
-        return fundRepository.findById(id)
+        return fundRepository.findByIdWithRepresentatives(id)
                 .orElseThrow(() -> new FundNotFoundException(id));
     }
 
     private FundResponse mapFundToDto(Fund fund) {
         return new FundResponse(
                 fund.getId(),
-                fund.getFundRepresName(),
-                fund.getFundRepresSurname(),
                 fund.getFundName(),
                 fund.getEdrpou(),
                 fund.getPhoneNumber(),
@@ -111,25 +113,41 @@ public class FundServiceImpl implements FundService {
                 fund.getActualAddress(),
                 fund.getCorpEmail(),
                 fund.getWebsite(),
-                fund.getSocialMediaUrls(),
+                new HashMap<>(fund.getSocialMediaUrls()),
                 fund.getDescription(),
-                fund.getStatus()
+                fund.getStatus(),
+                fund.getRepresentatives().stream()
+                        .map(FundRepresentativeFundResponse::from)
+                        .toList()
         );
     }
 
+
     private Fund mapRequestDtoToFund(FundCreateRequest request) {
-        Fund fund = new Fund();
-        fund.setFundRepresName(request.fundRepresName());
-        fund.setFundRepresSurname(request.fundRepresSurname());
-        fund.setFundName(request.fundName());
-        fund.setEdrpou(request.edrpou());
-        fund.setBankDetail(request.bankDetail());
-        fund.setRegisteredAddress(request.registeredAddress());
-        fund.setActualAddress(request.actualAddress());
-        fund.setPhoneNumber(request.phoneNumber());
-        fund.setCorpEmail(request.corpEmail());
-        fund.setWebsite(request.website());
-        fund.setSocialMediaUrls(request.socialMediaUrls());
-        return fund;
+        return new Fund(
+                request.fundName(),
+                request.edrpou(),
+                request.bankDetail(),
+                request.registeredAddress(),
+                request.actualAddress(),
+                request.phoneNumber(),
+                request.corpEmail(),
+                request.website(),
+                request.socialMediaUrls()
+        );
+    }
+
+    @Override
+    @Transactional
+    public void removeRepresentative(Long fundId, Long representativeId) {
+        Fund fund = fundRepository.findByIdWithRepresentatives(fundId)
+                .orElseThrow(() -> new FundNotFoundException(fundId));
+
+        FundRepresentative representative = fund.getRepresentatives().stream()
+                .filter(r -> representativeId.equals(r.getId()))
+                .findFirst()
+                .orElseThrow(() -> new FundRepresentativeNotFoundException(representativeId));
+
+        fund.removeRepresentative(representative);
     }
 }
