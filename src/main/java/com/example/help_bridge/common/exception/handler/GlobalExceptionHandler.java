@@ -7,6 +7,8 @@ import com.example.help_bridge.fundraising.fundraiser.exception.AssignmentNotFou
 import com.example.help_bridge.fundraising.fundraiser.exception.FundraiserNotFoundException;
 import com.example.help_bridge.fundraising.fundraiser.exception.InvalidAssignmentStateException;
 import com.example.help_bridge.fundraising.fundraiser.exception.InvalidEvidenceException;
+import com.example.help_bridge.users.systemadmin.exception.DuplicateSystemAdminException;
+import com.example.help_bridge.users.systemadmin.exception.SystemAdminNotFoundException;
 import com.example.help_bridge.users.volunteer.exception.DuplicateVolunteerException;
 import com.example.help_bridge.users.volunteer.exception.VolunteerNotFoundException;
 import com.example.help_bridge.fundraising.request.exception.RequestNotFoundException;
@@ -239,6 +241,14 @@ public class GlobalExceptionHandler {
         problemDetail.setProperty("timestamp", Instant.now());
         return problemDetail;
     }
+    @ExceptionHandler(SystemAdminNotFoundException.class)
+    public ProblemDetail handleSystemAdminNotFound(SystemAdminNotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
 
+    @ExceptionHandler(DuplicateSystemAdminException.class)
+    public ProblemDetail handleDuplicateSystemAdmin(DuplicateSystemAdminException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
 
 }
