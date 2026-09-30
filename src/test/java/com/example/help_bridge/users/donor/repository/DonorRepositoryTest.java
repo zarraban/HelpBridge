@@ -2,7 +2,6 @@ package com.example.help_bridge.users.donor.repository;
 
 import com.example.help_bridge.fundraising.fundraiser.entity.Fundraiser;
 import com.example.help_bridge.users.donor.entity.Donor;
-import org.hibernate.Hibernate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +15,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@DataJpaTest
+@DataJpaTest(properties = {
+        "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
+        "spring.jpa.hibernate.ddl-auto=create-drop"
+})
 class DonorRepositoryTest {
 
     @Autowired
@@ -34,9 +37,9 @@ class DonorRepositoryTest {
         otherFundraiser = em.persist(new Fundraiser());
     }
 
-    private static Donor donor(Fundraiser fundraiser, String email) {
+    private static Donor donor(Long fundraiserId, String email) {
         Donor donor = new Donor();
-        donor.setFundraiser(fundraiser);
+        donor.setFundraiserId(fundraiserId);
         donor.setFirstName("Jane");
         donor.setLastName("Doe");
         donor.setEmail(email);
@@ -47,14 +50,14 @@ class DonorRepositoryTest {
 
     @Test
     void saveGeneratesId() {
-        Donor saved = repository.save(donor(fundraiser, "jane@example.com"));
+        Donor saved = repository.save(donor(fundraiser.getId(), "jane@example.com"));
 
         assertNotNull(saved.getId());
     }
 
     @Test
     void saveOfExistingDonorUpdatesInsteadOfCreatingDuplicate() {
-        Donor saved = repository.save(donor(fundraiser, "jane@example.com"));
+        Donor saved = repository.save(donor(fundraiser.getId(), "jane@example.com"));
 
         saved.setFirstName("Janet");
         repository.save(saved);
@@ -66,22 +69,20 @@ class DonorRepositoryTest {
     }
 
     @Test
-    void findAllByFundraiserIdWithFundraiserReturnsOnlyDonorsOfFundraiserWithFundraiserLoaded() {
-        Donor own = em.persist(donor(fundraiser, "jane@example.com"));
-        em.persist(donor(otherFundraiser, "other@example.com"));
+    void findAllByFundraiserIdReturnsOnlyDonorsOfFundraiser() {
+        Donor own = em.persist(donor(fundraiser.getId(), "jane@example.com"));
+        em.persist(donor(otherFundraiser.getId(), "other@example.com"));
         em.flush();
         em.clear();
 
-        List<Donor> result = repository.findAllByFundraiserIdWithFundraiser(fundraiser.getId());
+        List<Donor> result = repository.findAllByFundraiserId(fundraiser.getId());
 
         assertEquals(List.of(own.getId()), result.stream().map(Donor::getId).toList());
-        // JOIN FETCH: збір завантажено тим самим запитом, а не лінивим проксі
-        assertTrue(Hibernate.isInitialized(result.getFirst().getFundraiser()));
     }
 
     @Test
     void deleteByIdRemovesDonor() {
-        Donor stored = em.persist(donor(fundraiser, "jane@example.com"));
+        Donor stored = em.persist(donor(fundraiser.getId(), "jane@example.com"));
 
         repository.deleteById(stored.getId());
 

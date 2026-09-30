@@ -29,9 +29,14 @@ public class RequestServiceImpl implements RequestService {
 
     @Override
     public RequestResponse createRequest(CreateRequestRequest dto) {
-        User requester = userRepository.findById(dto.userId())
-                .orElseThrow(() -> new RequesterNotFoundException(dto.userId()));
+        User requester = null;
 
+        if (dto.userId() != null) {
+            requester = userRepository.findById(dto.userId())
+                    .orElseThrow(() -> new RequesterNotFoundException(dto.userId()));
+        }
+
+        // Об'єкт Request вже створюється зі статусом PENDING_VERIFICATION за замовчуванням
         Request request = new Request(
                 requester,
                 dto.assistanceType(),

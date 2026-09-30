@@ -1,16 +1,12 @@
 package com.example.help_bridge.users.volunteer.entity;
 
-import com.example.help_bridge.fundraising.fund.entity.Fund;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -28,9 +24,8 @@ public class Volunteer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "fund_id", nullable = false)
-    private Fund fund;
+    @Column(name = "fund_id", nullable = false)
+    private Long fundId;
 
     @Column(name = "first_name", nullable = false)
     private String firstName;

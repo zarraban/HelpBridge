@@ -27,6 +27,7 @@ class EvidenceControllerTest {
 
     private final AddEvidenceRequest request = mock(AddEvidenceRequest.class);
     private final EvidenceResponse response = mock(EvidenceResponse.class);
+
     @Test
     void addEvidenceToFundraiser_shouldInvokeService() {
         Long fundraiserId = 1L;
@@ -45,7 +46,7 @@ class EvidenceControllerTest {
         List<EvidenceResponse> responses = List.of(response);
         when(evidenceService.getEvidencesByFundraiserId(fundraiserId)).thenReturn(responses);
 
-        ResponseEntity<List<EvidenceResponse>> result = evidenceController.addEvidenceToFundraiser(fundraiserId);
+        ResponseEntity<List<EvidenceResponse>> result = evidenceController.getEvidencesByFundraiserId(fundraiserId);
 
         verify(evidenceService, times(1)).getEvidencesByFundraiserId(fundraiserId);
         assertEquals(HttpStatus.OK, result.getStatusCode());

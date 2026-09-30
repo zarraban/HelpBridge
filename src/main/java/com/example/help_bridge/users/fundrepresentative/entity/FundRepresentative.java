@@ -1,6 +1,5 @@
 package com.example.help_bridge.users.fundrepresentative.entity;
 
-import com.example.help_bridge.fundraising.fund.entity.Fund;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -34,18 +33,17 @@ public class FundRepresentative {
     @Column(nullable = false)
     private String passwordHash;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "fund_id", nullable = false)
-    private Fund fund;
+    @Column(name = "fund_id", nullable = false)
+    private Long fundId;
 
     public FundRepresentative(String firstName, String lastName, String email,
-                              String phone, String passwordHash, Fund fund) {
+                              String phone, String passwordHash, Long fundId) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.phone = phone;
         this.passwordHash = passwordHash;
-        this.fund = fund;
+        this.fundId = fundId;
     }
 
     @Override

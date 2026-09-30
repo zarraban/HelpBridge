@@ -17,7 +17,7 @@ public record FundRepresentativeResponse(
                 r.getLastName(),
                 r.getEmail(),
                 r.getPhone(),
-                r.getFund().getId()
+                r.getFundId()
         );
     }
 }

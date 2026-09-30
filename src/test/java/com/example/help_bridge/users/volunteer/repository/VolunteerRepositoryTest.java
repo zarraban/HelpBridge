@@ -3,7 +3,6 @@ package com.example.help_bridge.users.volunteer.repository;
 import com.example.help_bridge.fundraising.fund.entity.Fund;
 import com.example.help_bridge.users.volunteer.entity.Volunteer;
 import com.example.help_bridge.users.volunteer.entity.VolunteerStatus;
-import org.hibernate.Hibernate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +16,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@DataJpaTest
+@DataJpaTest(properties = {
+        "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
+        "spring.jpa.hibernate.ddl-auto=create-drop"
+})
 class VolunteerRepositoryTest {
 
     private static final String EMAIL = "anna@gmail.com";
@@ -39,41 +42,47 @@ class VolunteerRepositoryTest {
     }
 
     private static Fund fund(String name, String edrpou) {
-        Fund fund = new Fund();
-        fund.setFundName(name);
-        fund.setEdrpou(edrpou);
-        return fund;
+        return new Fund(
+                name,
+                edrpou,
+                "UA123456789012345678901234567",
+                "Kyiv, Address 1",
+                "Kyiv, Address 1",
+                "+380441234567",
+                "info@fund.org",
+                "https://fund.org",
+                null
+        );
     }
 
-    private Volunteer persist(Fund fund, String email, String phone, VolunteerStatus status) {
-        return em.persist(new Volunteer(null, fund, "Anna", "Samana", email, phone, status));
+    private Volunteer persist(Long fundId, String email, String phone, VolunteerStatus status) {
+        return em.persist(new Volunteer(null, fundId, "Anna", "Samana", email, phone, status));
     }
 
     @Test
     void saveGeneratesId() {
-        Volunteer saved = repository.save(new Volunteer(null, fund, "Anna", "Samana", EMAIL, PHONE, VolunteerStatus.ACTIVE));
+        Volunteer saved = repository.save(new Volunteer(null, fund.getId(), "Anna", "Samana", EMAIL, PHONE, VolunteerStatus.ACTIVE));
 
         assertNotNull(saved.getId());
     }
 
     @Test
-    void findAllByFundWithFundReturnsOnlyActiveVolunteersOfFundWithFundLoaded() {
-        Volunteer active = persist(fund, EMAIL, PHONE, VolunteerStatus.ACTIVE);
-        persist(fund, "inactive@gmail.com", "+380500000001", VolunteerStatus.INACTIVE);
-        persist(otherFund, "other@gmail.com", "+380500000002", VolunteerStatus.ACTIVE);
+    void findAllByFundIdAndStatusReturnsOnlyActiveVolunteersOfFund() {
+        Volunteer active = persist(fund.getId(), EMAIL, PHONE, VolunteerStatus.ACTIVE);
+        persist(fund.getId(), "inactive@gmail.com", "+380500000001", VolunteerStatus.INACTIVE);
+        persist(otherFund.getId(), "other@gmail.com", "+380500000002", VolunteerStatus.ACTIVE);
         em.flush();
         em.clear();
 
-        List<Volunteer> result = repository.findAllByFundWithFund(fund.getId(), VolunteerStatus.ACTIVE);
+        List<Volunteer> result = repository.findAllByFundIdAndStatus(fund.getId(), VolunteerStatus.ACTIVE);
 
         assertEquals(List.of(active.getId()), result.stream().map(Volunteer::getId).toList());
-        assertTrue(Hibernate.isInitialized(result.getFirst().getFund()));
     }
 
     @Test
     void findByFundIdAndIdAndStatusIgnoresInactiveAndOtherFund() {
-        Volunteer inactive = persist(fund, EMAIL, PHONE, VolunteerStatus.INACTIVE);
-        Volunteer active = persist(fund, "active@gmail.com", "+380500000001", VolunteerStatus.ACTIVE);
+        Volunteer inactive = persist(fund.getId(), EMAIL, PHONE, VolunteerStatus.INACTIVE);
+        Volunteer active = persist(fund.getId(), "active@gmail.com", "+380500000001", VolunteerStatus.ACTIVE);
 
         assertTrue(repository.findByFundIdAndIdAndStatus(fund.getId(), inactive.getId(), VolunteerStatus.ACTIVE).isEmpty());
         assertTrue(repository.findByFundIdAndIdAndStatus(otherFund.getId(), active.getId(), VolunteerStatus.ACTIVE).isEmpty());
@@ -82,7 +91,7 @@ class VolunteerRepositoryTest {
 
     @Test
     void findByFundIdAndEmailIgnoreCaseMatchesRegardlessOfCase() {
-        Volunteer stored = persist(fund, EMAIL, PHONE, VolunteerStatus.ACTIVE);
+        Volunteer stored = persist(fund.getId(), EMAIL, PHONE, VolunteerStatus.ACTIVE);
 
         Optional<Volunteer> found = repository.findByFundIdAndEmailIgnoreCase(fund.getId(), "Anna@Gmail.COM");
 
@@ -92,7 +101,7 @@ class VolunteerRepositoryTest {
 
     @Test
     void findByFundIdAndPhoneNumberFindsInactiveVolunteerToo() {
-        Volunteer inactive = persist(fund, EMAIL, PHONE, VolunteerStatus.INACTIVE);
+        Volunteer inactive = persist(fund.getId(), EMAIL, PHONE, VolunteerStatus.INACTIVE);
 
         assertEquals(inactive.getId(), repository.findByFundIdAndPhone(fund.getId(), PHONE).orElseThrow().getId());
     }

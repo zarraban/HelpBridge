@@ -38,7 +38,7 @@ public class Request {
     @Column(nullable = false)
     private String institutionName;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String applicationNumber;
 
     @Column(nullable = false)
@@ -51,18 +51,21 @@ public class Request {
     @Column(nullable = false)
     private RequestStatus status;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name = "user_id")
     private User requester;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name = "fund_id")
     private Fund fund;
 
     @OneToMany(mappedBy = "request", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RequestDocument> documents = new ArrayList<>();
 
-    protected Request() {}
+    protected Request() {
+        this.createdAt = LocalDateTime.now();
+        this.status = RequestStatus.PENDING_VERIFICATION;
+    }
 
     public Request(User requester, String assistanceType, BigDecimal amount, LocalDate deadline,
                    String situationDescription, String needDescription,
@@ -80,6 +83,17 @@ public class Request {
         this.createdAt = LocalDateTime.now();
         this.status = RequestStatus.PENDING_VERIFICATION;
     }
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+        if (this.status == null) {
+            this.status = RequestStatus.PENDING_VERIFICATION;
+        }
+    }
+
     public void updateDetails(String assistanceType, BigDecimal amount, LocalDate deadline,
                               String situationDescription, String needDescription,
                               String institutionName, String applicationNumber) {
@@ -91,14 +105,17 @@ public class Request {
         this.institutionName = institutionName;
         this.applicationNumber = applicationNumber;
     }
+
     public void addDocument(RequestDocument document) {
         documents.add(document);
         document.setRequest(this);
     }
+
     public void removeDocument(RequestDocument document) {
         documents.remove(document);
         document.setRequest(null);
     }
+
     public void transitionTo(RequestStatus nextStatus) {
         if (!this.status.canTransitionTo(nextStatus)) {
             throw new InvalidRequestStateException(
@@ -108,8 +125,9 @@ public class Request {
     }
 
     public boolean isExpired() {
-        return deadline.isBefore(LocalDate.now()) && status != RequestStatus.CLOSED;
+        return deadline != null && deadline.isBefore(LocalDate.now()) && status != RequestStatus.CLOSED;
     }
+
     public Long getId() { return id; }
     public String getAssistanceType() { return assistanceType; }
     public BigDecimal getAmount() { return amount; }
@@ -131,11 +149,14 @@ public class Request {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Request request)) return false;
-        return Objects.equals(id, request.id);
+        if (id != null && request.id != null) {
+            return Objects.equals(id, request.id);
+        }
+        return applicationNumber != null && Objects.equals(applicationNumber, request.applicationNumber);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return Objects.hash(applicationNumber != null ? applicationNumber : id);
     }
 }

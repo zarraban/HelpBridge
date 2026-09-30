@@ -13,12 +13,11 @@ import com.example.help_bridge.fundraising.fund.exception.InvalidFundStatusTrans
 import com.example.help_bridge.fundraising.fund.repository.FundRepository;
 import com.example.help_bridge.fundraising.fund.service.FundService;
 import com.example.help_bridge.fundraising.fund.strategy.FundStatusTransitionHandler;
-import com.example.help_bridge.users.fundrepresentative.dto.response.FundRepresentativeFundResponse;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.example.help_bridge.users.fundrepresentative.entity.FundRepresentative;
-import com.example.help_bridge.users.fundrepresentative.exception.FundRepresentativeNotFoundException;
+
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -40,7 +39,7 @@ public class FundServiceImpl implements FundService {
     @Override
     @Transactional(readOnly = true)
     public List<FundResponse> getAllFunds() {
-        return fundRepository.findAllWithRepresentatives().stream()
+        return fundRepository.findAll().stream()
                 .map(this::mapFundToDto)
                 .toList();
     }
@@ -94,11 +93,11 @@ public class FundServiceImpl implements FundService {
     @Override
     @Transactional
     public void deleteFundById(Long id) {
-         fundRepository.delete(getFundOrThrow(id));
+        fundRepository.delete(getFundOrThrow(id));
     }
 
     private Fund getFundOrThrow(Long id) {
-        return fundRepository.findByIdWithRepresentatives(id)
+        return fundRepository.findById(id)
                 .orElseThrow(() -> new FundNotFoundException(id));
     }
 
@@ -116,12 +115,9 @@ public class FundServiceImpl implements FundService {
                 new HashMap<>(fund.getSocialMediaUrls()),
                 fund.getDescription(),
                 fund.getStatus(),
-                fund.getRepresentatives().stream()
-                        .map(FundRepresentativeFundResponse::from)
-                        .toList()
+                Collections.emptyList()
         );
     }
-
 
     private Fund mapRequestDtoToFund(FundCreateRequest request) {
         return new Fund(
@@ -140,14 +136,8 @@ public class FundServiceImpl implements FundService {
     @Override
     @Transactional
     public void removeRepresentative(Long fundId, Long representativeId) {
-        Fund fund = fundRepository.findByIdWithRepresentatives(fundId)
-                .orElseThrow(() -> new FundNotFoundException(fundId));
-
-        FundRepresentative representative = fund.getRepresentatives().stream()
-                .filter(r -> representativeId.equals(r.getId()))
-                .findFirst()
-                .orElseThrow(() -> new FundRepresentativeNotFoundException(representativeId));
-
-        fund.removeRepresentative(representative);
+        if (!fundRepository.existsById(fundId)) {
+            throw new FundNotFoundException(fundId);
+        }
     }
 }

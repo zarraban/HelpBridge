@@ -15,10 +15,16 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataJpaTest(properties = "spring.jpa.properties.hibernate.generate_statistics=true")
+@DataJpaTest(properties = {
+        "spring.jpa.properties.hibernate.generate_statistics=true",
+        "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
+        "spring.jpa.hibernate.ddl-auto=create-drop"
+})
 class RequestRepositoryTest {
 
     @Autowired
@@ -35,7 +41,13 @@ class RequestRepositoryTest {
     }
 
     private User persistUser() {
-        User u = new User();
+        User u = new User(
+                "Test",
+                "User",
+                "user_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().substring(0, 5) + "@example.com",
+                "hashed_password_123",
+                "+380501234567"
+        );
         em.persist(u);
         return u;
     }
@@ -45,15 +57,16 @@ class RequestRepositoryTest {
     }
 
     private Request newRequest(User owner, String institution) {
+        // Генеруємо унікальний application_number для кожного запиту
+        String uniqueAppNumber = "A-" + UUID.randomUUID().toString().substring(0, 8);
         return new Request(owner, "MEDICAL", BigDecimal.TEN,
-                LocalDate.now().plusDays(5), "s", "n", institution, "A-1", true);
+                LocalDate.now().plusDays(5), "s", "n", institution, uniqueAppNumber, true);
     }
 
     private long documentCount() {
         return em.createQuery("select count(d) from RequestDocument d", Long.class).getSingleResult();
     }
 
-    // SessionFactory спільний для всього застосунку, тому його не можна закривати через try-with-resources
     @SuppressWarnings("resource")
     private Statistics statistics() {
         return em.getEntityManagerFactory().unwrap(SessionFactory.class).getStatistics();
@@ -155,11 +168,12 @@ class RequestRepositoryTest {
 
     @Test
     void existsByApplicationNumber_and_countByStatus_work() {
-        em.persist(newRequest("inst"));
+        Request request = newRequest("inst");
+        em.persist(request);
         em.flush();
 
-        assertThat(requestRepository.existsByApplicationNumber("A-1")).isTrue();
-        assertThat(requestRepository.existsByApplicationNumber("missing")).isFalse();
+        assertThat(requestRepository.existsByApplicationNumber(request.getApplicationNumber())).isTrue();
+        assertThat(requestRepository.existsByApplicationNumber("missing-app-num")).isFalse();
         assertThat(requestRepository.countByStatus(RequestStatus.PENDING_VERIFICATION)).isEqualTo(1);
     }
 

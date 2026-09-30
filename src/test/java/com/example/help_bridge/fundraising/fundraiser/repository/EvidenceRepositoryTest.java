@@ -15,7 +15,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@DataJpaTest
+@DataJpaTest(properties = {
+        "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
+        "spring.jpa.hibernate.ddl-auto=create-drop"
+})
 class EvidenceRepositoryTest {
 
     @Autowired
@@ -37,7 +41,7 @@ class EvidenceRepositoryTest {
         Evidence evidence = new Evidence();
         evidence.setFundraiser(fundraiser);
         evidence.setReceiptNumber(receiptNumber);
-        evidence.setCreatedAt(createdAt);
+        evidence.setCreatedAt(createdAt != null ? createdAt : LocalDateTime.now());
         return evidence;
     }
 

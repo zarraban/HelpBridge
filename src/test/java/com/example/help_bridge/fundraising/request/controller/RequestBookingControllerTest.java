@@ -67,7 +67,7 @@ class RequestBookingControllerTest {
         assertThrows(InvalidRequestStateException.class,
                 () -> requestBookingController.bookRequest(1L, dto));
 
-        verify(requestBookingService).bookRequest(1L, dto.fundId());
+        verify(requestBookingService).bookRequest(1L, 2L);
     }
 
     @Test
@@ -80,6 +80,6 @@ class RequestBookingControllerTest {
         assertThrows(FundNotApprovedException.class,
                 () -> requestBookingController.bookRequest(1L, dto));
 
-        verify(requestBookingService).bookRequest(1L, dto.fundId());
+        verify(requestBookingService).bookRequest(1L, 2L);
     }
 }

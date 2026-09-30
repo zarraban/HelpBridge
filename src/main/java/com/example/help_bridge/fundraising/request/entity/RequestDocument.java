@@ -43,11 +43,14 @@ public class RequestDocument {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof RequestDocument that)) return false;
-        return Objects.equals(id, that.id);
+        if (id != null && that.id != null) {
+            return Objects.equals(id, that.id);
+        }
+        return Objects.equals(fileName, that.fileName) && Objects.equals(fileUrl, that.fileUrl);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return Objects.hash(id != null ? id : Objects.hash(fileName, fileUrl));
     }
 }

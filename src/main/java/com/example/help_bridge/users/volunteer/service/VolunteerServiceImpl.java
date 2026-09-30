@@ -1,7 +1,5 @@
 package com.example.help_bridge.users.volunteer.service;
 
-import com.example.help_bridge.fundraising.fund.entity.Fund;
-import com.example.help_bridge.fundraising.fund.exception.FundNotFoundException;
 import com.example.help_bridge.users.volunteer.command.RegisterVolunteerCommand;
 import com.example.help_bridge.users.volunteer.command.UpdateVolunteerCommand;
 import com.example.help_bridge.users.volunteer.dto.response.VolunteerResponse;
@@ -14,7 +12,6 @@ import com.example.help_bridge.users.volunteer.event.VolunteerUpdatedPhoneNumber
 import com.example.help_bridge.users.volunteer.exception.DuplicateVolunteerException;
 import com.example.help_bridge.users.volunteer.exception.VolunteerNotFoundException;
 import com.example.help_bridge.users.volunteer.repository.VolunteerRepository;
-import jakarta.persistence.EntityManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,21 +26,18 @@ public class VolunteerServiceImpl implements VolunteerService {
 
     private final VolunteerRepository repository;
     private final ApplicationEventPublisher eventPublisher;
-    private final EntityManager entityManager;
 
     public VolunteerServiceImpl(
             VolunteerRepository repository,
-            ApplicationEventPublisher eventPublisher,
-            EntityManager entityManager) {
+            ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
         this.eventPublisher = eventPublisher;
-        this.entityManager = entityManager;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<VolunteerResponse> getFundVolunteers(Long fundId) {
-        return repository.findAllByFundWithFund(fundId, VolunteerStatus.ACTIVE).stream()
+        return repository.findAllByFundIdAndStatus(fundId, VolunteerStatus.ACTIVE).stream()
                 .map(this::toResponse).toList();
     }
 
@@ -68,7 +62,6 @@ public class VolunteerServiceImpl implements VolunteerService {
             throw new DuplicateVolunteerException("Volunteer with phone number '" + command.phone() + "' already exists");
         });
 
-        // email і телефон належать двом різним неактивним записам — не можна однозначно відновити
         if (byEmail.isPresent() && byPhone.isPresent()
                 && !byEmail.get().getId().equals(byPhone.get().getId())) {
             throw new DuplicateVolunteerException("Email (" + byEmail.get().getId() + ") and phone number (" + byPhone.get().getPhone() + ") belong to different volunteers");
@@ -77,7 +70,7 @@ public class VolunteerServiceImpl implements VolunteerService {
         Volunteer volunteer = byEmail.or(() -> byPhone)
                 .orElseGet(() -> {
                     Volunteer v = new Volunteer();
-                    v.setFund(findFund(command.fundId()));
+                    v.setFundId(command.fundId());
                     return v;
                 });
 
@@ -89,7 +82,7 @@ public class VolunteerServiceImpl implements VolunteerService {
 
         Volunteer saved = repository.save(volunteer);
         eventPublisher.publishEvent(new VolunteerRegisteredEvent(
-                saved.getFund().getId(),
+                saved.getFundId(),
                 saved.getFirstName(),
                 saved.getEmail()));
         return toResponse(saved);
@@ -142,14 +135,6 @@ public class VolunteerServiceImpl implements VolunteerService {
         eventPublisher.publishEvent(new VolunteerRemovedEvent(volunteer.getFirstName(), volunteer.getEmail()));
     }
 
-    private Fund findFund(Long fundId) {
-        Fund fund = entityManager.find(Fund.class, fundId);
-        if (fund == null) {
-            throw new FundNotFoundException(fundId);
-        }
-        return fund;
-    }
-
     private static String normalizeEmail(String email) {
         return email.toLowerCase(Locale.ROOT);
     }
@@ -157,7 +142,7 @@ public class VolunteerServiceImpl implements VolunteerService {
     private VolunteerResponse toResponse(Volunteer v) {
         return new VolunteerResponse(
                 v.getId(),
-                v.getFund().getId(),
+                v.getFundId(),
                 v.getFirstName(),
                 v.getLastName(),
                 v.getEmail(),

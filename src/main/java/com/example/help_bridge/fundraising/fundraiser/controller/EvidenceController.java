@@ -14,13 +14,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api")
 @Validated
+@RequiredArgsConstructor
 public class EvidenceController {
 
     private final EvidenceService evidenceService;
-
-    public EvidenceController(EvidenceService evidenceService){
-        this.evidenceService = evidenceService;
-    }
 
     // TODO volunteer can't add evidences to other fundraisers except for his own
     @PostMapping("/fundraisers/{fundraiserId}/evidences")
@@ -32,7 +29,7 @@ public class EvidenceController {
     }
 
     @GetMapping("/fundraisers/{fundraiserId}/evidences")
-    public ResponseEntity<List<EvidenceResponse>> addEvidenceToFundraiser(
+    public ResponseEntity<List<EvidenceResponse>> getEvidencesByFundraiserId(
             @PathVariable Long fundraiserId
     ) {
         return ResponseEntity.ok(evidenceService.getEvidencesByFundraiserId(fundraiserId));
@@ -45,5 +42,4 @@ public class EvidenceController {
     ) {
         return ResponseEntity.ok(evidenceService.deleteEvidenceById(evidenceId));
     }
-
 }

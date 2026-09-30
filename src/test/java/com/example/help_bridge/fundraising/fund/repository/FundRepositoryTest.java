@@ -7,14 +7,18 @@ import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-// ВАЖЛИВО: імпорт @DataJpaTest у Boot 4 може відрізнятись, прийми підказку IntelliJ (Alt+Enter)
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataJpaTest(properties = "spring.jpa.properties.hibernate.generate_statistics=true")
+@DataJpaTest(properties = {
+        "spring.jpa.properties.hibernate.generate_statistics=true",
+        "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
+        "spring.jpa.hibernate.ddl-auto=create-drop"
+})
 class FundRepositoryTest {
 
     @Autowired
@@ -24,63 +28,37 @@ class FundRepositoryTest {
     private EntityManager em;
 
     @Test
-    void orphanRemoval_deletesRepresentativeRow() {
-        Fund fund = newFund("12345678", 1);
+    void deleteFund_deletesFundRow() {
+        Fund fund = newFund("12345678");
         em.persist(fund);
         em.flush();
         em.clear();
 
-        Fund loaded = fundRepository.findByIdWithRepresentatives(fund.getId()).orElseThrow();
-        FundRepresentative rep = loaded.getRepresentatives().iterator().next();
-        loaded.removeRepresentative(rep);
+        fundRepository.delete(fundRepository.findById(fund.getId()).orElseThrow());
         em.flush();
         em.clear();
 
-        Long count = em.createQuery("select count(r) from FundRepresentative r", Long.class)
-                .getSingleResult();
-        assertThat(count).isZero();
+        assertThat(fundRepository.findById(fund.getId())).isEmpty();
     }
 
     @Test
-    void cascadeRemove_deletesRepresentativesWithFund() {
-        Fund fund = newFund("12345678", 2);
-        em.persist(fund);
-        em.flush();
-        em.clear();
-
-        fundRepository.delete(fundRepository.findByIdWithRepresentatives(fund.getId()).orElseThrow());
-        em.flush();
-        em.clear();
-
-        Long count = em.createQuery("select count(r) from FundRepresentative r", Long.class)
-                .getSingleResult();
-        assertThat(count).isZero();
-    }
-
-    @Test
-    void findAllWithRepresentatives_runsSingleQuery() {
-        em.persist(newFund("12345678", 3));
-        em.persist(newFund("87654321", 3));
+    void findAll_runsSingleQuery() {
+        em.persist(newFund("12345678"));
+        em.persist(newFund("87654321"));
         em.flush();
         em.clear();
 
         Statistics stats = em.getEntityManagerFactory().unwrap(SessionFactory.class).getStatistics();
         stats.clear();
 
-        fundRepository.findAllWithRepresentatives()
-                .forEach(f -> f.getRepresentatives().size());
+        fundRepository.findAll();
 
         assertThat(stats.getPrepareStatementCount()).isEqualTo(1);
     }
 
-    private Fund newFund(String edrpou, int repsCount) {
-        Fund f = new Fund("Фонд " + edrpou, edrpou, "UA123", "Київ", "Київ",
+    private Fund newFund(String edrpou) {
+        return new Fund("Фонд " + edrpou, edrpou, "UA123", "Київ", "Київ",
                 "+380501112233", edrpou + "@fund.org", "https://fund.org",
                 Map.of("Instagram", "https://instagram.com/fund"));
-        for (int i = 0; i < repsCount; i++) {
-            f.addRepresentative(new FundRepresentative("Дар'я", "Чорна",
-                    edrpou + "_" + i + "@mail.com", "+380501112233", "hash", null));
-        }
-        return f;
     }
 }

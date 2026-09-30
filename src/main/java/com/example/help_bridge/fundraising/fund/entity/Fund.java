@@ -1,16 +1,13 @@
 package com.example.help_bridge.fundraising.fund.entity;
 
-import com.example.help_bridge.users.fundrepresentative.entity.FundRepresentative;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 @Entity
 @Table(name = "funds", uniqueConstraints = @UniqueConstraint(name = "uk_funds_edrpou", columnNames = "edrpou"))
@@ -58,9 +55,6 @@ public class Fund {
     @Column(nullable = false, length = 20)
     private FundStatus status = FundStatus.PENDING_APPROVAL;
 
-    @OneToMany(mappedBy = "fund", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<FundRepresentative> representatives = new HashSet<>();
-
     public Fund(String fundName, String edrpou,
                 String bankDetail, String registeredAddress, String actualAddress,
                 String phoneNumber, String corpEmail, String website,
@@ -76,16 +70,6 @@ public class Fund {
         if (socialMediaUrls != null) {
             this.socialMediaUrls.putAll(socialMediaUrls);
         }
-    }
-
-    public void addRepresentative(FundRepresentative representative) {
-        representatives.add(representative);
-        representative.setFund(this);
-    }
-
-    public void removeRepresentative(FundRepresentative representative) {
-        representatives.remove(representative);
-        representative.setFund(null);
     }
 
     @Override

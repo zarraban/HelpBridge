@@ -1,4 +1,5 @@
 package com.example.help_bridge.fundraising.fund.repository;
+
 import com.example.help_bridge.fundraising.fund.entity.Fund;
 import com.example.help_bridge.users.fundrepresentative.entity.FundRepresentative;
 import com.example.help_bridge.users.fundrepresentative.repository.FundRepresentativeRepository;
@@ -15,7 +16,11 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataJpaTest
+@DataJpaTest(properties = {
+        "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
+        "spring.jpa.hibernate.ddl-auto=create-drop"
+})
 class FundNPlusOneTest {
 
     @Autowired FundRepository fundRepository;
@@ -24,14 +29,14 @@ class FundNPlusOneTest {
     @Autowired EntityManagerFactory emf;
 
     @Test
-    void findAllWithRepresentatives_executesSingleQuery() {
+    void findAll_executesSingleQuery() {
         for (int i = 0; i < 3; i++) {
-            Fund fund = fundRepository.save(new Fund( "Fund" + i,
+            Fund fund = fundRepository.save(new Fund("Fund" + i,
                     String.format("%08d", i), "bank", "addr", "addr",
                     "+380000000", "f" + i + "@mail.com", "site", Map.of()));
             for (int j = 0; j < 2; j++) {
                 representativeRepository.save(new FundRepresentative(
-                        "A", "B", "r" + i + j + "@mail.com", "+38000", "hash12345", fund));
+                        "A", "B", "r" + i + j + "@mail.com", "+38000", "hash12345", fund.getId()));
             }
         }
         em.flush();
@@ -41,9 +46,7 @@ class FundNPlusOneTest {
         stats.setStatisticsEnabled(true);
         stats.clear();
 
-        List<Fund> funds = fundRepository.findAllWithRepresentatives();
-        funds.forEach(f -> assertThat(f.getRepresentatives()).hasSize(2));
-
+        List<Fund> funds = fundRepository.findAll();
         assertThat(funds).hasSize(3);
         assertThat(stats.getPrepareStatementCount()).isEqualTo(1);
     }

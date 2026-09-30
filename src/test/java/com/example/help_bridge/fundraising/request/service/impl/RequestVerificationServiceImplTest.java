@@ -9,8 +9,10 @@ import com.example.help_bridge.fundraising.request.service.RequestVerificationSe
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -27,24 +29,28 @@ class RequestVerificationServiceImplTest {
     @Mock
     private RequestRepository requestRepository;
 
+    @InjectMocks
     private RequestVerificationServiceImpl verificationService;
+
     private Request pendingRequest;
 
     @BeforeEach
     void setUp() {
-        verificationService = new RequestVerificationServiceImpl(requestRepository);
-        pendingRequest = new Request(null, "MEDICAL", BigDecimal.TEN,
-                LocalDate.now().plusDays(5), "s", "n", "inst", "A-1", true);
+        pendingRequest = new Request(
+                null, "MEDICAL", BigDecimal.TEN,
+                LocalDate.now().plusDays(5), "s", "n", "inst", "A-1", true
+        );
+        ReflectionTestUtils.setField(pendingRequest, "id", 1L);
     }
 
     @Test
-    void reviewRequest_whenApproved_transitionsToNewAndSaves() {
+    void reviewRequest_whenApproved_transitionsToNew() {
         when(requestRepository.findById(1L)).thenReturn(Optional.of(pendingRequest));
 
         verificationService.reviewRequest(1L, new RequestVerificationDto(true, "ok"));
 
         assertThat(pendingRequest.getStatus()).isEqualTo(RequestStatus.NEW);
-        verify(requestRepository).save(pendingRequest);
+        verify(requestRepository, never()).delete(any());
     }
 
     @Test

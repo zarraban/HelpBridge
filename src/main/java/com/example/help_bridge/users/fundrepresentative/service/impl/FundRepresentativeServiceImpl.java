@@ -1,8 +1,5 @@
 package com.example.help_bridge.users.fundrepresentative.service.impl;
 
-import com.example.help_bridge.fundraising.fund.entity.Fund;
-import com.example.help_bridge.fundraising.fund.exception.FundNotFoundException;
-import com.example.help_bridge.fundraising.fund.repository.FundRepository;
 import com.example.help_bridge.users.fundrepresentative.dto.request.FundRepresentativeRequest;
 import com.example.help_bridge.users.fundrepresentative.dto.request.FundRepresentativeUpdateRequest;
 import com.example.help_bridge.users.fundrepresentative.dto.response.FundRepresentativeResponse;
@@ -21,11 +18,9 @@ import java.util.List;
 public class FundRepresentativeServiceImpl implements FundRepresentativeService {
 
     private final FundRepresentativeRepository repository;
-    private final FundRepository fundRepository;
 
-    public FundRepresentativeServiceImpl(FundRepresentativeRepository repository, FundRepository fundRepository) {
+    public FundRepresentativeServiceImpl(FundRepresentativeRepository repository) {
         this.repository = repository;
-        this.fundRepository = fundRepository;
     }
 
     @Override
@@ -34,37 +29,31 @@ public class FundRepresentativeServiceImpl implements FundRepresentativeService 
         if (repository.existsByEmail(request.email())) {
             throw new DuplicateFundRepresentativeException(request.email());
         }
-        Fund fund = fundRepository.findById(request.fundId())
-                .orElseThrow(() -> new FundNotFoundException(request.fundId()));
 
-        // TODO: після підключення Spring Security замінити на passwordEncoder.encode(...)
         FundRepresentative representative = new FundRepresentative(
                 request.firstName(), request.lastName(), request.email(),
-                request.phone(), request.password(), fund);
+                request.phone(), request.password(), request.fundId());
 
         return FundRepresentativeResponse.from(repository.save(representative));
     }
 
     @Override
     public FundRepresentativeResponse getById(Long id) {
-        return repository.findByIdWithFund(id)
+        return repository.findById(id)
                 .map(FundRepresentativeResponse::from)
                 .orElseThrow(() -> new FundRepresentativeNotFoundException(id));
     }
 
     @Override
     public List<FundRepresentativeResponse> getAll() {
-        return repository.findAllWithFund().stream()
+        return repository.findAll().stream()
                 .map(FundRepresentativeResponse::from)
                 .toList();
     }
 
     @Override
     public List<FundRepresentativeResponse> getByFundId(Long fundId) {
-        if (!fundRepository.existsById(fundId)) {
-            throw new FundNotFoundException(fundId);
-        }
-        return repository.findByFundIdWithFund(fundId).stream()
+        return repository.findByFundId(fundId).stream()
                 .map(FundRepresentativeResponse::from)
                 .toList();
     }
@@ -72,7 +61,7 @@ public class FundRepresentativeServiceImpl implements FundRepresentativeService 
     @Override
     @Transactional
     public FundRepresentativeResponse update(Long id, FundRepresentativeUpdateRequest request) {
-        FundRepresentative representative = repository.findByIdWithFund(id)
+        FundRepresentative representative = repository.findById(id)
                 .orElseThrow(() -> new FundRepresentativeNotFoundException(id));
 
         if (repository.existsByEmailAndIdNot(request.email(), id)) {
