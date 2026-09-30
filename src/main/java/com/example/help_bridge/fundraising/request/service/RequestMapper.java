@@ -1,7 +1,9 @@
 package com.example.help_bridge.fundraising.request.service;
 
+import com.example.help_bridge.fundraising.request.dto.request.RequestDocumentDto.DocumentResponse;
 import com.example.help_bridge.fundraising.request.dto.request.RequestDto.RequestResponse;
 import com.example.help_bridge.fundraising.request.entity.Request;
+import com.example.help_bridge.fundraising.request.entity.RequestDocument;
 
 final class RequestMapper {
 
@@ -18,7 +20,15 @@ final class RequestMapper {
                 request.getInstitutionName(),
                 request.getApplicationNumber(),
                 request.getStatus(),
-                request.isExpired()
+                request.isExpired(),
+                request.getCreatedAt(),
+                request.getDocuments().stream()
+                        .map(RequestMapper::toDocumentResponse)
+                        .toList()
         );
+    }
+
+    private static DocumentResponse toDocumentResponse(RequestDocument d) {
+        return new DocumentResponse(d.getId(), d.getFileName(), d.getFileUrl());
     }
 }
