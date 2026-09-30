@@ -18,6 +18,6 @@ public record VolunteerRequest(
         String email,
         @NotBlank(message = "Phone number cannot be blank")
         @Pattern(regexp = "^\\+380\\d{9}$", message = "Phone number must match +380XXXXXXXXX")
-        String phoneNumber
+        String phone
 ) {
 }
