@@ -8,7 +8,7 @@ import com.example.help_bridge.fundraising.fundraiser.dto.response.SendMailingRe
 import com.example.help_bridge.fundraising.fundraiser.entity.Fundraiser;
 import com.example.help_bridge.fundraising.fundraiser.entity.FundraiserStatus;
 import com.example.help_bridge.fundraising.fundraiser.event.MassMailingRequestedEvent;
-import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserRepository;
+import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserJpaRepository;
 import com.example.help_bridge.fundraising.fundraiser.service.FundraiserService;
 
 
@@ -25,13 +25,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class FundraiserServiceImpl implements FundraiserService {
 
-    private final FundraiserRepository fundraiserRepository;
+    private final FundraiserJpaRepository FundraiserJpaRepository;
     private final ApplicationEventPublisher eventPublisher;
     
 
     @Override
     public FundraiserResponse getFundraiserById(Long id) {
-        Fundraiser fundraiser = fundraiserRepository.findById(id)
+        Fundraiser fundraiser = FundraiserJpaRepository.findById(id)
                 .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with ID " + id + " not found"));
 
         return mapToResponse(fundraiser);
@@ -39,7 +39,7 @@ public class FundraiserServiceImpl implements FundraiserService {
 
     @Override
     public List<FundraiserResponse> getAllFundraisers(String sort, Long page, Long size) {
-        return fundraiserRepository.findAll().stream()
+        return FundraiserJpaRepository.findAll().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -56,7 +56,7 @@ public class FundraiserServiceImpl implements FundraiserService {
     }
 
     public void closeFundraiser(Long id) {
-        Fundraiser fundraiser = fundraiserRepository.findById(id)
+        Fundraiser fundraiser = FundraiserJpaRepository.findById(id)
                 .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with ID " + id + " not found"));
 
         if (fundraiser.getStatus() == FundraiserStatus.CLOSED) {
@@ -69,7 +69,7 @@ public class FundraiserServiceImpl implements FundraiserService {
 
         fundraiser.setStatus(FundraiserStatus.CLOSED);
         fundraiser.setClosedAt(LocalDateTime.now());
-        fundraiserRepository.save(fundraiser);
+        FundraiserJpaRepository.save(fundraiser);
     }
 
     private FundraiserResponse mapToResponse(Fundraiser fundraiser) {
