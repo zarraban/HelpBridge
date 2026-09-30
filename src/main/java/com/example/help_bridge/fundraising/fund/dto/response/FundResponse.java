@@ -1,9 +1,7 @@
 package com.example.help_bridge.fundraising.fund.dto.response;
 
 import com.example.help_bridge.fundraising.fund.entity.FundStatus;
-import com.example.help_bridge.users.fundrepresentative.dto.response.FundRepresentativeFundResponse;
 
-import java.util.List;
 import java.util.Map;
 
 public record FundResponse(
@@ -18,7 +16,6 @@ public record FundResponse(
         String website,
         Map<String, String> socialMediaUrls,
         String description,
-        FundStatus status,
-        List<FundRepresentativeFundResponse> representatives
+        FundStatus status
 ) {
 }

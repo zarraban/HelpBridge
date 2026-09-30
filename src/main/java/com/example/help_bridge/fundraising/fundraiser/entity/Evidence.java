@@ -12,6 +12,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
@@ -28,6 +29,10 @@ public class Evidence {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "fundraiser_id", nullable = false)
     private Fundraiser fundraiser;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assignment_id")
+    private FundraiserAssignment assignment;
 
     @Column(name = "receipt_number", length = 50)
     private String receiptNumber;

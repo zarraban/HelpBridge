@@ -21,19 +21,19 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public void scheduleEmails(List<String> emails, String subject, String text) {
         MailingTask task = new MailingTask();
-        
-        List<MailingRecipient> recipients = emails.stream().map(email -> {
-            MailingRecipient r = new MailingRecipient();
-            r.setEmail(email);
-            r.setStatus(RecipientStatus.PENDING);
-            return r;
-        }).toList();
-
-        task.setRecipients(recipients);
         task.setSubject(subject);
         task.setMessageBody(text);
         task.setStatus(MailingStatus.PENDING);
         task.setCreatedAt(LocalDateTime.now());
+        
+        if (emails != null) {
+            for (String email : emails) {
+                MailingRecipient r = new MailingRecipient();
+                r.setEmail(email);
+                r.setStatus(RecipientStatus.PENDING);
+                task.addRecipient(r);
+            }
+        }
         
         MailingTaskJpaRepository.save(task);
     }
