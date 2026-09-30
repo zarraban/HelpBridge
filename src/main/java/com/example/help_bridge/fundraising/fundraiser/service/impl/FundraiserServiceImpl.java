@@ -77,7 +77,7 @@ public class FundraiserServiceImpl implements FundraiserService {
                 fundraiser.getEvidences().stream()
                         .map(e -> new EvidenceResponse(
                                 e.getId(),
-                                e.getFundraiserId(),
+                                fundraiser.getId(),
                                 e.getReceiptNumber(),
                                 e.getRecipientFeedback(),
                                 e.getAttachmentUrl(),
