@@ -1,6 +1,5 @@
 package com.example.help_bridge.fundraising.request.controller;
 
-import com.example.help_bridge.fundraising.request.controller.RequestBookingController;
 import com.example.help_bridge.fundraising.request.dto.request.RequestBookingDto;
 import com.example.help_bridge.fundraising.request.dto.request.RequestDto.RequestResponse;
 import com.example.help_bridge.fundraising.request.entity.RequestStatus;
@@ -17,6 +16,8 @@ import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -37,7 +38,7 @@ class RequestBookingControllerTest {
         return new RequestResponse(
                 1L, "MEDICAL", new BigDecimal("1500.00"), LocalDate.now().plusDays(10),
                 "Situation description", "Need description", "Some Institution",
-                "APP-001", status, false
+                "APP-001", status, false, LocalDateTime.now(), List.of()
         );
     }
 

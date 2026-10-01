@@ -33,8 +33,8 @@ class RequestVerificationServiceImplTest {
     @BeforeEach
     void setUp() {
         verificationService = new RequestVerificationServiceImpl(requestRepository);
-        pendingRequest = new Request(1L, "MEDICAL", BigDecimal.TEN,
-                LocalDate.now().plusDays(5), "s", "n", "inst", "A-1");
+        pendingRequest = new Request(null, "MEDICAL", BigDecimal.TEN,
+                LocalDate.now().plusDays(5), "s", "n", "inst", "A-1", true);
     }
 
     @Test
@@ -53,7 +53,7 @@ class RequestVerificationServiceImplTest {
 
         verificationService.reviewRequest(1L, new RequestVerificationDto(false, "fraud"));
 
-        verify(requestRepository).deleteById(1L);
+        verify(requestRepository).delete(pendingRequest);
         verify(requestRepository, never()).save(any());
     }
 
