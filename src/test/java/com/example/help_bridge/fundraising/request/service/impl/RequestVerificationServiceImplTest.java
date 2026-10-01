@@ -53,7 +53,7 @@ class RequestVerificationServiceImplTest {
 
         verificationService.reviewRequest(1L, new RequestVerificationDto(false, "fraud"));
 
-        verify(requestRepository).delete(pendingRequest);
+        verify(requestRepository).deleteById(anyLong());
         verify(requestRepository, never()).save(any());
     }
 
