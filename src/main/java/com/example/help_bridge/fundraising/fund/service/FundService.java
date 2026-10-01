@@ -14,4 +14,5 @@ public interface FundService {
     FundResponse updateFundStatus(Long id, FundStatusUpdateRequest request);
     FundResponse updateFundDescription(Long id, FundDescriptUpdateRequest request);
     void deleteFundById(Long id);
+    void removeRepresentative(Long fundId, Long representativeId);
 }
