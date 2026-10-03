@@ -1,5 +1,6 @@
 package com.example.help_bridge.users.systemadmin.entity;
 
+import com.example.help_bridge.fundraising.verification.entity.VerificationAct;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -8,6 +9,7 @@ import lombok.Setter;
 
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 @Entity
 @Table(name = "system_admins", uniqueConstraints = @UniqueConstraint(name = "uk_system_admins_email", columnNames = "email"))
@@ -32,7 +34,8 @@ public class SystemAdmin {
     @Column(nullable = false, length = 50)
     private String lastName;
 
-    //@OneToMany(mappedBy = "systemAdmin") private Set<VerificationAct> verificationActs = new HashSet<>();
+    @OneToMany(mappedBy = "systemAdmin")
+    private Set<VerificationAct> verificationActs = new HashSet<>();
 
     public SystemAdmin(String email, String passwordHash, String firstName, String lastName) {
         this.email = email;

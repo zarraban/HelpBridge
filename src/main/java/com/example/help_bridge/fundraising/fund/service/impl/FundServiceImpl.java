@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.help_bridge.users.fundrepresentative.entity.FundRepresentative;
 import com.example.help_bridge.users.fundrepresentative.exception.FundRepresentativeNotFoundException;
+import com.example.help_bridge.fundraising.fund.dto.request.FundUpdateRequest;
 import java.util.HashMap;
 import java.util.List;
 
@@ -88,6 +89,24 @@ public class FundServiceImpl implements FundService {
     public FundResponse updateFundDescription(Long id, FundDescriptUpdateRequest request) {
         Fund fund = getFundOrThrow(id);
         fund.setDescription(request.description());
+        return mapFundToDto(fund);
+    }
+
+    @Override
+    @Transactional
+    public FundResponse updateFund(Long id, FundUpdateRequest request) {
+        Fund fund = getFundOrThrow(id);
+        fund.setFundName(request.fundName());
+        fund.setBankDetail(request.bankDetail());
+        fund.setRegisteredAddress(request.registeredAddress());
+        fund.setActualAddress(request.actualAddress());
+        fund.setPhoneNumber(request.phoneNumber());
+        fund.setCorpEmail(request.corpEmail());
+        fund.setWebsite(request.website());
+        fund.getSocialMediaUrls().clear();
+        if (request.socialMediaUrls() != null) {
+            fund.getSocialMediaUrls().putAll(request.socialMediaUrls());
+        }
         return mapFundToDto(fund);
     }
 

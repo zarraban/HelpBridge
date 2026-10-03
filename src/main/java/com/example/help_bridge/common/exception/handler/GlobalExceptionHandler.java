@@ -26,6 +26,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import com.example.help_bridge.fundraising.fund.exception.DuplicateFundException;
+import com.example.help_bridge.users.fundrepresentative.exception.DuplicateFundRepresentativeException;
+import com.example.help_bridge.users.fundrepresentative.exception.FundRepresentativeNotFoundException;
+import com.example.help_bridge.users.systemadmin.exception.SystemAdminHasVerificationActsException;
 
 import java.net.URI;
 import java.time.Instant;
@@ -168,7 +172,8 @@ public class GlobalExceptionHandler {
             AssignmentNotFoundException.class,
             VolunteerNotFoundException.class,
             FundNotFoundException.class,
-            RequestNotFoundException.class
+            RequestNotFoundException.class,
+            FundRepresentativeNotFoundException.class
     })
     public ProblemDetail handleNotFoundDomainExceptions(RuntimeException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
@@ -249,6 +254,33 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateSystemAdminException.class)
     public ProblemDetail handleDuplicateSystemAdmin(DuplicateSystemAdminException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler({
+            DuplicateFundException.class,
+            DuplicateFundRepresentativeException.class
+    })
+    public ProblemDetail handleDuplicateFundDomain(RuntimeException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                ex.getMessage()
+        );
+        problemDetail.setTitle("Resource Already Exists");
+        problemDetail.setType(URI.create("https://api.example.com/errors/duplicate-resource"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler(SystemAdminHasVerificationActsException.class)
+    public ProblemDetail handleSystemAdminHasVerificationActs(SystemAdminHasVerificationActsException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                ex.getMessage()
+        );
+        problemDetail.setTitle("Admin Has Verification Acts");
+        problemDetail.setType(URI.create("https://api.example.com/errors/admin-has-verification-acts"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
     }
 
 }
