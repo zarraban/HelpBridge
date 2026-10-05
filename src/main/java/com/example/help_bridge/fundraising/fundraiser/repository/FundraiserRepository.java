@@ -1,12 +1,8 @@
 package com.example.help_bridge.fundraising.fundraiser.repository;
-
 import com.example.help_bridge.fundraising.fundraiser.entity.Fundraiser;
-import java.util.List;
-import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-public interface FundraiserRepository {
-    List<Fundraiser> findAll();
-    Optional<Fundraiser> findById(Long id);
-    Fundraiser save(Fundraiser fundraiser);
-    void deleteById(Long id);
+@Repository
+public interface FundraiserRepository extends JpaRepository<Fundraiser, Long> {
 }

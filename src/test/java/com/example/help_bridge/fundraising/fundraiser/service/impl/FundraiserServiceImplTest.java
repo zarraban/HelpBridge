@@ -5,7 +5,7 @@ import com.example.help_bridge.fundraising.fundraiser.event.MassMailingRequested
 import com.example.help_bridge.fundraising.fundraiser.entity.Evidence;
 import com.example.help_bridge.fundraising.fundraiser.entity.Fundraiser;
 import com.example.help_bridge.fundraising.fundraiser.entity.FundraiserStatus;
-import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserJpaRepository;
+import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,7 +24,7 @@ import static org.mockito.Mockito.*;
 class FundraiserServiceImplTest {
 
     @Mock
-    private FundraiserJpaRepository fundraiserJpaRepository;
+    private FundraiserRepository fundraiserRepository;
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
@@ -38,7 +38,7 @@ class FundraiserServiceImplTest {
         fundraiser.setStatus(FundraiserStatus.IN_PROGRESS);
         fundraiser.setEvidences(List.of());
 
-        when(fundraiserJpaRepository.findById(1L)).thenReturn(Optional.of(fundraiser));
+        when(fundraiserRepository.findById(1L)).thenReturn(Optional.of(fundraiser));
 
         assertThrows(IllegalStateException.class, () -> fundraiserService.closeFundraiser(1L));
     }
@@ -49,13 +49,13 @@ class FundraiserServiceImplTest {
         fundraiser.setStatus(FundraiserStatus.IN_PROGRESS);
         fundraiser.setEvidences(List.of(new Evidence()));
 
-        when(fundraiserJpaRepository.findById(1L)).thenReturn(Optional.of(fundraiser));
+        when(fundraiserRepository.findById(1L)).thenReturn(Optional.of(fundraiser));
 
         fundraiserService.closeFundraiser(1L);
 
         assertEquals(FundraiserStatus.CLOSED, fundraiser.getStatus());
         assertNotNull(fundraiser.getClosedAt());
-        verify(fundraiserJpaRepository).save(fundraiser);
+        verify(fundraiserRepository).save(fundraiser);
     }
 
     @Test

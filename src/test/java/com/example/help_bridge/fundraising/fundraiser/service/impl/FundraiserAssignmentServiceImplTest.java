@@ -6,8 +6,8 @@ import com.example.help_bridge.fundraising.fundraiser.dto.request.CompleteAssign
 import com.example.help_bridge.fundraising.fundraiser.entity.AssignmentStatus;
 import com.example.help_bridge.fundraising.fundraiser.entity.Fundraiser;
 import com.example.help_bridge.fundraising.fundraiser.entity.FundraiserAssignment;
-import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserAssignmentJpaRepository;
-import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserJpaRepository;
+import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserAssignmentRepository;
+import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,10 +23,10 @@ import static org.mockito.Mockito.*;
 class FundraiserAssignmentServiceImplTest {
 
     @Mock
-    private FundraiserAssignmentJpaRepository assignmentJpaRepository;
+    private FundraiserAssignmentRepository assignmentJpaRepository;
 
     @Mock
-    private FundraiserJpaRepository fundraiserJpaRepository;
+    private FundraiserRepository fundraiserRepository;
 
     @InjectMocks
     private FundraiserAssignmentServiceImpl assignmentService;
@@ -60,7 +60,7 @@ class FundraiserAssignmentServiceImplTest {
         fundraiser.setId(100L);
 
         when(assignmentJpaRepository.findById(1L)).thenReturn(Optional.of(assignment));
-        when(fundraiserJpaRepository.findById(100L)).thenReturn(Optional.of(fundraiser));
+        when(fundraiserRepository.findById(100L)).thenReturn(Optional.of(fundraiser));
 
         assignmentService.completeAssignment(1L, new CompleteAssignmentRequest("comment"));
 

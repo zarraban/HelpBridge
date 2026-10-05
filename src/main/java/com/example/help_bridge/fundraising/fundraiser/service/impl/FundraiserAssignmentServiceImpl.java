@@ -10,8 +10,8 @@ import com.example.help_bridge.fundraising.fundraiser.dto.response.ReturnAssignm
 import com.example.help_bridge.fundraising.fundraiser.entity.AssignmentStatus;
 import com.example.help_bridge.fundraising.fundraiser.entity.Fundraiser;
 import com.example.help_bridge.fundraising.fundraiser.entity.FundraiserAssignment;
-import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserAssignmentJpaRepository;
-import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserJpaRepository;
+import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserAssignmentRepository;
+import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserRepository;
 import com.example.help_bridge.fundraising.fundraiser.service.FundraiserAssignmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,12 +23,15 @@ import com.example.help_bridge.fundraising.fundraiser.exception.AssignmentNotFou
 import com.example.help_bridge.fundraising.fundraiser.exception.FundraiserNotFoundException;
 import com.example.help_bridge.fundraising.fundraiser.exception.InvalidAssignmentStateException;
 
+import org.springframework.transaction.annotation.Transactional;
+
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentService {
 
-    private final FundraiserAssignmentJpaRepository assignmentJpaRepository;
-    private final FundraiserJpaRepository FundraiserJpaRepository;
+    private final FundraiserAssignmentRepository assignmentJpaRepository;
+    private final FundraiserRepository FundraiserRepository;
 
     @Override
     public CompleteAssignmentResponse completeAssignment(Long assignmentId, CompleteAssignmentRequest request) {
@@ -43,7 +46,7 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
         assignment.setFinishedAt(LocalDateTime.now());
         assignmentJpaRepository.save(assignment);
         
-        Fundraiser fundraiser = FundraiserJpaRepository.findById(assignment.getFundraiserId())
+        Fundraiser fundraiser = FundraiserRepository.findById(assignment.getFundraiserId())
                 .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with the specified ID was not found"));
                 
         int evidenceCount = fundraiser.getEvidences() == null ? 0 : fundraiser.getEvidences().size();
@@ -83,7 +86,7 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
 
     @Override
     public AssignVolunteerResponse assignVolunteerToFund(Long fundraiserId, AssignVolunteerRequest request) {
-        Fundraiser fundraiser = FundraiserJpaRepository.findById(fundraiserId)
+        Fundraiser fundraiser = FundraiserRepository.findById(fundraiserId)
                 .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with the specified ID was not found"));
 
         FundraiserAssignment assignment = new FundraiserAssignment();
@@ -103,17 +106,17 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<FundraiserAssignmentResponse> getFundraiserAssignments(Long fundraiserId) {
-        return assignmentJpaRepository.findAll().stream()
-                .filter(a -> fundraiserId.equals(a.getFundraiserId()))
+        return assignmentJpaRepository.findByFundraiserId(fundraiserId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<FundraiserAssignmentResponse> getVolunteerAssignments(Long volunteerId) {
-        return assignmentJpaRepository.findAll().stream()
-                .filter(a -> volunteerId.equals(a.getVolunteerId()))
+        return assignmentJpaRepository.findByVolunteerId(volunteerId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }

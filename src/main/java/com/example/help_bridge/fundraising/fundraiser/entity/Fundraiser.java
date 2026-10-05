@@ -24,7 +24,11 @@ public class Fundraiser {
     @Enumerated(EnumType.STRING)
     private FundraiserStatus status;
 
+    @org.hibernate.annotations.CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "closed_at")
     private LocalDateTime closedAt;
 
     @OneToMany(mappedBy = "fundraiser", cascade = CascadeType.ALL, orphanRemoval = true)
