@@ -1,14 +1,18 @@
 package com.example.help_bridge.notification.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "mailing_recipient")
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class MailingRecipient {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -16,8 +20,6 @@ public class MailingRecipient {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "task_id", nullable = false)
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
     private MailingTask task;
 
     @Column(nullable = false)

@@ -39,10 +39,7 @@ class VolunteerRepositoryTest {
     }
 
     private static Fund fund(String name, String edrpou) {
-        Fund fund = new Fund();
-        fund.setFundName(name);
-        fund.setEdrpou(edrpou);
-        return fund;
+        return new Fund(name, edrpou, "IBAN123", "Reg address", "Act address", "+380501112233", "f@mail.com", "https://f.com", java.util.Map.of());
     }
 
     private Volunteer persist(Fund fund, String email, String phone, VolunteerStatus status) {

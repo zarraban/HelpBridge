@@ -83,8 +83,11 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
 
     @Override
     public AssignVolunteerResponse assignVolunteerToFund(Long fundraiserId, AssignVolunteerRequest request) {
+        Fundraiser fundraiser = FundraiserJpaRepository.findById(fundraiserId)
+                .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with the specified ID was not found"));
+
         FundraiserAssignment assignment = new FundraiserAssignment();
-        assignment.setFundraiserId(fundraiserId);
+        assignment.setFundraiser(fundraiser);
         assignment.setVolunteerId(request.volunteerId());
         assignment.setStatus(AssignmentStatus.ACTIVE);
         assignment.setAssignedAt(LocalDateTime.now());

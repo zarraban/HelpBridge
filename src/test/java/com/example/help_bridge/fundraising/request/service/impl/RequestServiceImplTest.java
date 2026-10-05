@@ -8,6 +8,7 @@ import com.example.help_bridge.fundraising.request.exception.RequestNotFoundExce
 import com.example.help_bridge.fundraising.request.exception.RequesterNotFoundException;
 import com.example.help_bridge.fundraising.request.repository.RequestRepository;
 import com.example.help_bridge.fundraising.request.service.RequestServiceImpl;
+import com.example.help_bridge.fundraising.user.entity.User;
 import com.example.help_bridge.fundraising.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,11 +56,11 @@ class RequestServiceImplTest {
     @Test
     void createRequest_withoutUser_savesWithPendingVerificationStatus() {
         when(requestRepository.save(any(Request.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        RequestResponse response = requestService.createRequest(dto(null));
+        when(userRepository.findById(anyLong())).thenReturn(Optional.of(new User()));
+        RequestResponse response = requestService.createRequest(dto(1L));
 
         assertThat(response.status()).isEqualTo(RequestStatus.PENDING_VERIFICATION);
-        verify(userRepository, never()).findById(any());
+        verify(userRepository).findById(any());
     }
 
     @Test
