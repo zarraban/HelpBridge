@@ -13,6 +13,8 @@ import com.example.help_bridge.users.fundrepresentative.repository.FundRepresent
 import com.example.help_bridge.users.fundrepresentative.service.FundRepresentativeService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 
@@ -22,6 +24,7 @@ public class FundRepresentativeServiceImpl implements FundRepresentativeService 
 
     private final FundRepresentativeRepository repository;
     private final FundRepository fundRepository;
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public FundRepresentativeServiceImpl(FundRepresentativeRepository repository, FundRepository fundRepository) {
         this.repository = repository;
@@ -37,10 +40,9 @@ public class FundRepresentativeServiceImpl implements FundRepresentativeService 
         Fund fund = fundRepository.findById(request.fundId())
                 .orElseThrow(() -> new FundNotFoundException(request.fundId()));
 
-        // TODO: після підключення Spring Security замінити на passwordEncoder.encode(...)
         FundRepresentative representative = new FundRepresentative(
                 request.firstName(), request.lastName(), request.email(),
-                request.phone(), request.password(), fund);
+                request.phone(), passwordEncoder.encode((request.password())), fund);
 
         return FundRepresentativeResponse.from(repository.save(representative));
     }

@@ -5,6 +5,7 @@ import com.example.help_bridge.users.systemadmin.dto.request.SystemAdminUpdateRe
 import com.example.help_bridge.users.systemadmin.dto.response.SystemAdminResponse;
 import com.example.help_bridge.users.systemadmin.entity.SystemAdmin;
 import com.example.help_bridge.users.systemadmin.exception.DuplicateSystemAdminException;
+import com.example.help_bridge.users.systemadmin.exception.SystemAdminHasVerificationActsException;
 import com.example.help_bridge.users.systemadmin.exception.SystemAdminNotFoundException;
 import com.example.help_bridge.users.systemadmin.repository.SystemAdminRepository;
 import com.example.help_bridge.users.systemadmin.service.SystemAdminService;
@@ -71,7 +72,13 @@ public class SystemAdminServiceImpl implements SystemAdminService {
     @Override
     @Transactional
     public void deleteSystemAdminById(Long id) {
-        systemAdminRepository.delete(getOrThrow(id));
+        SystemAdmin admin = getOrThrow(id);
+        try {
+            systemAdminRepository.delete(admin);
+            systemAdminRepository.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw new SystemAdminHasVerificationActsException(id);
+        }
     }
 
     private SystemAdmin getOrThrow(Long id) {
@@ -86,5 +93,13 @@ public class SystemAdminServiceImpl implements SystemAdminService {
                 admin.getFirstName(),
                 admin.getLastName()
         );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SystemAdminResponse> searchByLastName(String lastName) {
+        return systemAdminRepository.searchByLastName(lastName).stream()
+                .map(this::mapToDto)
+                .toList();
     }
 }

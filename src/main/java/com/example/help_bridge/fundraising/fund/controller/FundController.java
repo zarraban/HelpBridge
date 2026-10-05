@@ -9,7 +9,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-
+import com.example.help_bridge.fundraising.fund.dto.request.FundUpdateRequest;
 import java.net.URI;
 import java.util.List;
 
@@ -43,6 +43,14 @@ public class FundController {
         return ResponseEntity.created(location).body(response);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<FundResponse> updateFund(
+            @PathVariable("id") Long id,
+            @RequestBody @Valid FundUpdateRequest request
+    ) {
+        return ResponseEntity.ok(service.updateFund(id, request));
+    }
+
     @PatchMapping("/{id}/status")
     public ResponseEntity<FundResponse> updateFundStatus(
             @PathVariable("id") Long id,
@@ -64,4 +72,13 @@ public class FundController {
         service.deleteFundById(id);
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping("/{fundId}/representatives/{representativeId}")
+    public ResponseEntity<Void> removeRepresentative(@PathVariable("fundId") Long fundId,
+                                                     @PathVariable("representativeId") Long representativeId) {
+        service.removeRepresentative(fundId, representativeId);
+        return ResponseEntity.noContent().build();
+    }
+
+
 }

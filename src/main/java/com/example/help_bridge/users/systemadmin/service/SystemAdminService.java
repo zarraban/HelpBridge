@@ -12,4 +12,5 @@ public interface SystemAdminService {
     SystemAdminResponse createSystemAdmin(SystemAdminCreateRequest request);
     SystemAdminResponse updateSystemAdmin(Long id, SystemAdminUpdateRequest request);
     void deleteSystemAdminById(Long id);
+    List<SystemAdminResponse> searchByLastName(String lastName);
 }

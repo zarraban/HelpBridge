@@ -12,7 +12,7 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
-@RequestMapping("/system-admins")
+@RequestMapping("/api/system-admins")
 public class SystemAdminController {
 
     private final SystemAdminService service;
@@ -26,6 +26,11 @@ public class SystemAdminController {
         return ResponseEntity.ok(service.getAllSystemAdmins());
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<List<SystemAdminResponse>> search(@RequestParam("lastName") String lastName) {
+        return ResponseEntity.ok(service.searchByLastName(lastName));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<SystemAdminResponse> getSystemAdminById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getSystemAdminById(id));
@@ -35,7 +40,7 @@ public class SystemAdminController {
     public ResponseEntity<SystemAdminResponse> createSystemAdmin(@RequestBody @Valid SystemAdminCreateRequest request) {
         SystemAdminResponse response = service.createSystemAdmin(request);
         return ResponseEntity
-                .created(URI.create("/system-admins/" + response.id()))
+                .created(URI.create("/api/system-admins/" + response.id()))
                 .body(response);
     }
 

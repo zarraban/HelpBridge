@@ -37,9 +37,9 @@ class SystemAdminControllerTest {
         when(service.createSystemAdmin(any()))
                 .thenReturn(new SystemAdminResponse(1L, "admin@help.ua", "Daria", "Chorna"));
 
-        mockMvc.perform(post("/system-admins").contentType(MediaType.APPLICATION_JSON).content(VALID_CREATE))
+        mockMvc.perform(post("/api/system-admins").contentType(MediaType.APPLICATION_JSON).content(VALID_CREATE))
                 .andExpect(status().isCreated())
-                .andExpect(header().string("Location", "/system-admins/1"))
+                .andExpect(header().string("Location", "/api/system-admins/1"))
                 .andExpect(jsonPath("$.email").value("admin@help.ua"))
                 .andExpect(jsonPath("$.password").doesNotExist())
                 .andExpect(jsonPath("$.passwordHash").doesNotExist());
@@ -51,7 +51,7 @@ class SystemAdminControllerTest {
                 {"email":"not-an-email","password":"123","firstName":"Daria","lastName":"Chorna"}
                 """;
 
-        mockMvc.perform(post("/system-admins").contentType(MediaType.APPLICATION_JSON).content(invalid))
+        mockMvc.perform(post("/api/system-admins").contentType(MediaType.APPLICATION_JSON).content(invalid))
                 .andExpect(status().isBadRequest());
     }
 
@@ -59,7 +59,7 @@ class SystemAdminControllerTest {
     void create_duplicate_returns409() throws Exception {
         when(service.createSystemAdmin(any())).thenThrow(new DuplicateSystemAdminException("admin@help.ua"));
 
-        mockMvc.perform(post("/system-admins").contentType(MediaType.APPLICATION_JSON).content(VALID_CREATE))
+        mockMvc.perform(post("/api/system-admins").contentType(MediaType.APPLICATION_JSON).content(VALID_CREATE))
                 .andExpect(status().isConflict());
     }
 
@@ -68,7 +68,7 @@ class SystemAdminControllerTest {
         when(service.getAllSystemAdmins())
                 .thenReturn(List.of(new SystemAdminResponse(1L, "admin@help.ua", "Daria", "Chorna")));
 
-        mockMvc.perform(get("/system-admins"))
+        mockMvc.perform(get("/api/system-admins"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1));
     }
@@ -77,7 +77,7 @@ class SystemAdminControllerTest {
     void getById_notFound_returns404() throws Exception {
         when(service.getSystemAdminById(99L)).thenThrow(new SystemAdminNotFoundException(99L));
 
-        mockMvc.perform(get("/system-admins/99"))
+        mockMvc.perform(get("/api/system-admins/99"))
                 .andExpect(status().isNotFound());
     }
 
@@ -86,7 +86,7 @@ class SystemAdminControllerTest {
         when(service.updateSystemAdmin(any(), any()))
                 .thenReturn(new SystemAdminResponse(1L, "admin@help.ua", "Olena", "Shevchenko"));
 
-        mockMvc.perform(put("/system-admins/1").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(put("/api/system-admins/1").contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"firstName":"Olena","lastName":"Shevchenko"}
                                 """))
@@ -96,7 +96,7 @@ class SystemAdminControllerTest {
 
     @Test
     void delete_returns204() throws Exception {
-        mockMvc.perform(delete("/system-admins/1"))
+        mockMvc.perform(delete("/api/system-admins/1"))
                 .andExpect(status().isNoContent());
         verify(service).deleteSystemAdminById(1L);
     }

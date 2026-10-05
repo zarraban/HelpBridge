@@ -23,4 +23,9 @@ public interface FundRepository extends JpaRepository<Fund, Long> {
     @Query("SELECT f FROM Fund f LEFT JOIN FETCH f.representatives WHERE f.id = :id")
     Optional<Fund> findByIdWithRepresentatives(@Param("id") Long id);
 
+    @Query("SELECT DISTINCT f FROM Fund f LEFT JOIN FETCH f.representatives WHERE f.status = :status")
+    List<Fund> findByStatusWithRepresentatives(@Param("status") FundStatus status);
+
+    List<Fund> findByFundNameContainingIgnoreCase(String name);
+    Optional<Fund> findByEdrpou(String edrpou);
 }

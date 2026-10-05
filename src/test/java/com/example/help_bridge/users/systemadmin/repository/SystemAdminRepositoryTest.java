@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -33,4 +34,16 @@ class SystemAdminRepositoryTest {
                 repository.saveAndFlush(new SystemAdmin("admin@help.ua", "hash2", "Olena", "Shevchenko")))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
+
+    @Test
+    void searchByLastName_matchesPartIgnoringCase() {
+        repository.saveAndFlush(new SystemAdmin("a@help.ua", "hash", "Daria", "Chorna"));
+        repository.saveAndFlush(new SystemAdmin("b@help.ua", "hash", "Olena", "Shevchenko"));
+
+        assertThat(repository.searchByLastName("CHOR"))
+                .extracting(SystemAdmin::getEmail)
+                .containsExactly("a@help.ua");
+        assertThat(repository.searchByLastName("xyz")).isEmpty();
+    }
+
 }
