@@ -56,7 +56,7 @@ public class SystemAdminServiceImpl implements SystemAdminService {
         try {
             return mapToDto(systemAdminRepository.saveAndFlush(admin));
         } catch (DataIntegrityViolationException e) {
-            throw new DuplicateSystemAdminException(request.email());
+            throw new DuplicateSystemAdminException(request.email(), e);
         }
     }
 
@@ -77,7 +77,7 @@ public class SystemAdminServiceImpl implements SystemAdminService {
             systemAdminRepository.delete(admin);
             systemAdminRepository.flush();
         } catch (DataIntegrityViolationException e) {
-            throw new SystemAdminHasVerificationActsException(id);
+            throw new SystemAdminHasVerificationActsException(id, e);
         }
     }
 
