@@ -7,23 +7,28 @@ import com.example.help_bridge.fundraising.fund.dto.response.FundResponse;
 import com.example.help_bridge.fundraising.fund.entity.Fund;
 import com.example.help_bridge.fundraising.fund.entity.FundStatus;
 import com.example.help_bridge.fundraising.fund.event.FundStatusChangedEvent;
-import com.example.help_bridge.fundraising.fund.exception.DuplicateFundException;
-import com.example.help_bridge.fundraising.fund.exception.FundHasRequestsException;
-import com.example.help_bridge.fundraising.fund.exception.FundNotFoundException;
+import com.example.help_bridge.fundraising.fund.exception.*;
 import com.example.help_bridge.fundraising.request.repository.RequestRepository;
-import com.example.help_bridge.fundraising.fund.exception.InvalidFundStatusTransitionException;
 import com.example.help_bridge.fundraising.fund.repository.FundRepository;
 import com.example.help_bridge.fundraising.fund.service.FundService;
 import com.example.help_bridge.fundraising.fund.strategy.FundStatusTransitionHandler;
+import com.example.help_bridge.fundraising.verification.entity.VerificationAct;
+import com.example.help_bridge.fundraising.verification.repository.VerificationActRepository;
 import com.example.help_bridge.users.fundrepresentative.dto.response.FundRepresentativeFundResponse;
+import com.example.help_bridge.users.systemadmin.entity.SystemAdmin;
+import com.example.help_bridge.users.systemadmin.exception.SystemAdminNotFoundException;
+import com.example.help_bridge.users.systemadmin.repository.SystemAdminRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.help_bridge.users.fundrepresentative.entity.FundRepresentative;
 import com.example.help_bridge.users.fundrepresentative.exception.FundRepresentativeNotFoundException;
 import com.example.help_bridge.fundraising.fund.dto.request.FundUpdateRequest;
+
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
+
 
 @Service
 public class FundServiceImpl implements FundService {
@@ -32,15 +37,21 @@ public class FundServiceImpl implements FundService {
     private final List<FundStatusTransitionHandler> transitionHandlers;
     private final ApplicationEventPublisher eventPublisher;
     private final RequestRepository requestRepository;
+    private final SystemAdminRepository systemAdminRepository;
+    private final VerificationActRepository verificationActRepository;
 
     public FundServiceImpl(FundRepository fundRepository,
                            List<FundStatusTransitionHandler> transitionHandlers,
                            ApplicationEventPublisher eventPublisher,
-                           RequestRepository requestRepository) {
+                           RequestRepository requestRepository,
+                           SystemAdminRepository systemAdminRepository,
+                           VerificationActRepository verificationActRepository) {
         this.fundRepository = fundRepository;
         this.transitionHandlers = transitionHandlers;
         this.eventPublisher = eventPublisher;
         this.requestRepository = requestRepository;
+        this.systemAdminRepository = systemAdminRepository;
+        this.verificationActRepository = verificationActRepository;
     }
 
     @Override
@@ -80,6 +91,11 @@ public class FundServiceImpl implements FundService {
 
         fund.setStatus(targetStatus);
 
+        SystemAdmin admin = systemAdminRepository.findById(request.adminId())
+                .orElseThrow(() -> new SystemAdminNotFoundException(request.adminId()));
+        verificationActRepository.save(
+                new VerificationAct(fund, admin, LocalDate.now(), targetStatus, request.comment()));
+
         transitionHandlers.stream()
                 .filter(handler -> handler.supports(targetStatus))
                 .forEach(handler -> handler.handle(fund));
@@ -93,6 +109,9 @@ public class FundServiceImpl implements FundService {
     @Transactional
     public FundResponse updateFundDescription(Long id, FundDescriptUpdateRequest request) {
         Fund fund = getFundOrThrow(id);
+        if (fund.getStatus() != FundStatus.APPROVED) {
+            throw new FundNotApprovedException(id);
+        }
         fund.setDescription(request.description());
         return mapFundToDto(fund);
     }
@@ -102,9 +121,8 @@ public class FundServiceImpl implements FundService {
     public FundResponse updateFund(Long id, FundUpdateRequest request) {
         Fund fund = getFundOrThrow(id);
         fund.setFundName(request.fundName());
-        fund.setBankDetail(request.bankDetail());
         fund.setRegisteredAddress(request.registeredAddress());
-        fund.setActualAddress(request.actualAddress());
+        fund.setActualAddress(resolveActualAddress(request.actualAddress(), request.registeredAddress()));
         fund.setPhoneNumber(request.phoneNumber());
         fund.setCorpEmail(request.corpEmail());
         fund.setWebsite(request.website());
@@ -122,6 +140,7 @@ public class FundServiceImpl implements FundService {
         if (requestRepository.existsByFundId(id)) {
             throw new FundHasRequestsException(id);
         }
+        verificationActRepository.deleteByFundId(id);
         fundRepository.delete(fund);
     }
 
@@ -157,7 +176,7 @@ public class FundServiceImpl implements FundService {
                 request.edrpou(),
                 request.bankDetail(),
                 request.registeredAddress(),
-                request.actualAddress(),
+                resolveActualAddress(request.actualAddress(), request.registeredAddress()),
                 request.phoneNumber(),
                 request.corpEmail(),
                 request.website(),
@@ -177,5 +196,9 @@ public class FundServiceImpl implements FundService {
                 .orElseThrow(() -> new FundRepresentativeNotFoundException(representativeId));
 
         fund.removeRepresentative(representative);
+    }
+
+    private String resolveActualAddress(String actualAddress, String registeredAddress) {
+        return actualAddress == null || actualAddress.isBlank() ? registeredAddress : actualAddress;
     }
 }
