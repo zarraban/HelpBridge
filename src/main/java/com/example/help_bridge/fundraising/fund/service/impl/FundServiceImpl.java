@@ -8,7 +8,9 @@ import com.example.help_bridge.fundraising.fund.entity.Fund;
 import com.example.help_bridge.fundraising.fund.entity.FundStatus;
 import com.example.help_bridge.fundraising.fund.event.FundStatusChangedEvent;
 import com.example.help_bridge.fundraising.fund.exception.DuplicateFundException;
+import com.example.help_bridge.fundraising.fund.exception.FundHasRequestsException;
 import com.example.help_bridge.fundraising.fund.exception.FundNotFoundException;
+import com.example.help_bridge.fundraising.request.repository.RequestRepository;
 import com.example.help_bridge.fundraising.fund.exception.InvalidFundStatusTransitionException;
 import com.example.help_bridge.fundraising.fund.repository.FundRepository;
 import com.example.help_bridge.fundraising.fund.service.FundService;
@@ -29,13 +31,16 @@ public class FundServiceImpl implements FundService {
     private final FundRepository fundRepository;
     private final List<FundStatusTransitionHandler> transitionHandlers;
     private final ApplicationEventPublisher eventPublisher;
+    private final RequestRepository requestRepository;
 
     public FundServiceImpl(FundRepository fundRepository,
                            List<FundStatusTransitionHandler> transitionHandlers,
-                           ApplicationEventPublisher eventPublisher) {
+                           ApplicationEventPublisher eventPublisher,
+                           RequestRepository requestRepository) {
         this.fundRepository = fundRepository;
         this.transitionHandlers = transitionHandlers;
         this.eventPublisher = eventPublisher;
+        this.requestRepository = requestRepository;
     }
 
     @Override
@@ -113,7 +118,11 @@ public class FundServiceImpl implements FundService {
     @Override
     @Transactional
     public void deleteFundById(Long id) {
-         fundRepository.delete(getFundOrThrow(id));
+        Fund fund = getFundOrThrow(id);
+        if (requestRepository.existsByFundId(id)) {
+            throw new FundHasRequestsException(id);
+        }
+        fundRepository.delete(fund);
     }
 
     private Fund getFundOrThrow(Long id) {
