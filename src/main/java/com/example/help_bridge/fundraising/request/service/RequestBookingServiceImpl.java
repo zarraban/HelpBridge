@@ -6,7 +6,6 @@ import com.example.help_bridge.fundraising.fund.exception.FundNotFoundException;
 import com.example.help_bridge.fundraising.fund.repository.FundRepository;
 import com.example.help_bridge.fundraising.request.dto.request.RequestDto.RequestResponse;
 import com.example.help_bridge.fundraising.request.entity.Request;
-import com.example.help_bridge.fundraising.request.entity.RequestStatus;
 import com.example.help_bridge.fundraising.request.event.RequestBookedEvent;
 import com.example.help_bridge.fundraising.request.exception.FundNotApprovedException;
 import com.example.help_bridge.fundraising.request.exception.RequestNotFoundException;
@@ -41,9 +40,7 @@ public class RequestBookingServiceImpl implements RequestBookingService {
         if (fund.getStatus() != FundStatus.APPROVED) {
             throw new FundNotApprovedException(fundId);
         }
-
-        request.transitionTo(RequestStatus.IN_PROGRESS);
-        request.setFund(fund);
+        request.book(fund);
 
         eventPublisher.publishEvent(new RequestBookedEvent(requestId, fundId));
 

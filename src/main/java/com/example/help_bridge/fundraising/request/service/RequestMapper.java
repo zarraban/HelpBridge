@@ -12,6 +12,8 @@ final class RequestMapper {
     static RequestResponse toResponse(Request request) {
         return new RequestResponse(
                 request.getId(),
+                request.getRequester().getId(),
+                request.getFund() != null ? request.getFund().getId() : null,
                 request.getAssistanceType(),
                 request.getAmount(),
                 request.getDeadline(),

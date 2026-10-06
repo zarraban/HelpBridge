@@ -2,6 +2,7 @@ package com.example.help_bridge.fundraising.request.service;
 
 import com.example.help_bridge.fundraising.request.dto.request.RequestDto.CreateRequestRequest;
 import com.example.help_bridge.fundraising.request.dto.request.RequestDto.RequestResponse;
+import com.example.help_bridge.fundraising.request.dto.request.RequestDto.UpdateRequestRequest;
 import com.example.help_bridge.fundraising.request.entity.Request;
 import com.example.help_bridge.fundraising.request.entity.RequestStatus;
 import com.example.help_bridge.fundraising.request.exception.RequestNotFoundException;
@@ -55,7 +56,6 @@ public class RequestServiceImpl implements RequestService {
                 : requestRepository.findAllByStatusWithDetails(status);
         return requests.stream().map(RequestMapper::toResponse).toList();
     }
-
     @Override
     @Transactional(readOnly = true)
     public List<RequestResponse> getSharedPool() {
@@ -85,7 +85,6 @@ public class RequestServiceImpl implements RequestService {
                 .map(RequestMapper::toResponse)
                 .toList();
     }
-
     @Override
     @Transactional(readOnly = true)
     public RequestResponse getRequestById(Long id) {
@@ -95,7 +94,7 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
-    public RequestResponse updateRequest(Long id, CreateRequestRequest dto) {
+    public RequestResponse updateRequest(Long id, UpdateRequestRequest dto) {
         Request request = requestRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new RequestNotFoundException(id));
 
@@ -114,9 +113,9 @@ public class RequestServiceImpl implements RequestService {
 
     @Override
     public void deleteRequest(Long id) {
-        if (!requestRepository.existsById(id)) {
-            throw new RequestNotFoundException(id);
-        }
-        requestRepository.deleteById(id);
+        Request request = requestRepository.findById(id)
+                .orElseThrow(() -> new RequestNotFoundException(id));
+        request.ensureDeletable();
+        requestRepository.delete(request);
     }
 }

@@ -2,9 +2,11 @@ package com.example.help_bridge.fundraising.request.controller;
 
 import com.example.help_bridge.fundraising.request.dto.request.RequestDto.CreateRequestRequest;
 import com.example.help_bridge.fundraising.request.dto.request.RequestDto.RequestResponse;
+import com.example.help_bridge.fundraising.request.dto.request.RequestDto.UpdateRequestRequest;
 import com.example.help_bridge.fundraising.request.entity.RequestStatus;
 import com.example.help_bridge.fundraising.request.service.RequestService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -31,28 +33,26 @@ public class RequestController {
                 .toUri();
         return ResponseEntity.created(location).body(created);
     }
-
-    /** Усі запити; за потреби фільтр ?status=NEW */
     @GetMapping
-    public ResponseEntity<List<RequestResponse>> getAllRequests(
-            @RequestParam(required = false) RequestStatus status) {
+    public ResponseEntity<List<RequestResponse>> getRequests(
+            @RequestParam(required = false) RequestStatus status,
+            @RequestParam(required = false)
+            @Pattern(regexp = ".*\\S.*", message = "Institution name must not be blank")
+            String institutionName,
+            @RequestParam(required = false) Long requesterId) {
+
+        if (institutionName != null) {
+            return ResponseEntity.ok(requestService.searchByInstitution(institutionName));
+        }
+        if (requesterId != null) {
+            return ResponseEntity.ok(requestService.getRequestsByUser(requesterId));
+        }
         return ResponseEntity.ok(requestService.getAllRequests(status));
     }
 
     @GetMapping("/shared-pool")
     public ResponseEntity<List<RequestResponse>> getSharedPool() {
         return ResponseEntity.ok(requestService.getSharedPool());
-    }
-
-    /** Пошук за частиною назви закладу: /search?institution=лікарня */
-    @GetMapping("/search")
-    public ResponseEntity<List<RequestResponse>> searchByInstitution(@RequestParam String institution) {
-        return ResponseEntity.ok(requestService.searchByInstitution(institution));
-    }
-
-    @GetMapping("/by-user/{userId}")
-    public ResponseEntity<List<RequestResponse>> getRequestsByUser(@PathVariable Long userId) {
-        return ResponseEntity.ok(requestService.getRequestsByUser(userId));
     }
 
     @GetMapping("/{id}")
@@ -63,7 +63,7 @@ public class RequestController {
     @PutMapping("/{id}")
     public ResponseEntity<RequestResponse> updateRequest(
             @PathVariable Long id,
-            @RequestBody @Valid CreateRequestRequest request) {
+            @RequestBody @Valid UpdateRequestRequest request) {
         return ResponseEntity.ok(requestService.updateRequest(id, request));
     }
 

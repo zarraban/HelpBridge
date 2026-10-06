@@ -13,6 +13,7 @@ import com.example.help_bridge.fundraising.request.exception.InvalidRequestState
 import com.example.help_bridge.fundraising.request.exception.RequestNotFoundException;
 import com.example.help_bridge.fundraising.request.repository.RequestRepository;
 import com.example.help_bridge.fundraising.request.service.RequestBookingServiceImpl;
+import com.example.help_bridge.fundraising.user.entity.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,7 +50,7 @@ class RequestBookingServiceImplTest {
     }
 
     private Request newRequest() {
-        return new Request(null, "MEDICAL", BigDecimal.TEN,
+        return new Request(new User(), "MEDICAL", BigDecimal.TEN,
                 LocalDate.now().plusDays(5), "s", "n", "inst", "A-1", true);
     }
 
@@ -127,5 +128,24 @@ class RequestBookingServiceImplTest {
                 .isInstanceOf(FundNotFoundException.class);
 
         verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void bookRequest_responseContainsRequesterAndFundIds() {
+        User user = mock(User.class);
+        when(user.getId()).thenReturn(7L);
+        Request request = new Request(user, "MEDICAL", BigDecimal.TEN,
+                LocalDate.now().plusDays(5), "s", "n", "inst", "A-1", true);
+        request.approve();
+        Fund fund = mock(Fund.class);
+        when(fund.getStatus()).thenReturn(FundStatus.APPROVED);
+        when(fund.getId()).thenReturn(2L);
+        when(requestRepository.findByIdWithDetails(1L)).thenReturn(Optional.of(request));
+        when(fundRepository.findById(2L)).thenReturn(Optional.of(fund));
+
+        RequestResponse response = bookingService.bookRequest(1L, 2L);
+
+        assertThat(response.requesterId()).isEqualTo(7L);
+        assertThat(response.fundId()).isEqualTo(2L);
     }
 }

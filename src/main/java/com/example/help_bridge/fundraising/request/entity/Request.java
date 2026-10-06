@@ -19,11 +19,13 @@ public class Request {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Version
+    private Long version;
 
     @Column(nullable = false)
     private String assistanceType;
 
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
 
     @Column(nullable = false)
@@ -51,8 +53,8 @@ public class Request {
     @Column(nullable = false)
     private RequestStatus status;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private User requester;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -80,9 +82,14 @@ public class Request {
         this.createdAt = LocalDateTime.now();
         this.status = RequestStatus.PENDING_VERIFICATION;
     }
+    /** Редагувати можна лише заявку, яку адмін ще не перевірив. */
     public void updateDetails(String assistanceType, BigDecimal amount, LocalDate deadline,
                               String situationDescription, String needDescription,
                               String institutionName, String applicationNumber) {
+        if (status != RequestStatus.PENDING_VERIFICATION) {
+            throw new InvalidRequestStateException(
+                    "Request " + id + " can be edited only in PENDING_VERIFICATION, but is " + status);
+        }
         this.assistanceType = assistanceType;
         this.amount = amount;
         this.deadline = deadline;
@@ -91,10 +98,32 @@ public class Request {
         this.institutionName = institutionName;
         this.applicationNumber = applicationNumber;
     }
+    public void approve() {
+        transitionTo(RequestStatus.NEW);
+    }
+    public void book(Fund fund) {
+        Objects.requireNonNull(fund, "fund must not be null");
+        transitionTo(RequestStatus.IN_PROGRESS);
+        this.fund = fund;
+    }
+    public void ensureRejectable() {
+        if (status != RequestStatus.PENDING_VERIFICATION) {
+            throw new InvalidRequestStateException(
+                    "Request " + id + " can be rejected only in PENDING_VERIFICATION, but is " + status);
+        }
+    }
+    public void ensureDeletable() {
+        if (status != RequestStatus.PENDING_VERIFICATION && status != RequestStatus.NEW) {
+            throw new InvalidRequestStateException(
+                    "Request " + id + " cannot be deleted in status " + status);
+        }
+    }
+
     public void addDocument(RequestDocument document) {
         documents.add(document);
         document.setRequest(this);
     }
+
     public void removeDocument(RequestDocument document) {
         documents.remove(document);
         document.setRequest(null);
@@ -110,6 +139,7 @@ public class Request {
     public boolean isExpired() {
         return deadline.isBefore(LocalDate.now()) && status != RequestStatus.CLOSED;
     }
+
     public Long getId() { return id; }
     public String getAssistanceType() { return assistanceType; }
     public BigDecimal getAmount() { return amount; }
@@ -122,20 +152,18 @@ public class Request {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public RequestStatus getStatus() { return status; }
     public User getRequester() { return requester; }
-    public void setRequester(User requester) { this.requester = requester; }
     public Fund getFund() { return fund; }
-    public void setFund(Fund fund) { this.fund = fund; }
     public List<RequestDocument> getDocuments() { return documents; }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Request request)) return false;
-        return Objects.equals(id, request.id);
+        if (!(o instanceof Request other)) return false;
+        return id != null && id.equals(other.getId());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return Request.class.hashCode();
     }
 }
