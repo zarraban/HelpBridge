@@ -92,6 +92,29 @@ class VolunteerStatisticsControllerTest {
     }
 
     @Test
+    void returns400WhenFromIsAfterTo() throws Exception {
+        mockMvc.perform(get(URL, VOLUNTEER_ID)
+                        .param("from", "2026-09-01")
+                        .param("to", "2026-01-01"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.periodValid").value("Parameter 'from' must not be after 'to'"));
+
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void returnsStatisticsWhenFromEqualsTo() throws Exception {
+        VolunteerStatisticsRequest period = new VolunteerStatisticsRequest(FROM, FROM);
+        when(service.getClosedFundraisersStatistics(VOLUNTEER_ID, period))
+                .thenReturn(new VolunteerStatisticsResponse(VOLUNTEER_ID, FROM, FROM, 1));
+
+        mockMvc.perform(get(URL, VOLUNTEER_ID)
+                        .param("from", "2026-01-01")
+                        .param("to", "2026-01-01"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void returns400WhenDateHasWrongFormat() throws Exception {
         mockMvc.perform(get(URL, VOLUNTEER_ID)
                         .param("from", "01.01.2026")

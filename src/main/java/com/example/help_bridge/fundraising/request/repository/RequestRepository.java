@@ -21,6 +21,8 @@ public interface RequestRepository extends JpaRepository<Request, Long> {
 
     boolean existsByApplicationNumber(String applicationNumber);
 
+    boolean existsByFundId(Long fundId);
+
     long countByStatus(RequestStatus status);
 
     @Query("SELECT DISTINCT r FROM Request r " +

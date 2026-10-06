@@ -1,5 +1,6 @@
 package com.example.help_bridge.users.volunteer.dto.request;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -17,4 +18,8 @@ public record VolunteerStatisticsRequest(
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
         LocalDate to
 ) {
+    @AssertTrue(message = "Parameter 'from' must not be after 'to'")
+    public boolean isPeriodValid() {
+        return from == null || to == null || !from.isAfter(to);
+    }
 }

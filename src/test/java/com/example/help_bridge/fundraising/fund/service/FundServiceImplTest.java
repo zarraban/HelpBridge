@@ -8,7 +8,9 @@ import com.example.help_bridge.fundraising.fund.entity.Fund;
 import com.example.help_bridge.fundraising.fund.entity.FundStatus;
 import com.example.help_bridge.fundraising.fund.event.FundStatusChangedEvent;
 import com.example.help_bridge.fundraising.fund.exception.DuplicateFundException;
+import com.example.help_bridge.fundraising.fund.exception.FundHasRequestsException;
 import com.example.help_bridge.fundraising.fund.exception.FundNotFoundException;
+import com.example.help_bridge.fundraising.request.repository.RequestRepository;
 import com.example.help_bridge.fundraising.fund.exception.InvalidFundStatusTransitionException;
 import com.example.help_bridge.fundraising.fund.repository.FundRepository;
 import com.example.help_bridge.fundraising.fund.service.impl.FundServiceImpl;
@@ -47,6 +49,9 @@ class FundServiceImplTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private RequestRepository requestRepository;
+
     private FundServiceImpl fundService;
 
     @BeforeEach
@@ -54,7 +59,8 @@ class FundServiceImplTest {
         fundService = new FundServiceImpl(
                 fundRepository,
                 List.of(approvedHandler, rejectedHandler),
-                eventPublisher
+                eventPublisher,
+                requestRepository
         );
     }
 
@@ -91,8 +97,8 @@ class FundServiceImplTest {
         List<FundResponse> result = fundService.getAllFunds();
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).fundName()).isEqualTo("Help Bridge");
-        assertThat(result.get(0).representatives()).isEmpty();
+        assertThat(result.getFirst().fundName()).isEqualTo("Help Bridge");
+        assertThat(result.getFirst().representatives()).isEmpty();
     }
 
     @Test
@@ -188,6 +194,18 @@ class FundServiceImplTest {
         fundService.deleteFundById(1L);
 
         verify(fundRepository).delete(fund);
+    }
+
+    @Test
+    void deleteFundById_throwsConflict_whenFundHasRequests() {
+        Fund fund = pendingFund();
+        when(fundRepository.findByIdWithRepresentatives(1L)).thenReturn(Optional.of(fund));
+        when(requestRepository.existsByFundId(1L)).thenReturn(true);
+
+        assertThatThrownBy(() -> fundService.deleteFundById(1L))
+                .isInstanceOf(FundHasRequestsException.class);
+
+        verify(fundRepository, never()).delete(any());
     }
 
     @Test

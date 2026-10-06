@@ -1,7 +1,9 @@
 package com.example.help_bridge.common.exception.handler;
 
+import com.example.help_bridge.fundraising.fund.exception.FundHasRequestsException;
 import com.example.help_bridge.fundraising.fund.exception.FundNotFoundException;
 import com.example.help_bridge.fundraising.fund.exception.InvalidFundStatusTransitionException;
+import com.example.help_bridge.fundraising.request.exception.RequesterNotFoundException;
 import com.example.help_bridge.users.donor.exception.DonorNotFoundException;
 import com.example.help_bridge.fundraising.fundraiser.exception.AssignmentNotFoundException;
 import com.example.help_bridge.fundraising.fundraiser.exception.FundraiserNotFoundException;
@@ -16,6 +18,8 @@ import com.example.help_bridge.fundraising.request.exception.InvalidRequestState
 import com.example.help_bridge.fundraising.request.exception.FundNotApprovedException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.validation.FieldError;
@@ -40,11 +44,15 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleUnhandledException(Exception ex) {
         if (ex instanceof ErrorResponse errorResponse) {
             return errorResponse.getBody();
         }
+
+        log.error("Unhandled exception", ex);
 
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
                 HttpStatus.INTERNAL_SERVER_ERROR,
@@ -173,7 +181,8 @@ public class GlobalExceptionHandler {
             VolunteerNotFoundException.class,
             FundNotFoundException.class,
             RequestNotFoundException.class,
-            FundRepresentativeNotFoundException.class
+            FundRepresentativeNotFoundException.class,
+            RequesterNotFoundException.class
     })
     public ProblemDetail handleNotFoundDomainExceptions(RuntimeException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
@@ -195,6 +204,18 @@ public class GlobalExceptionHandler {
 
         problemDetail.setTitle("Invalid State Transition");
         problemDetail.setType(URI.create("https://api.example.com/errors/invalid-state"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler(FundHasRequestsException.class)
+    public ProblemDetail handleFundHasRequests(FundHasRequestsException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                ex.getMessage()
+        );
+        problemDetail.setTitle("Fund Has Requests");
+        problemDetail.setType(URI.create("https://api.example.com/errors/fund-has-requests"));
         problemDetail.setProperty("timestamp", Instant.now());
         return problemDetail;
     }
