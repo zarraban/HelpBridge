@@ -1,8 +1,8 @@
 package com.example.help_bridge.fundraising.fund.controller;
 
 import com.example.help_bridge.fundraising.fund.dto.request.FundCreateRequest;
-import com.example.help_bridge.fundraising.fund.dto.response.FundResponse;
 import com.example.help_bridge.fundraising.fund.dto.request.FundStatusUpdateRequest;
+import com.example.help_bridge.fundraising.fund.dto.response.FundResponse;
 import com.example.help_bridge.fundraising.fund.entity.FundStatus;
 import com.example.help_bridge.fundraising.fund.service.FundService;
 import org.junit.jupiter.api.Test;
@@ -67,12 +67,11 @@ class FundControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1));
     }
+
     @Test
     void createFund_ShouldReturnResponse() throws Exception {
         String jsonRequest = """
                 {
-                    "fundRepresName": "Daria",
-                    "fundRepresSurname": "Chorna",
                     "fundName": "Help Fund",
                     "edrpou": "12345678",
                     "bankDetail": "Bank Details",

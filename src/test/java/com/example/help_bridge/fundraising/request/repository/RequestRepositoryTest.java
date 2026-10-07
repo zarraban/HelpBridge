@@ -203,4 +203,22 @@ class RequestRepositoryTest {
 
         assertThat(documentCount()).isZero();
     }
+
+    @Test
+    void findByIdWithDetails_loadsDocumentsInSingleQuery() {
+        Request request = newRequest("inst");
+        request.addDocument(new RequestDocument("a.pdf", "http://x/a"));
+        request.addDocument(new RequestDocument("b.pdf", "http://x/b"));
+        em.persist(request);
+        em.flush();
+        em.clear();
+
+        Statistics statistics = statistics();
+        statistics.clear();
+
+        Request loaded = requestRepository.findByIdWithDetails(request.getId()).orElseThrow();
+
+        assertThat(loaded.getDocuments()).hasSize(2);
+        assertThat(statistics.getPrepareStatementCount()).isEqualTo(1);
+    }
 }

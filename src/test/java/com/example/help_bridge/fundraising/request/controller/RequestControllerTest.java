@@ -2,6 +2,7 @@ package com.example.help_bridge.fundraising.request.controller;
 
 import com.example.help_bridge.fundraising.request.dto.request.RequestDto.CreateRequestRequest;
 import com.example.help_bridge.fundraising.request.dto.request.RequestDto.RequestResponse;
+import com.example.help_bridge.fundraising.request.dto.request.RequestDto.UpdateRequestRequest;
 import com.example.help_bridge.fundraising.request.entity.RequestStatus;
 import com.example.help_bridge.fundraising.request.service.RequestService;
 import org.junit.jupiter.api.AfterEach;
@@ -18,6 +19,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,6 +27,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -55,7 +58,7 @@ class RequestControllerTest {
 
     private CreateRequestRequest validRequest() {
         return new CreateRequestRequest(
-                null,
+                1L,
                 "MEDICAL",
                 new BigDecimal("1500.00"),
                 LocalDate.now().plusDays(10),
@@ -67,9 +70,21 @@ class RequestControllerTest {
         );
     }
 
+    private UpdateRequestRequest validUpdate() {
+        return new UpdateRequestRequest(
+                "SURGERY",
+                new BigDecimal("2000.00"),
+                LocalDate.now().plusDays(20),
+                "New situation",
+                "New need",
+                "New Institution",
+                "APP-002"
+        );
+    }
+
     private RequestResponse sampleResponse() {
         return new RequestResponse(
-                1L, "MEDICAL", new BigDecimal("1500.00"), LocalDate.now().plusDays(10),
+                1L, 7L, null, "MEDICAL", new BigDecimal("1500.00"), LocalDate.now().plusDays(10),
                 "Situation description", "Need description", "Some Institution",
                 "APP-001", RequestStatus.PENDING_VERIFICATION, false,
                 LocalDateTime.now(), List.of()
@@ -77,7 +92,7 @@ class RequestControllerTest {
     }
 
     @Test
-    void createRequest_withValidBody_returnsCreatedResponse() {
+    void createRequest_withValidBody_returnsCreatedWithLocation() {
         CreateRequestRequest requestDto = validRequest();
         RequestResponse expectedResponse = sampleResponse();
 
@@ -88,6 +103,8 @@ class RequestControllerTest {
         assertNotNull(response);
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals(expectedResponse, response.getBody());
+        assertEquals(URI.create("http://localhost:8080/api/v1/requests/1"),
+                response.getHeaders().getLocation());
         verify(requestService).createRequest(requestDto);
     }
 
@@ -102,38 +119,51 @@ class RequestControllerTest {
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(expectedList, response.getBody());
-        assertEquals(1, response.getBody().size());
         verify(requestService).getSharedPool();
     }
 
     @Test
-    void getAllRequests_withoutStatus_returnsAll() {
+    void getRequests_withoutFilters_returnsAll() {
         List<RequestResponse> expectedList = List.of(sampleResponse());
         when(requestService.getAllRequests(null)).thenReturn(expectedList);
 
-        ResponseEntity<List<RequestResponse>> response = requestController.getAllRequests(null);
+        ResponseEntity<List<RequestResponse>> response = requestController.getRequests(null, null, null);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(expectedList, response.getBody());
     }
 
     @Test
-    void searchByInstitution_returnsMatches() {
+    void getRequests_withStatus_filtersByStatus() {
+        List<RequestResponse> expectedList = List.of(sampleResponse());
+        when(requestService.getAllRequests(RequestStatus.NEW)).thenReturn(expectedList);
+
+        ResponseEntity<List<RequestResponse>> response =
+                requestController.getRequests(RequestStatus.NEW, null, null);
+
+        assertEquals(expectedList, response.getBody());
+    }
+
+    @Test
+    void getRequests_withInstitutionName_searchesByInstitution() {
         List<RequestResponse> expectedList = List.of(sampleResponse());
         when(requestService.searchByInstitution("hospital")).thenReturn(expectedList);
 
-        ResponseEntity<List<RequestResponse>> response = requestController.searchByInstitution("hospital");
+        ResponseEntity<List<RequestResponse>> response =
+                requestController.getRequests(null, "hospital", null);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(expectedList, response.getBody());
+        verify(requestService, never()).getAllRequests(any());
     }
 
     @Test
-    void getRequestsByUser_returnsUserRequests() {
+    void getRequests_withRequesterId_returnsUserRequests() {
         List<RequestResponse> expectedList = List.of(sampleResponse());
         when(requestService.getRequestsByUser(7L)).thenReturn(expectedList);
 
-        ResponseEntity<List<RequestResponse>> response = requestController.getRequestsByUser(7L);
+        ResponseEntity<List<RequestResponse>> response =
+                requestController.getRequests(null, null, 7L);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(expectedList, response.getBody());
@@ -142,7 +172,6 @@ class RequestControllerTest {
     @Test
     void getRequestById_returnsRequest() {
         RequestResponse expectedResponse = sampleResponse();
-
         when(requestService.getRequestById(1L)).thenReturn(expectedResponse);
 
         ResponseEntity<RequestResponse> response = requestController.getRequestById(1L);
@@ -153,9 +182,8 @@ class RequestControllerTest {
 
     @Test
     void updateRequest_returnsUpdatedRequest() {
-        CreateRequestRequest requestDto = validRequest();
+        UpdateRequestRequest requestDto = validUpdate();
         RequestResponse expectedResponse = sampleResponse();
-
         when(requestService.updateRequest(1L, requestDto)).thenReturn(expectedResponse);
 
         ResponseEntity<RequestResponse> response = requestController.updateRequest(1L, requestDto);

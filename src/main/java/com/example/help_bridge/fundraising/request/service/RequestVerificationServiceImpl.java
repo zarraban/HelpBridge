@@ -2,11 +2,9 @@ package com.example.help_bridge.fundraising.request.service;
 
 import com.example.help_bridge.fundraising.request.dto.request.RequestVerificationDto;
 import com.example.help_bridge.fundraising.request.entity.Request;
-import com.example.help_bridge.fundraising.request.entity.RequestStatus;
 import com.example.help_bridge.fundraising.request.exception.RequestNotFoundException;
 import com.example.help_bridge.fundraising.request.repository.RequestRepository;
 import org.springframework.stereotype.Service;
-
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -25,9 +23,10 @@ public class RequestVerificationServiceImpl implements RequestVerificationServic
                 .orElseThrow(() -> new RequestNotFoundException(id));
 
         if (Boolean.TRUE.equals(reviewRequest.approved())) {
-            request.transitionTo(RequestStatus.NEW);
+            request.approve();
             requestRepository.save(request);
         } else {
+            request.ensureRejectable();
             requestRepository.deleteById(id);
         }
     }

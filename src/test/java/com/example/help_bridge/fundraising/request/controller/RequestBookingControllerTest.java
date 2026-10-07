@@ -36,7 +36,7 @@ class RequestBookingControllerTest {
 
     private RequestResponse sampleResponse(RequestStatus status) {
         return new RequestResponse(
-                1L, "MEDICAL", new BigDecimal("1500.00"), LocalDate.now().plusDays(10),
+                1L, 7L, 2L, "MEDICAL", new BigDecimal("1500.00"), LocalDate.now().plusDays(10),
                 "Situation description", "Need description", "Some Institution",
                 "APP-001", status, false, LocalDateTime.now(), List.of()
         );

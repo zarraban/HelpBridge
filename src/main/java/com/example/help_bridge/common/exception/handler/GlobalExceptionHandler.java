@@ -1,5 +1,6 @@
 package com.example.help_bridge.common.exception.handler;
 
+import com.example.help_bridge.fundraising.request.exception.RequestDocumentNotFoundException;
 import com.example.help_bridge.fundraising.fund.exception.FundHasRequestsException;
 import com.example.help_bridge.fundraising.fund.exception.FundNotFoundException;
 import com.example.help_bridge.fundraising.fund.exception.InvalidFundStatusTransitionException;
@@ -23,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.validation.FieldError;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -182,7 +184,8 @@ public class GlobalExceptionHandler {
             FundNotFoundException.class,
             RequestNotFoundException.class,
             FundRepresentativeNotFoundException.class,
-            RequesterNotFoundException.class
+            RequesterNotFoundException.class,
+            RequestDocumentNotFoundException.class
     })
     public ProblemDetail handleNotFoundDomainExceptions(RuntimeException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
@@ -300,6 +303,18 @@ public class GlobalExceptionHandler {
         );
         problemDetail.setTitle("Admin Has Verification Acts");
         problemDetail.setType(URI.create("https://api.example.com/errors/admin-has-verification-acts"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ProblemDetail handleOptimisticLock(ObjectOptimisticLockingFailureException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                "The resource was modified by another request. Please retry."
+        );
+        problemDetail.setTitle("Concurrent Modification");
+        problemDetail.setType(URI.create("https://api.example.com/errors/concurrent-modification"));
         problemDetail.setProperty("timestamp", Instant.now());
         return problemDetail;
     }

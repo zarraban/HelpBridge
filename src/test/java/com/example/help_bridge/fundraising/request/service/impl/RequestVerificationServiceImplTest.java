@@ -3,6 +3,7 @@ package com.example.help_bridge.fundraising.request.service.impl;
 import com.example.help_bridge.fundraising.request.dto.request.RequestVerificationDto;
 import com.example.help_bridge.fundraising.request.entity.Request;
 import com.example.help_bridge.fundraising.request.entity.RequestStatus;
+import com.example.help_bridge.fundraising.request.exception.InvalidRequestStateException;
 import com.example.help_bridge.fundraising.request.exception.RequestNotFoundException;
 import com.example.help_bridge.fundraising.request.repository.RequestRepository;
 import com.example.help_bridge.fundraising.request.service.RequestVerificationServiceImpl;
@@ -53,7 +54,32 @@ class RequestVerificationServiceImplTest {
 
         verificationService.reviewRequest(1L, new RequestVerificationDto(false, "fraud"));
 
-        verify(requestRepository).deleteById(anyLong());
+        verify(requestRepository).deleteById(1L);
+        verify(requestRepository, never()).save(any());
+    }
+
+    @Test
+    void reviewRequest_whenRejectingAlreadyBookedRequest_throwsAndKeepsIt() {
+        pendingRequest.approve();
+        pendingRequest.transitionTo(RequestStatus.IN_PROGRESS);
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(pendingRequest));
+
+        assertThatThrownBy(() ->
+                verificationService.reviewRequest(1L, new RequestVerificationDto(false, "late")))
+                .isInstanceOf(InvalidRequestStateException.class);
+
+        verify(requestRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void reviewRequest_whenApprovingAlreadyApprovedRequest_throwsInvalidState() {
+        pendingRequest.approve();
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(pendingRequest));
+
+        assertThatThrownBy(() ->
+                verificationService.reviewRequest(1L, new RequestVerificationDto(true, null)))
+                .isInstanceOf(InvalidRequestStateException.class);
+
         verify(requestRepository, never()).save(any());
     }
 
