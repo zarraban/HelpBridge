@@ -15,8 +15,13 @@ import com.example.help_bridge.fundraising.fund.exception.InvalidFundStatusTrans
 import com.example.help_bridge.fundraising.fund.repository.FundRepository;
 import com.example.help_bridge.fundraising.fund.service.impl.FundServiceImpl;
 import com.example.help_bridge.fundraising.fund.strategy.FundStatusTransitionHandler;
+import com.example.help_bridge.fundraising.verification.entity.VerificationAct;
+import com.example.help_bridge.fundraising.verification.repository.VerificationActRepository;
 import com.example.help_bridge.users.fundrepresentative.entity.FundRepresentative;
 import com.example.help_bridge.users.fundrepresentative.exception.FundRepresentativeNotFoundException;
+import com.example.help_bridge.users.systemadmin.entity.SystemAdmin;
+import com.example.help_bridge.users.systemadmin.exception.SystemAdminNotFoundException;
+import com.example.help_bridge.users.systemadmin.repository.SystemAdminRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,13 +59,22 @@ class FundServiceImplTest {
 
     private FundServiceImpl fundService;
 
+    @Mock
+    private SystemAdminRepository systemAdminRepository;
+
+    @Mock
+    private VerificationActRepository verificationActRepository;
+
+
     @BeforeEach
     void setUp() {
         fundService = new FundServiceImpl(
                 fundRepository,
                 List.of(approvedHandler, rejectedHandler),
                 eventPublisher,
-                requestRepository
+                requestRepository,
+                systemAdminRepository,
+                verificationActRepository
         );
     }
 
@@ -70,6 +84,10 @@ class FundServiceImplTest {
         fund.setFundName("Help Bridge");
         fund.setStatus(FundStatus.PENDING_APPROVAL);
         return fund;
+    }
+
+    private SystemAdmin admin() {
+        return new SystemAdmin("admin@mail.com", "hash", "Іван", "Адмін");
     }
 
     @Test
@@ -143,12 +161,14 @@ class FundServiceImplTest {
         when(fundRepository.findByIdWithRepresentatives(1L)).thenReturn(Optional.of(fund));
         when(approvedHandler.supports(FundStatus.APPROVED)).thenReturn(true);
         when(rejectedHandler.supports(FundStatus.APPROVED)).thenReturn(false);
+        when(systemAdminRepository.findById(1L)).thenReturn(Optional.of(admin()));
 
-        FundResponse response = fundService.updateFundStatus(1L, new FundStatusUpdateRequest(FundStatus.APPROVED));
+        FundResponse response = fundService.updateFundStatus(1L, new FundStatusUpdateRequest(FundStatus.APPROVED, 1L, null));
 
         assertThat(response.status()).isEqualTo(FundStatus.APPROVED);
         verify(approvedHandler).handle(fund);
         verify(rejectedHandler, never()).handle(any());
+        verify(verificationActRepository).save(any(VerificationAct.class));
 
         ArgumentCaptor<FundStatusChangedEvent> captor = ArgumentCaptor.forClass(FundStatusChangedEvent.class);
         verify(eventPublisher).publishEvent(captor.capture());
@@ -162,23 +182,25 @@ class FundServiceImplTest {
         fund.setStatus(FundStatus.APPROVED);
         when(fundRepository.findByIdWithRepresentatives(1L)).thenReturn(Optional.of(fund));
 
-        assertThatThrownBy(() -> fundService.updateFundStatus(1L, new FundStatusUpdateRequest(FundStatus.REJECTED)))
+        assertThatThrownBy(() -> fundService.updateFundStatus(1L, new FundStatusUpdateRequest(FundStatus.REJECTED, 1L, null)))
                 .isInstanceOf(InvalidFundStatusTransitionException.class);
 
         verify(eventPublisher, never()).publishEvent(any());
+        verify(verificationActRepository, never()).save(any());
     }
 
     @Test
     void updateFundStatus_throwsNotFound_whenFundMissing() {
         when(fundRepository.findByIdWithRepresentatives(42L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> fundService.updateFundStatus(42L, new FundStatusUpdateRequest(FundStatus.APPROVED)))
+        assertThatThrownBy(() -> fundService.updateFundStatus(42L, new FundStatusUpdateRequest(FundStatus.APPROVED, 1L, null)))
                 .isInstanceOf(FundNotFoundException.class);
     }
 
     @Test
     void updateFundDescription_updatesDescription() {
         Fund fund = pendingFund();
+        fund.setStatus(FundStatus.APPROVED);
         when(fundRepository.findByIdWithRepresentatives(1L)).thenReturn(Optional.of(fund));
 
         FundResponse response = fundService.updateFundDescription(1L, new FundDescriptUpdateRequest("New description"));
@@ -194,6 +216,7 @@ class FundServiceImplTest {
         fundService.deleteFundById(1L);
 
         verify(fundRepository).delete(fund);
+        verify(verificationActRepository).deleteByFundId(1L);
     }
 
     @Test
@@ -206,6 +229,7 @@ class FundServiceImplTest {
                 .isInstanceOf(FundHasRequestsException.class);
 
         verify(fundRepository, never()).delete(any());
+        verify(verificationActRepository, never()).deleteByFundId(any());
     }
 
     @Test
@@ -248,5 +272,16 @@ class FundServiceImplTest {
 
         assertThatThrownBy(() -> fundService.removeRepresentative(1L, 10L))
                 .isInstanceOf(FundRepresentativeNotFoundException.class);
+    }
+
+    @Test
+    void updateFundStatus_throwsAdminNotFound_whenAdminMissing() {
+        when(fundRepository.findByIdWithRepresentatives(1L)).thenReturn(Optional.of(pendingFund()));
+        when(systemAdminRepository.findById(5L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> fundService.updateFundStatus(1L, new FundStatusUpdateRequest(FundStatus.APPROVED, 5L, null)))
+                .isInstanceOf(SystemAdminNotFoundException.class);
+
+        verify(verificationActRepository, never()).save(any());
     }
 }

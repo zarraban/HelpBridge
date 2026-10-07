@@ -98,10 +98,12 @@ class FundControllerTest {
     @Test
     void updateFundStatus_ShouldReturnUpdatedFund() throws Exception {
         String jsonRequest = """
-                {
-                    "status": "APPROVED"
-                }
-                """;
+            {
+                "status": "APPROVED",
+                "adminId": 1,
+                "comment": "Documents verified"
+            }
+            """;
 
         when(service.updateFundStatus(any(Long.class), any(FundStatusUpdateRequest.class)))
                 .thenReturn(createSampleResponse());

@@ -8,7 +8,6 @@ import java.util.Map;
 
 public record FundUpdateRequest(
         @NotBlank @Size(max = 150) String fundName,
-        @NotBlank @Size(max = 500) String bankDetail,
         @NotBlank String registeredAddress,
         @NotBlank String actualAddress,
         @NotBlank @Size(max = 20) String phoneNumber,

@@ -1,6 +1,7 @@
 package com.example.help_bridge.fundraising.verification.entity;
 
 import com.example.help_bridge.fundraising.fund.entity.Fund;
+import com.example.help_bridge.fundraising.fund.entity.FundStatus;
 import com.example.help_bridge.users.systemadmin.entity.SystemAdmin;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -32,10 +33,19 @@ public class VerificationAct {
     @Column(nullable = false)
     private LocalDate dateOfVerification;
 
-    public VerificationAct(Fund fund, SystemAdmin systemAdmin, LocalDate dateOfVerification) {
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private FundStatus decision;
+
+    @Column(length = 1000)
+    private String comment;
+
+    public VerificationAct(Fund fund, SystemAdmin systemAdmin, LocalDate dateOfVerification, FundStatus decision, String comment) {
         this.fund = fund;
         this.systemAdmin = systemAdmin;
         this.dateOfVerification = dateOfVerification;
+        this.decision = decision;
+        this.comment = comment;
     }
 
     @Override
