@@ -12,4 +12,10 @@ public record FundRepresentativeRequest(
         @NotBlank @Size(max = 20) String phone,
         @NotBlank @Size(min = 8, max = 100) String password,
         @NotNull Long fundId
-) {}
+) {
+    @Override
+    public String toString() {
+        return "FundRepresentativeRequest[firstName=" + firstName + ", lastName=" + lastName
+                + ", email=" + email + ", phone=" + phone + ", password=****, fundId=" + fundId + "]";
+    }
+}

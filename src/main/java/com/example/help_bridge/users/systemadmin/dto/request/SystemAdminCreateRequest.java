@@ -22,4 +22,9 @@ public record SystemAdminCreateRequest(
         @Size(min = 2, max = 50, message = "Last name should be from 2 to 50 characters")
         String lastName
 ) {
+    @Override
+    public String toString() {
+        return "SystemAdminCreateRequest[email=" + email + ", password=****, firstName=" + firstName
+                + ", lastName=" + lastName + "]";
+    }
 }

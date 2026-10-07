@@ -25,7 +25,6 @@ public record FundCreateRequest(
         @Size(max = 255, message = "Address is too long")
         String registeredAddress,
 
-        @NotBlank(message = "This field is necessary")
         @Size(max = 255, message = "Address is too long")
         String actualAddress,
 
