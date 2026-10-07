@@ -1,0 +1,255 @@
+{
+  "info": {
+    "name": "HelpBridge - E2E: request to fund booking",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Create system admin",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.variables.set('uniq', String(Date.now()));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.test('Admin has id and email', () => {",
+              "  pm.expect(json.id).to.be.a('number');",
+              "  pm.expect(json.email).to.include('@');",
+              "});",
+              "pm.test('Password is not returned', () => pm.expect(json).to.not.have.property('password'));",
+              "pm.environment.set('adminId', json.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin{{uniq}}@helpbridge.test\",\n  \"password\": \"Passw0rd123\",\n  \"firstName\": \"Олександр\",\n  \"lastName\": \"Іваненко\"\n}"
+        },
+        "url": "{{baseUrl}}/api/system-admins"
+      }
+    },
+    {
+      "name": "2. Create fund",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.variables.set('uniq', String(Date.now()));",
+              "pm.variables.set('edrpou', String(Math.floor(10000000 + Math.random() * 90000000)));",
+              "pm.variables.set('phone', '+38050' + String(Math.floor(1000000 + Math.random() * 9000000)));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+              "pm.test('Location header present', () => pm.response.to.have.header('Location'));",
+              "const json = pm.response.json();",
+              "pm.test('Fund has id and name', () => {",
+              "  pm.expect(json.id).to.be.a('number');",
+              "  pm.expect(json.fundName).to.be.a('string');",
+              "});",
+              "pm.environment.set('fundId', json.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fundName\": \"Фонд Допомоги {{uniq}}\",\n  \"edrpou\": \"{{edrpou}}\",\n  \"bankDetail\": \"UA213223130000026007233566001\",\n  \"registeredAddress\": \"м. Київ, вул. Хрещатик, 1\",\n  \"actualAddress\": \"м. Київ, вул. Хрещатик, 1\",\n  \"phoneNumber\": \"{{phone}}\",\n  \"corpEmail\": \"fund{{uniq}}@helpbridge.test\",\n  \"website\": \"https://fund-help.org\",\n  \"socialMediaUrls\": {\n    \"facebook\": \"https://facebook.com/fundhelp\"\n  }\n}"
+        },
+        "url": "{{baseUrl}}/api/funds"
+      }
+    },
+    {
+      "name": "3. Approve fund (admin)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Fund id matches', () => pm.expect(json.id).to.eql(pm.environment.get('fundId')));",
+              "pm.test('Fund status changed', () => pm.expect(json.status).to.eql(pm.environment.get('fundApprovedStatus')));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"{{fundApprovedStatus}}\",\n  \"adminId\": {{adminId}},\n  \"comment\": \"Документи перевірено, фонд схвалено\"\n}"
+        },
+        "url": "{{baseUrl}}/api/funds/{{fundId}}/status"
+      }
+    },
+    {
+      "name": "4. Create help request",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const d = new Date();",
+              "d.setDate(d.getDate() + 30);",
+              "pm.variables.set('deadline', d.toISOString().slice(0, 10));",
+              "pm.variables.set('appNumber', 'APP-' + Date.now());"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.test('Request has id', () => pm.expect(json.id).to.be.a('number'));",
+              "pm.test('Requester id matches', () => pm.expect(String(json.requesterId)).to.eql(String(pm.environment.get('requesterId'))));",
+              "pm.test('Not booked yet', () => pm.expect(json.fundId).to.be.null);",
+              "pm.environment.set('requestId', json.id);",
+              "pm.environment.set('requestInitialStatus', json.status);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": {{requesterId}},\n  \"assistanceType\": \"MEDICAL\",\n  \"amount\": 15000.00,\n  \"deadline\": \"{{deadline}}\",\n  \"situationDescription\": \"Потрібне термінове лікування після травми\",\n  \"needDescription\": \"Оплата операції та реабілітації\",\n  \"institutionName\": \"Київська міська лікарня №1\",\n  \"applicationNumber\": \"{{appNumber}}\",\n  \"dataProcessingConsent\": true\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/requests"
+      }
+    },
+    {
+      "name": "5. Verify request (approve)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"approved\": true,\n  \"comment\": \"Документи підтверджено\"\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/requests/{{requestId}}/verification"
+      }
+    },
+    {
+      "name": "6. Book request by fund",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 202', () => pm.response.to.have.status(202));",
+              "const json = pm.response.json();",
+              "pm.test('Fund id is set', () => pm.expect(String(json.fundId)).to.eql(String(pm.environment.get('fundId'))));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fundId\": {{fundId}}\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/requests/{{requestId}}/fundraiser"
+      }
+    },
+    {
+      "name": "7. Get request and check result",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Same request returned', () => pm.expect(json.id).to.eql(pm.environment.get('requestId')));",
+              "pm.test('Request is linked to fund', () => pm.expect(String(json.fundId)).to.eql(String(pm.environment.get('fundId'))));",
+              "pm.test('Status changed after booking', () => pm.expect(json.status).to.not.eql(pm.environment.get('requestInitialStatus')));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/v1/requests/{{requestId}}"
+      }
+    },
+    {
+      "name": "8. Negative: invalid request body",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Problem detail title is Validation Error', () => pm.expect(json.title).to.eql('Validation Error'));",
+              "pm.test('Errors contain failed fields', () => {",
+              "  pm.expect(json.errors).to.have.property('assistanceType');",
+              "  pm.expect(json.errors).to.have.property('amount');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": {{requesterId}},\n  \"assistanceType\": \"\",\n  \"amount\": -5,\n  \"deadline\": \"2099-01-01\",\n  \"situationDescription\": \"x\",\n  \"needDescription\": \"x\",\n  \"institutionName\": \"x\",\n  \"applicationNumber\": \"x\",\n  \"dataProcessingConsent\": true\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/requests"
+      }
+    }
+  ]
+}
