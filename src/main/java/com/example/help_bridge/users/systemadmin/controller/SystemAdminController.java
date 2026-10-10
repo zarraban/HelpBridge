@@ -1,5 +1,6 @@
 package com.example.help_bridge.users.systemadmin.controller;
 
+import io.swagger.v3.oas.annotations.Parameter;
 import com.example.help_bridge.users.systemadmin.dto.request.SystemAdminCreateRequest;
 import com.example.help_bridge.users.systemadmin.dto.request.SystemAdminUpdateRequest;
 import com.example.help_bridge.users.systemadmin.dto.response.SystemAdminResponse;
@@ -39,7 +40,7 @@ public class SystemAdminController {
     @ApiResponse(responseCode = "200", description = "Результати пошуку")
     @GetMapping("/search")
     public ResponseEntity<List<SystemAdminResponse>> search(
-            @io.swagger.v3.oas.annotations.Parameter(description = "Прізвище", example = "Іваненко")
+            @Parameter(description = "Прізвище", example = "Іваненко")
             @RequestParam("lastName") String lastName) {
         return ResponseEntity.ok(service.searchByLastName(lastName));
     }
