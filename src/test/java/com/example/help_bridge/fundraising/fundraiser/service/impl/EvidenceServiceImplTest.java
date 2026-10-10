@@ -1,5 +1,6 @@
 package com.example.help_bridge.fundraising.fundraiser.service.impl;
 
+import com.example.help_bridge.fundraising.fundraiser.exception.EvidenceNotFoundException;
 import com.example.help_bridge.fundraising.fundraiser.exception.FundraiserNotFoundException;
 import com.example.help_bridge.fundraising.fundraiser.exception.InvalidEvidenceException;
 import com.example.help_bridge.fundraising.fundraiser.dto.request.AddEvidenceRequest;
@@ -117,7 +118,7 @@ class EvidenceServiceImplTest {
     void deleteEvidenceById_shouldThrowNotFound_whenMissing() {
         when(evidenceRepository.existsById(5L)).thenReturn(false);
 
-        assertThrows(com.example.help_bridge.fundraising.fundraiser.exception.EvidenceNotFoundException.class,
+        assertThrows(EvidenceNotFoundException.class,
                 () -> evidenceService.deleteEvidenceById(5L));
         verify(evidenceRepository, never()).deleteById(any());
     }
