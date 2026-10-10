@@ -9,6 +9,8 @@ import com.example.help_bridge.fundraising.fundraiser.dto.response.FundraiserAss
 import com.example.help_bridge.fundraising.fundraiser.dto.response.ReturnAssignmentResponse;
 import com.example.help_bridge.fundraising.fundraiser.entity.AssignmentStatus;
 import com.example.help_bridge.fundraising.fundraiser.entity.Fundraiser;
+import com.example.help_bridge.fundraising.fundraiser.entity.FundraiserStatus;
+import com.example.help_bridge.fundraising.fundraiser.spi.VolunteerDirectory;
 import com.example.help_bridge.fundraising.fundraiser.entity.FundraiserAssignment;
 import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserAssignmentRepository;
 import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserRepository;
@@ -32,12 +34,13 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
 
     private final FundraiserAssignmentRepository assignmentJpaRepository;
     private final FundraiserRepository FundraiserRepository;
+    private final VolunteerDirectory volunteerDirectory;
 
     @Override
     public CompleteAssignmentResponse completeAssignment(Long assignmentId, CompleteAssignmentRequest request) {
         FundraiserAssignment assignment = assignmentJpaRepository.findById(assignmentId)
                 .orElseThrow(() -> new AssignmentNotFoundException("Assignment with the specified ID was not found"));
-        
+
         if (!assignment.getStatus().canTransitionTo(AssignmentStatus.COMPLETED)) {
             throw new InvalidAssignmentStateException("Cannot transition assignment status from " + assignment.getStatus() + " to COMPLETED");
         }
@@ -45,10 +48,10 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
         assignment.setStatus(AssignmentStatus.COMPLETED);
         assignment.setFinishedAt(LocalDateTime.now());
         assignmentJpaRepository.save(assignment);
-        
+
         Fundraiser fundraiser = FundraiserRepository.findById(assignment.getFundraiserId())
                 .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with the specified ID was not found"));
-                
+
         int evidenceCount = fundraiser.getEvidences() == null ? 0 : fundraiser.getEvidences().size();
 
         return new CompleteAssignmentResponse(
@@ -74,7 +77,13 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
         assignment.setReturnReason(request.returnReason());
         assignment.setFinishedAt(LocalDateTime.now());
         assignmentJpaRepository.save(assignment);
-        
+
+        Fundraiser fundraiser = assignment.getFundraiser();
+        if (fundraiser != null && fundraiser.getStatus() == FundraiserStatus.IN_PROGRESS
+                && !assignmentJpaRepository.existsByFundraiserIdAndStatus(fundraiser.getId(), AssignmentStatus.ACTIVE)) {
+            fundraiser.setStatus(FundraiserStatus.PENDING_ASSIGNMENT);
+        }
+
         return new ReturnAssignmentResponse(
                 assignment.getId(), 
                 assignment.getFundraiserId(),
@@ -89,14 +98,28 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
         Fundraiser fundraiser = FundraiserRepository.findById(fundraiserId)
                 .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with the specified ID was not found"));
 
+        if (fundraiser.getStatus() == FundraiserStatus.CLOSED) {
+            throw new InvalidAssignmentStateException("Cannot assign a volunteer to a closed fundraiser");
+        }
+        volunteerDirectory.requireActiveVolunteer(request.volunteerId());
+        if (assignmentJpaRepository.existsByFundraiserIdAndVolunteerIdAndStatus(
+                fundraiserId, request.volunteerId(), AssignmentStatus.ACTIVE)) {
+            throw new InvalidAssignmentStateException("Volunteer " + request.volunteerId()
+                    + " already has an active assignment for this fundraiser");
+        }
+
         FundraiserAssignment assignment = new FundraiserAssignment();
         assignment.setFundraiser(fundraiser);
         assignment.setVolunteerId(request.volunteerId());
         assignment.setStatus(AssignmentStatus.ACTIVE);
         assignment.setAssignedAt(LocalDateTime.now());
-        
+
         FundraiserAssignment saved = assignmentJpaRepository.save(assignment);
-        
+
+        if (fundraiser.getStatus() == FundraiserStatus.PENDING_ASSIGNMENT) {
+            fundraiser.setStatus(FundraiserStatus.IN_PROGRESS);
+        }
+
         return new AssignVolunteerResponse(
                 saved.getId(), 
                 saved.getFundraiserId(),

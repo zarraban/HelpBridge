@@ -69,7 +69,7 @@ class FundraiserAssignmentControllerTest {
         ResponseEntity<AssignVolunteerResponse> result = assignmentController.assignVolunteerToFund(fundraiserId, request);
 
         verify(assignmentService, times(1)).assignVolunteerToFund(fundraiserId, request);
-        assertEquals(HttpStatus.OK, result.getStatusCode());
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
         assertEquals(response, result.getBody());
     }
 

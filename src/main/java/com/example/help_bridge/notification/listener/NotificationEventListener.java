@@ -40,7 +40,8 @@ public class NotificationEventListener {
                 .stream().map(DonorResponse::email)
                 .toList();
 
-        notificationService.scheduleEmails(emailToSent,
+        notificationService.scheduleEmails(event.fundraiserId(),
+                emailToSent,
                 event.subject(),
                 event.message());
 

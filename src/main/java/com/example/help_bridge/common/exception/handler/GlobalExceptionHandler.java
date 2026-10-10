@@ -276,12 +276,26 @@ public class GlobalExceptionHandler {
     }
     @ExceptionHandler(SystemAdminNotFoundException.class)
     public ProblemDetail handleSystemAdminNotFound(SystemAdminNotFoundException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                ex.getMessage()
+        );
+        problemDetail.setTitle("Resource Not Found");
+        problemDetail.setType(URI.create("https://api.example.com/errors/not-found"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
     }
 
     @ExceptionHandler(DuplicateSystemAdminException.class)
     public ProblemDetail handleDuplicateSystemAdmin(DuplicateSystemAdminException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                ex.getMessage()
+        );
+        problemDetail.setTitle("Resource Already Exists");
+        problemDetail.setType(URI.create("https://api.example.com/errors/duplicate-resource"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
     }
 
     @ExceptionHandler({

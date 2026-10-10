@@ -2,7 +2,9 @@ package com.example.help_bridge.fundraising.fundraiser.service.impl;
 
 import com.example.help_bridge.fundraising.fundraiser.exception.FundraiserNotFoundException;
 import com.example.help_bridge.fundraising.fundraiser.exception.EvidenceNotFoundException;
+import com.example.help_bridge.fundraising.fundraiser.entity.FundraiserStatus;
 import com.example.help_bridge.fundraising.fundraiser.exception.InvalidEvidenceException;
+import com.example.help_bridge.fundraising.fundraiser.exception.InvalidFundraiserStateException;
 import com.example.help_bridge.fundraising.fundraiser.dto.request.AddEvidenceRequest;
 import com.example.help_bridge.fundraising.fundraiser.dto.response.EvidenceResponse;
 import com.example.help_bridge.fundraising.fundraiser.entity.Evidence;
@@ -32,6 +34,10 @@ public class EvidenceServiceImpl implements EvidenceService {
     public EvidenceResponse addEvidenceToFundraiser(Long fundraiserId, AddEvidenceRequest request) {
         Fundraiser fundraiser = fundraiserRepository.findById(fundraiserId)
                 .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with ID " + fundraiserId + " not found"));
+
+        if (fundraiser.getStatus() == FundraiserStatus.CLOSED) {
+            throw new InvalidFundraiserStateException("Cannot add evidence to a closed fundraiser");
+        }
 
         Evidence evidence = new Evidence();
         evidence.setFundraiser(fundraiser);

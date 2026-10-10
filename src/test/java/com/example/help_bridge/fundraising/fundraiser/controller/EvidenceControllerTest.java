@@ -35,7 +35,7 @@ class EvidenceControllerTest {
         ResponseEntity<EvidenceResponse> result = evidenceController.addEvidenceToFundraiser(fundraiserId, request);
 
         verify(evidenceService, times(1)).addEvidenceToFundraiser(fundraiserId, request);
-        assertEquals(HttpStatus.OK, result.getStatusCode());
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
         assertEquals(response, result.getBody());
     }
 
@@ -45,7 +45,7 @@ class EvidenceControllerTest {
         List<EvidenceResponse> responses = List.of(response);
         when(evidenceService.getEvidencesByFundraiserId(fundraiserId)).thenReturn(responses);
 
-        ResponseEntity<List<EvidenceResponse>> result = evidenceController.addEvidenceToFundraiser(fundraiserId);
+        ResponseEntity<List<EvidenceResponse>> result = evidenceController.getEvidencesByFundraiserId(fundraiserId);
 
         verify(evidenceService, times(1)).getEvidencesByFundraiserId(fundraiserId);
         assertEquals(HttpStatus.OK, result.getStatusCode());

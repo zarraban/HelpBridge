@@ -13,6 +13,8 @@ import java.util.List;
 public interface FundraiserAssignmentRepository extends JpaRepository<FundraiserAssignment, Long> {
     List<FundraiserAssignment> findByFundraiserId(Long fundraiserId);
     List<FundraiserAssignment> findByVolunteerId(Long volunteerId);
+    boolean existsByFundraiserIdAndVolunteerIdAndStatus(Long fundraiserId, Long volunteerId, AssignmentStatus status);
+    boolean existsByFundraiserIdAndStatus(Long fundraiserId, AssignmentStatus status);
 
     @Query("""
             SELECT COUNT(DISTINCT a.fundraiser.id) FROM FundraiserAssignment a

@@ -15,6 +15,8 @@ public interface VolunteerRepository extends ListCrudRepository<Volunteer, Long>
 
     Optional<Volunteer> findByFundIdAndIdAndStatus(Long fundId, Long id, VolunteerStatus status);
 
+    boolean existsByIdAndStatus(Long id, VolunteerStatus status);
+
     Optional<Volunteer> findByFundIdAndEmailIgnoreCase(Long fundId, String email);
 
     Optional<Volunteer> findByFundIdAndPhone(Long fundId, String phone);
