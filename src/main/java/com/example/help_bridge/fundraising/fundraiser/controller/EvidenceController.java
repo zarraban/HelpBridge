@@ -5,6 +5,7 @@ import com.example.help_bridge.fundraising.fundraiser.dto.response.EvidenceRespo
 import com.example.help_bridge.fundraising.fundraiser.service.EvidenceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -28,11 +29,12 @@ public class EvidenceController {
             @PathVariable Long fundraiserId,
             @RequestBody @Valid AddEvidenceRequest evidenceRequest
     ) {
-        return ResponseEntity.ok(evidenceService.addEvidenceToFundraiser(fundraiserId, evidenceRequest));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(evidenceService.addEvidenceToFundraiser(fundraiserId, evidenceRequest));
     }
 
     @GetMapping("/fundraisers/{fundraiserId}/evidences")
-    public ResponseEntity<List<EvidenceResponse>> addEvidenceToFundraiser(
+    public ResponseEntity<List<EvidenceResponse>> getEvidencesByFundraiserId(
             @PathVariable Long fundraiserId
     ) {
         return ResponseEntity.ok(evidenceService.getEvidencesByFundraiserId(fundraiserId));

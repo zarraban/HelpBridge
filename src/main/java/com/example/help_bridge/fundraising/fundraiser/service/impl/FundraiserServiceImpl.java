@@ -1,6 +1,7 @@
 package com.example.help_bridge.fundraising.fundraiser.service.impl;
 
 import com.example.help_bridge.fundraising.fundraiser.exception.FundraiserNotFoundException;
+import com.example.help_bridge.fundraising.fundraiser.exception.InvalidFundraiserStateException;
 import com.example.help_bridge.fundraising.fundraiser.dto.request.SendMailingRequest;
 import com.example.help_bridge.fundraising.fundraiser.dto.response.EvidenceResponse;
 import com.example.help_bridge.fundraising.fundraiser.dto.response.FundraiserResponse;
@@ -63,11 +64,11 @@ public class FundraiserServiceImpl implements FundraiserService {
                 .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with ID " + id + " not found"));
 
         if (fundraiser.getStatus() == FundraiserStatus.CLOSED) {
-            throw new IllegalStateException("This fundraiser is already closed!");
+            throw new InvalidFundraiserStateException("This fundraiser is already closed!");
         }
 
         if (fundraiser.getEvidences() == null || fundraiser.getEvidences().isEmpty()) {
-            throw new IllegalStateException("Cannot close a fundraiser without attached evidence!");
+            throw new InvalidFundraiserStateException("Cannot close a fundraiser without attached evidence!");
         }
 
         fundraiser.setStatus(FundraiserStatus.CLOSED);

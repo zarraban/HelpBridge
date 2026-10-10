@@ -1,7 +1,10 @@
 package com.example.help_bridge.fundraising.fundraiser.service.impl;
 
 import com.example.help_bridge.fundraising.fundraiser.exception.FundraiserNotFoundException;
+import com.example.help_bridge.fundraising.fundraiser.exception.EvidenceNotFoundException;
+import com.example.help_bridge.fundraising.fundraiser.entity.FundraiserStatus;
 import com.example.help_bridge.fundraising.fundraiser.exception.InvalidEvidenceException;
+import com.example.help_bridge.fundraising.fundraiser.exception.InvalidFundraiserStateException;
 import com.example.help_bridge.fundraising.fundraiser.dto.request.AddEvidenceRequest;
 import com.example.help_bridge.fundraising.fundraiser.dto.response.EvidenceResponse;
 import com.example.help_bridge.fundraising.fundraiser.entity.Evidence;
@@ -32,6 +35,10 @@ public class EvidenceServiceImpl implements EvidenceService {
         Fundraiser fundraiser = fundraiserRepository.findById(fundraiserId)
                 .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with ID " + fundraiserId + " not found"));
 
+        if (fundraiser.getStatus() == FundraiserStatus.CLOSED) {
+            throw new InvalidFundraiserStateException("Cannot add evidence to a closed fundraiser");
+        }
+
         Evidence evidence = new Evidence();
         evidence.setFundraiser(fundraiser);
         evidence.setReceiptNumber(request.receiptNumber());
@@ -44,7 +51,6 @@ public class EvidenceServiceImpl implements EvidenceService {
             if (strategy.supports(evidence)) {
                 strategy.validate(evidence);
                 isValid = true;
-                break;
             }
         }
 
@@ -66,6 +72,9 @@ public class EvidenceServiceImpl implements EvidenceService {
 
     @Override
     public String deleteEvidenceById(Long evidenceId) {
+        if (!evidenceRepository.existsById(evidenceId)) {
+            throw new EvidenceNotFoundException(evidenceId);
+        }
         evidenceRepository.deleteById(evidenceId);
         return "Deleted successfully";
     }
