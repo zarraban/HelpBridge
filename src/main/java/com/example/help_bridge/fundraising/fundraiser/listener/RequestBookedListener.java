@@ -9,10 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-/**
- * Opens a fundraiser when a fund books a request. Runs synchronously in the
- * booking transaction, so a booked request always has its fundraiser.
- */
 @Component
 public class RequestBookedListener {
 
