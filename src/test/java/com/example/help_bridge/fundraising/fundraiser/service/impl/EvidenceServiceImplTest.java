@@ -112,4 +112,13 @@ class EvidenceServiceImplTest {
         assertEquals(10L, responses.getFirst().evidenceId());
         assertEquals(1L, responses.getFirst().fundraiserId());
     }
+
+    @Test
+    void deleteEvidenceById_shouldThrowNotFound_whenMissing() {
+        when(evidenceRepository.existsById(5L)).thenReturn(false);
+
+        assertThrows(com.example.help_bridge.fundraising.fundraiser.exception.EvidenceNotFoundException.class,
+                () -> evidenceService.deleteEvidenceById(5L));
+        verify(evidenceRepository, never()).deleteById(any());
+    }
 }

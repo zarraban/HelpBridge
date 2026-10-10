@@ -1,14 +1,15 @@
 package com.example.help_bridge.fundraising.fundraiser.strategy;
 
-import com.example.help_bridge.fundraising.fundraiser.exception.InvalidEvidenceException;
 import com.example.help_bridge.fundraising.fundraiser.entity.Evidence;
+import com.example.help_bridge.fundraising.fundraiser.exception.InvalidEvidenceException;
 import org.springframework.stereotype.Component;
 
 @Component
 public class FeedbackValidatorStrategy implements EvidenceValidatorStrategy{
     @Override
     public boolean supports(Evidence evidence) {
-        return evidence.getAttachmentUrl() != null && !evidence.getAttachmentUrl().isBlank();    }
+        return evidence.getRecipientFeedback() != null && !evidence.getRecipientFeedback().isBlank();
+    }
 
     @Override
     public void validate(Evidence evidence) {

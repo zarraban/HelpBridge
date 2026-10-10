@@ -8,7 +8,9 @@ import com.example.help_bridge.fundraising.request.exception.RequesterNotFoundEx
 import com.example.help_bridge.users.donor.exception.DonorNotFoundException;
 import com.example.help_bridge.fundraising.fundraiser.exception.AssignmentNotFoundException;
 import com.example.help_bridge.fundraising.fundraiser.exception.FundraiserNotFoundException;
+import com.example.help_bridge.fundraising.fundraiser.exception.EvidenceNotFoundException;
 import com.example.help_bridge.fundraising.fundraiser.exception.InvalidAssignmentStateException;
+import com.example.help_bridge.fundraising.fundraiser.exception.InvalidFundraiserStateException;
 import com.example.help_bridge.fundraising.fundraiser.exception.InvalidEvidenceException;
 import com.example.help_bridge.users.systemadmin.exception.DuplicateSystemAdminException;
 import com.example.help_bridge.users.systemadmin.exception.SystemAdminNotFoundException;
@@ -185,7 +187,8 @@ public class GlobalExceptionHandler {
             RequestNotFoundException.class,
             FundRepresentativeNotFoundException.class,
             RequesterNotFoundException.class,
-            RequestDocumentNotFoundException.class
+            RequestDocumentNotFoundException.class,
+            EvidenceNotFoundException.class
     })
     public ProblemDetail handleNotFoundDomainExceptions(RuntimeException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
@@ -198,8 +201,8 @@ public class GlobalExceptionHandler {
         return problemDetail;
     }
 
-    @ExceptionHandler(InvalidAssignmentStateException.class)
-    public ProblemDetail handleInvalidStateException(InvalidAssignmentStateException ex) {
+    @ExceptionHandler({InvalidAssignmentStateException.class, InvalidFundraiserStateException.class})
+    public ProblemDetail handleInvalidStateException(RuntimeException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
                 HttpStatus.CONFLICT,
                 ex.getMessage()
@@ -259,7 +262,8 @@ public class GlobalExceptionHandler {
         return problemDetail;
     }
 
-    @ExceptionHandler({InvalidRequestStateException.class, FundNotApprovedException.class})
+    @ExceptionHandler({InvalidRequestStateException.class, FundNotApprovedException.class,
+            com.example.help_bridge.fundraising.fund.exception.FundNotApprovedException.class})
     public ProblemDetail handleRequestConflictExceptions(RuntimeException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
                 HttpStatus.CONFLICT,

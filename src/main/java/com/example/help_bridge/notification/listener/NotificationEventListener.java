@@ -90,8 +90,8 @@ public class NotificationEventListener {
         log.info("VolunteerUpdatedPhoneNumberEvent handling started");
         List<String> emailToSent = Arrays.asList(event.email());
         notificationService.scheduleEmails(emailToSent,
-                "Зміна пошти у HelpBridge!",
-                ("Вітаємо, " + event.firstName() + "! Перевіряємо вашу нову пошту цим листом!"));
+                "Зміна номера телефону у HelpBridge!",
+                ("Вітаємо, " + event.firstName() + "! Ваш номер телефону змінено на " + event.phoneNumber() + "."));
 
         log.info("VolunteerUpdatedPhoneNumberEvent handling finished");
     }
