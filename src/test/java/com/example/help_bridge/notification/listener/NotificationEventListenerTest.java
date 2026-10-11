@@ -39,6 +39,6 @@ class NotificationEventListenerTest {
         listener.onMassMailRequested(event);
 
         verify(donorService).getDonorsByFundraiserId(100L);
-        verify(notificationService).scheduleEmails(List.of("john@example.com", "jane@example.com"), "Subject", "Body");
+        verify(notificationService).scheduleEmails(100L, List.of("john@example.com", "jane@example.com"), "Subject", "Body");
     }
 }

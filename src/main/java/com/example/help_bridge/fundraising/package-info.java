@@ -1,5 +1,7 @@
-@org.springframework.modulith.ApplicationModule(
+@ApplicationModule(
         allowedDependencies = {"users", "users::exception", "users::*"},
-        type = org.springframework.modulith.ApplicationModule.Type.OPEN
+        type = ApplicationModule.Type.OPEN
 )
 package com.example.help_bridge.fundraising;
+
+import org.springframework.modulith.ApplicationModule;

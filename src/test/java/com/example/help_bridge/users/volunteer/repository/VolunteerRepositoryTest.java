@@ -1,5 +1,6 @@
 package com.example.help_bridge.users.volunteer.repository;
 
+import java.util.Map;
 import com.example.help_bridge.fundraising.fund.entity.Fund;
 import com.example.help_bridge.users.volunteer.entity.Volunteer;
 import com.example.help_bridge.users.volunteer.entity.VolunteerStatus;
@@ -39,7 +40,7 @@ class VolunteerRepositoryTest {
     }
 
     private static Fund fund(String name, String edrpou) {
-        return new Fund(name, edrpou, "IBAN123", "Reg address", "Act address", "+380501112233", "f@mail.com", "https://f.com", java.util.Map.of());
+        return new Fund(name, edrpou, "IBAN123", "Reg address", "Act address", "+380501112233", "f@mail.com", "https://f.com", Map.of());
     }
 
     private Volunteer persist(Fund fund, String email, String phone, VolunteerStatus status) {

@@ -1,2 +1,4 @@
-@org.springframework.modulith.NamedInterface("event")
+@NamedInterface("event")
 package com.example.help_bridge.fundraising.fundraiser.event;
+
+import org.springframework.modulith.NamedInterface;

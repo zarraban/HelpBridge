@@ -44,4 +44,13 @@ class NotificationServiceImplTest {
         assertEquals(MailingStatus.PENDING, savedTask.getStatus());
         assertNotNull(savedTask.getCreatedAt());
     }
+
+    @Test
+    void scheduleEmails_withFundraiserId_shouldStoreItOnTask() {
+        notificationService.scheduleEmails(7L, List.of("a@b.com"), "S", "B");
+
+        ArgumentCaptor<MailingTask> captor = ArgumentCaptor.forClass(MailingTask.class);
+        verify(MailingTaskJpaRepository).save(captor.capture());
+        assertEquals(7L, captor.getValue().getFundraiserId());
+    }
 }

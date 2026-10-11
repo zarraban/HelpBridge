@@ -5,6 +5,7 @@ import com.example.help_bridge.users.donor.dto.response.DonorResponse;
 import com.example.help_bridge.users.donor.service.DonorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -27,7 +28,7 @@ public class DonorController {
     public ResponseEntity<DonorResponse> addNewDonor(
             @RequestBody @Valid DonorRequest request
     ) {
-        return ResponseEntity.ok(donorService.addNewDonor(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(donorService.addNewDonor(request));
     }
 
     @GetMapping("/{id}")

@@ -5,4 +5,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface FundraiserRepository extends JpaRepository<Fundraiser, Long> {
+    boolean existsByRequestId(Long requestId);
 }

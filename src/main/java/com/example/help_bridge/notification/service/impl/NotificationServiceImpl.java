@@ -20,12 +20,18 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public void scheduleEmails(List<String> emails, String subject, String text) {
+        scheduleEmails(null, emails, subject, text);
+    }
+
+    @Override
+    public void scheduleEmails(Long fundraiserId, List<String> emails, String subject, String text) {
         MailingTask task = new MailingTask();
+        task.setFundraiserId(fundraiserId);
         task.setSubject(subject);
         task.setMessageBody(text);
         task.setStatus(MailingStatus.PENDING);
         task.setCreatedAt(LocalDateTime.now());
-        
+
         if (emails != null) {
             for (String email : emails) {
                 MailingRecipient r = new MailingRecipient();
@@ -34,7 +40,7 @@ public class NotificationServiceImpl implements NotificationService {
                 task.addRecipient(r);
             }
         }
-        
+
         MailingTaskJpaRepository.save(task);
     }
 }

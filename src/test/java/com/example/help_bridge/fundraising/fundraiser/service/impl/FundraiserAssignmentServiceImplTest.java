@@ -1,5 +1,8 @@
 package com.example.help_bridge.fundraising.fundraiser.service.impl;
 
+import com.example.help_bridge.fundraising.fundraiser.spi.VolunteerDirectory;
+import com.example.help_bridge.fundraising.fundraiser.entity.FundraiserStatus;
+import com.example.help_bridge.fundraising.fundraiser.dto.request.AssignVolunteerRequest;
 import com.example.help_bridge.fundraising.fundraiser.exception.AssignmentNotFoundException;
 import com.example.help_bridge.fundraising.fundraiser.exception.InvalidAssignmentStateException;
 import com.example.help_bridge.fundraising.fundraiser.dto.request.CompleteAssignmentRequest;
@@ -27,6 +30,9 @@ class FundraiserAssignmentServiceImplTest {
 
     @Mock
     private FundraiserRepository fundraiserRepository;
+
+    @Mock
+    private VolunteerDirectory volunteerDirectory;
 
     @InjectMocks
     private FundraiserAssignmentServiceImpl assignmentService;
@@ -67,5 +73,45 @@ class FundraiserAssignmentServiceImplTest {
         assertEquals(AssignmentStatus.COMPLETED, assignment.getStatus());
         assertNotNull(assignment.getFinishedAt());
         verify(assignmentJpaRepository).save(assignment);
+    }
+
+    @Test
+    void assignVolunteerToFund_shouldMoveFundraiserToInProgress() {
+        Fundraiser fundraiser = new Fundraiser();
+        fundraiser.setId(100L);
+        fundraiser.setStatus(FundraiserStatus.PENDING_ASSIGNMENT);
+        when(fundraiserRepository.findById(100L)).thenReturn(Optional.of(fundraiser));
+        when(assignmentJpaRepository.save(any(FundraiserAssignment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        assignmentService.assignVolunteerToFund(100L,
+                new AssignVolunteerRequest(5L));
+
+        verify(volunteerDirectory).requireActiveVolunteer(5L);
+        assertEquals(FundraiserStatus.IN_PROGRESS, fundraiser.getStatus());
+    }
+
+    @Test
+    void assignVolunteerToFund_shouldRejectClosedFundraiser() {
+        Fundraiser fundraiser = new Fundraiser();
+        fundraiser.setId(100L);
+        fundraiser.setStatus(FundraiserStatus.CLOSED);
+        when(fundraiserRepository.findById(100L)).thenReturn(Optional.of(fundraiser));
+
+        assertThrows(InvalidAssignmentStateException.class, () -> assignmentService.assignVolunteerToFund(100L,
+                new AssignVolunteerRequest(5L)));
+        verify(assignmentJpaRepository, never()).save(any());
+    }
+
+    @Test
+    void assignVolunteerToFund_shouldRejectDuplicateActiveAssignment() {
+        Fundraiser fundraiser = new Fundraiser();
+        fundraiser.setId(100L);
+        fundraiser.setStatus(FundraiserStatus.IN_PROGRESS);
+        when(fundraiserRepository.findById(100L)).thenReturn(Optional.of(fundraiser));
+        when(assignmentJpaRepository.existsByFundraiserIdAndVolunteerIdAndStatus(100L, 5L, AssignmentStatus.ACTIVE))
+                .thenReturn(true);
+
+        assertThrows(InvalidAssignmentStateException.class, () -> assignmentService.assignVolunteerToFund(100L,
+                new AssignVolunteerRequest(5L)));
     }
 }

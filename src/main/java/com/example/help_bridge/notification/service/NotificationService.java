@@ -4,4 +4,6 @@ import java.util.List;
 
 public interface NotificationService {
     void scheduleEmails(List<String> emails, String subject, String text);
+
+    void scheduleEmails(Long fundraiserId, List<String> emails, String subject, String text);
 }

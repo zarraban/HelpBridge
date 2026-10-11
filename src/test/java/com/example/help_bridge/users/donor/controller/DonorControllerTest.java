@@ -35,7 +35,7 @@ class DonorControllerTest {
         ResponseEntity<DonorResponse> result = donorController.addNewDonor(request);
 
         verify(donorService, times(1)).addNewDonor(request);
-        assertEquals(HttpStatus.OK, result.getStatusCode());
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
         assertEquals(response, result.getBody());
     }
 

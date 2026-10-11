@@ -24,6 +24,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.hamcrest.Matchers.endsWith;
 
 @WebMvcTest(controllers = {RequestController.class, RequestDocumentController.class})
 class RequestApiContractTest {
@@ -67,7 +68,7 @@ class RequestApiContractTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json("")))
                 .andExpect(status().isCreated())
-                .andExpect(header().string("Location", org.hamcrest.Matchers.endsWith("/api/v1/requests/1")))
+                .andExpect(header().string("Location", endsWith("/api/v1/requests/1")))
                 .andExpect(jsonPath("$.id").value(1));
     }
 

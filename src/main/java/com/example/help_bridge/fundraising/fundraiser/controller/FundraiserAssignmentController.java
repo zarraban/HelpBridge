@@ -10,6 +10,7 @@ import com.example.help_bridge.fundraising.fundraiser.dto.response.ReturnAssignm
 import com.example.help_bridge.fundraising.fundraiser.service.FundraiserAssignmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -49,7 +50,8 @@ public class FundraiserAssignmentController {
             @PathVariable(value = "fundraiserId") Long fundraiserId,
             @RequestBody @Valid AssignVolunteerRequest assignVolunteerRequest
     ){
-        return ResponseEntity.ok(assignmentService.assignVolunteerToFund(fundraiserId, assignVolunteerRequest));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(assignmentService.assignVolunteerToFund(fundraiserId, assignVolunteerRequest));
     }
 
     @GetMapping("/fundraisers/{fundraiserId}/assignments")

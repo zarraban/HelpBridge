@@ -1,5 +1,6 @@
 package com.example.help_bridge.fundraising.fundraiser.entity;
 
+import org.hibernate.annotations.CreationTimestamp;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,7 +25,7 @@ public class Fundraiser {
     @Enumerated(EnumType.STRING)
     private FundraiserStatus status;
 
-    @org.hibernate.annotations.CreationTimestamp
+    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
