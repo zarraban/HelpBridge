@@ -12,6 +12,9 @@ on:
 
 jobs:
   claude-review:
+    # Only review PRs authored by the repo owner
+    if: github.event.pull_request.user.login == 'zarraban'
+
     # Optional: Filter by PR author
     # if: |
     #   github.event.pull_request.user.login == 'external-contributor' ||
