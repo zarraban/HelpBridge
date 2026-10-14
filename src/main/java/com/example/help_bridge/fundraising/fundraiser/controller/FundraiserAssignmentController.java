@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,6 +30,7 @@ public class FundraiserAssignmentController {
         this.assignmentService = assignmentService;
     }
 
+    @PreAuthorize("hasAnyRole('VOLUNTEER', 'FUND_REPRESENTATIVE')")
     @PatchMapping("/fundraiser-assignments/{assignmentId}/complete")
     public ResponseEntity<CompleteAssignmentResponse> completeAssignment(
             @PathVariable(value = "assignmentId") Long assignmentId,
@@ -37,6 +39,7 @@ public class FundraiserAssignmentController {
         return ResponseEntity.ok(assignmentService.completeAssignment(assignmentId, completeAssignmentRequest));
     }
 
+    @PreAuthorize("hasAnyRole('VOLUNTEER', 'FUND_REPRESENTATIVE')")
     @PatchMapping("/fundraiser-assignments/{assignmentId}/return")
     public ResponseEntity<ReturnAssignmentResponse> returnAssignment(
             @PathVariable(value = "assignmentId") Long assignmentId,
@@ -45,6 +48,7 @@ public class FundraiserAssignmentController {
         return ResponseEntity.ok(assignmentService.returnAssignment(assignmentId, returnAssignmentRequest));
     }
 
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'FUND_REPRESENTATIVE')")
     @PostMapping("/fundraisers/{fundraiserId}/assignments")
     public ResponseEntity<AssignVolunteerResponse> assignVolunteerToFund(
             @PathVariable(value = "fundraiserId") Long fundraiserId,
