@@ -75,8 +75,8 @@ class JwtLoginFilterTest {
         assertThat(response.getStatus()).isEqualTo(200);
         var json = objectMapper.readTree(response.getContentAsString());
         assertThat(json.get("tokenType").asString()).isEqualTo("Bearer");
-        assertThat(json.get("expiresInSeconds").asLong()).isEqualTo(900);
-        String token = json.get("token").asString();
+        assertThat(json.get("expiresIn").asLong()).isEqualTo(900);
+        String token = json.get("accessToken").asString();
         assertThat(new JwtValidatorService(SECRET).extractUsername(token)).isEqualTo("VOLUNTEER:anna@gmail.com");
     }
 
@@ -100,7 +100,7 @@ class JwtLoginFilterTest {
         filter.doFilter(post("/api/auth/login", VALID_BODY), response, new MockFilterChain());
 
         verify(authenticationEntryPoint).commence(any(), any(), isA(BadCredentialsException.class));
-        assertThat(response.getContentAsString()).doesNotContain("token");
+        assertThat(response.getContentAsString()).doesNotContain("accessToken");
     }
 
     @Test

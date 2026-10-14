@@ -1,7 +1,7 @@
 package com.example.help_bridge.common.security.filter;
 
-import com.example.help_bridge.common.security.dto.LoginRequest;
-import com.example.help_bridge.common.security.dto.TokenResponse;
+import com.example.help_bridge.common.security.dto.request.LoginRequest;
+import com.example.help_bridge.common.security.dto.response.AuthResponse;
 import com.example.help_bridge.common.security.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -58,7 +58,7 @@ public class JwtLoginFilter extends AbstractAuthenticationProcessingFilter {
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response,
                                             FilterChain chain, Authentication authResult) throws IOException {
         String token = jwtService.generateToken((UserDetails) authResult.getPrincipal());
-        TokenResponse body = new TokenResponse(token, "Bearer", jwtService.getExpirationMillis() / 1000);
+        AuthResponse body = AuthResponse.of(token, jwtService.getExpirationMillis() / 1000);
         response.setStatus(HttpStatus.OK.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         objectMapper.writeValue(response.getOutputStream(), body);
