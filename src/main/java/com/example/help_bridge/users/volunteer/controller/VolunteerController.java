@@ -8,6 +8,7 @@ import com.example.help_bridge.users.volunteer.dto.response.VolunteerResponse;
 import com.example.help_bridge.users.volunteer.service.VolunteerService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -15,6 +16,7 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
+@PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'FUND_REPRESENTATIVE')")
 @RequestMapping("/api/funds/{fundId}/volunteers")
 public class VolunteerController {
 
