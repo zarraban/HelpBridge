@@ -6,6 +6,7 @@ import com.example.help_bridge.users.fundrepresentative.dto.response.FundReprese
 import com.example.help_bridge.users.fundrepresentative.service.FundRepresentativeService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class FundRepresentativeController {
         this.service = service;
     }
 
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public FundRepresentativeResponse create(@Valid @RequestBody FundRepresentativeRequest request) {
@@ -31,6 +33,7 @@ public class FundRepresentativeController {
         return service.getById(id);
     }
 
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     @GetMapping
     public List<FundRepresentativeResponse> getAll() {
         return service.getAll();
@@ -47,6 +50,7 @@ public class FundRepresentativeController {
         return service.update(id, request);
     }
 
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {

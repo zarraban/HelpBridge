@@ -49,8 +49,18 @@ class VolunteerControllerTest {
             }
             """;
 
+    private static final String VALID_REGISTER_BODY = """
+            {
+              "firstName": "Anna",
+              "lastName": "Samana",
+              "email": "anna@gmail.com",
+              "phone": "+380501234567",
+              "password": "Secret123!"
+            }
+            """;
+
     private static final RegisterVolunteerCommand REGISTER_COMMAND =
-            new RegisterVolunteerCommand(FUND_ID, "Anna", "Samana", "anna@gmail.com", "+380501234567");
+            new RegisterVolunteerCommand(FUND_ID, "Anna", "Samana", "anna@gmail.com", "+380501234567", "Secret123!");
 
     private static final UpdateVolunteerCommand UPDATE_COMMAND =
             new UpdateVolunteerCommand(VOLUNTEER_ID, FUND_ID, "Anna", "Samana", "anna@gmail.com", "+380501234567");
@@ -167,7 +177,7 @@ class VolunteerControllerTest {
 
             mockMvc.perform(post(BASE_URL, FUND_ID)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(VALID_BODY))
+                            .content(VALID_REGISTER_BODY))
                     .andExpect(status().isCreated())
                     .andExpect(header().string("Location",
                             "http://localhost/api/funds/" + FUND_ID + "/volunteers/" + createdId))
@@ -287,7 +297,7 @@ class VolunteerControllerTest {
 
             mockMvc.perform(post(BASE_URL, FUND_ID)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(VALID_BODY))
+                            .content(VALID_REGISTER_BODY))
                     .andExpect(status().isConflict())
                     .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                     .andExpect(jsonPath("$.status").value(409))
@@ -310,7 +320,7 @@ class VolunteerControllerTest {
         void returns415WhenContentTypeIsNotJson() throws Exception {
             mockMvc.perform(post(BASE_URL, FUND_ID)
                             .contentType(MediaType.TEXT_PLAIN)
-                            .content(VALID_BODY))
+                            .content(VALID_REGISTER_BODY))
                     .andExpect(status().isUnsupportedMediaType());
 
             verifyNoInteractions(service);

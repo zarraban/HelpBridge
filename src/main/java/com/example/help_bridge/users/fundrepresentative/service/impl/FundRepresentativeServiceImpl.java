@@ -13,7 +13,6 @@ import com.example.help_bridge.users.fundrepresentative.repository.FundRepresent
 import com.example.help_bridge.users.fundrepresentative.service.FundRepresentativeService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
@@ -24,11 +23,13 @@ public class FundRepresentativeServiceImpl implements FundRepresentativeService 
 
     private final FundRepresentativeRepository repository;
     private final FundRepository fundRepository;
-    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final PasswordEncoder passwordEncoder;
 
-    public FundRepresentativeServiceImpl(FundRepresentativeRepository repository, FundRepository fundRepository) {
+    public FundRepresentativeServiceImpl(FundRepresentativeRepository repository, FundRepository fundRepository,
+                                         PasswordEncoder passwordEncoder) {
         this.repository = repository;
         this.fundRepository = fundRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override

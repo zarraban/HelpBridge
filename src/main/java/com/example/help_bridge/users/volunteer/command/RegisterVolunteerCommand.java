@@ -5,6 +5,12 @@ public record RegisterVolunteerCommand(
         String firstName,
         String lastName,
         String email,
-        String phone
+        String phone,
+        String password
 ) {
+    @Override
+    public String toString() {
+        return "RegisterVolunteerCommand[fundId=" + fundId + ", firstName=" + firstName
+                + ", lastName=" + lastName + ", email=" + email + ", phone=" + phone + ", password=****]";
+    }
 }
