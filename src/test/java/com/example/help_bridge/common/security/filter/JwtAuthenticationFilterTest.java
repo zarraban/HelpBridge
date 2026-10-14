@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -61,7 +62,8 @@ class JwtAuthenticationFilterTest {
         SecurityContextHolder.clearContext();
         userDetailsService = new AppUserDetailsService(fundRepresentativeRepository, systemAdminRepository, volunteerRepository);
         jwtService = new JwtService(SECRET, 15);
-        filter = new JwtAuthenticationFilter(new JwtValidatorService(SECRET), userDetailsService, authenticationEntryPoint);
+        filter = new JwtAuthenticationFilter(new JwtValidatorService(SECRET), userDetailsService, authenticationEntryPoint,
+                new AccountStatusUserDetailsChecker());
     }
 
     @AfterEach

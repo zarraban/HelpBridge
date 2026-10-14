@@ -7,12 +7,14 @@ import com.example.help_bridge.common.security.service.JwtValidatorService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsChecker;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -33,6 +35,11 @@ public class SecurityConfiguration {
     }
 
     @Bean
+    public UserDetailsChecker accountStatusChecker() {
+        return new AccountStatusUserDetailsChecker();
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    JwtValidatorService jwtValidatorService,
                                                    JwtService jwtService,
@@ -40,10 +47,11 @@ public class SecurityConfiguration {
                                                    AuthenticationManager authenticationManager,
                                                    ObjectMapper objectMapper,
                                                    AuthenticationEntryPoint authenticationEntryPoint,
-                                                   AccessDeniedHandler accessDeniedHandler) throws Exception {
+                                                   AccessDeniedHandler accessDeniedHandler,
+                                                   UserDetailsChecker accountStatusChecker) throws Exception {
         JwtLoginFilter jwtLoginFilter = new JwtLoginFilter(authenticationManager, jwtService, objectMapper, authenticationEntryPoint);
         JwtAuthenticationFilter jwtAuthenticationFilter =
-                new JwtAuthenticationFilter(jwtValidatorService, userDetailsService, authenticationEntryPoint);
+                new JwtAuthenticationFilter(jwtValidatorService, userDetailsService, authenticationEntryPoint, accountStatusChecker);
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
