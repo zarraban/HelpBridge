@@ -21,6 +21,8 @@ public interface VolunteerRepository extends ListCrudRepository<Volunteer, Long>
 
     Optional<Volunteer> findByFundIdAndPhone(Long fundId, String phone);
 
+    Optional<Volunteer> findByEmail(String email);
+
     @Query("""
             SELECT v FROM Volunteer v
             JOIN FETCH v.fund f
