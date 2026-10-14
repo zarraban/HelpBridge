@@ -2,6 +2,7 @@ package com.example.help_bridge.users.volunteer.service;
 
 import com.example.help_bridge.fundraising.fund.entity.Fund;
 import com.example.help_bridge.fundraising.fund.exception.FundNotFoundException;
+import com.example.help_bridge.fundraising.fund.repository.FundRepository;
 import com.example.help_bridge.users.volunteer.command.RegisterVolunteerCommand;
 import com.example.help_bridge.users.volunteer.command.UpdateVolunteerCommand;
 import com.example.help_bridge.users.volunteer.dto.response.VolunteerResponse;
@@ -14,7 +15,6 @@ import com.example.help_bridge.users.volunteer.event.VolunteerUpdatedPhoneNumber
 import com.example.help_bridge.users.volunteer.exception.DuplicateVolunteerException;
 import com.example.help_bridge.users.volunteer.exception.VolunteerNotFoundException;
 import com.example.help_bridge.users.volunteer.repository.VolunteerRepository;
-import jakarta.persistence.EntityManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,15 +29,15 @@ public class VolunteerServiceImpl implements VolunteerService {
 
     private final VolunteerRepository repository;
     private final ApplicationEventPublisher eventPublisher;
-    private final EntityManager entityManager;
+    private final FundRepository fundRepository;
 
     public VolunteerServiceImpl(
             VolunteerRepository repository,
             ApplicationEventPublisher eventPublisher,
-            EntityManager entityManager) {
+            FundRepository fundRepository) {
         this.repository = repository;
         this.eventPublisher = eventPublisher;
-        this.entityManager = entityManager;
+        this.fundRepository = fundRepository;
     }
 
     @Override
@@ -143,11 +143,8 @@ public class VolunteerServiceImpl implements VolunteerService {
     }
 
     private Fund findFund(Long fundId) {
-        Fund fund = entityManager.find(Fund.class, fundId);
-        if (fund == null) {
-            throw new FundNotFoundException(fundId);
-        }
-        return fund;
+        return fundRepository.findById(fundId)
+                .orElseThrow(() -> new FundNotFoundException(fundId));
     }
 
     private static String normalizeEmail(String email) {

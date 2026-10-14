@@ -2,6 +2,7 @@ package com.example.help_bridge.users.volunteer.service;
 
 import com.example.help_bridge.fundraising.fund.entity.Fund;
 import com.example.help_bridge.fundraising.fund.exception.FundNotFoundException;
+import com.example.help_bridge.fundraising.fund.repository.FundRepository;
 import com.example.help_bridge.users.volunteer.command.RegisterVolunteerCommand;
 import com.example.help_bridge.users.volunteer.command.UpdateVolunteerCommand;
 import com.example.help_bridge.users.volunteer.dto.response.VolunteerResponse;
@@ -14,7 +15,6 @@ import com.example.help_bridge.users.volunteer.event.VolunteerUpdatedPhoneNumber
 import com.example.help_bridge.users.volunteer.exception.DuplicateVolunteerException;
 import com.example.help_bridge.users.volunteer.exception.VolunteerNotFoundException;
 import com.example.help_bridge.users.volunteer.repository.VolunteerRepository;
-import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -62,14 +62,14 @@ class VolunteerServiceImplTest {
     private ApplicationEventPublisher eventPublisher;
 
     @Mock
-    private EntityManager entityManager;
+    private FundRepository fundRepository;
 
     private VolunteerServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new VolunteerServiceImpl(repository, eventPublisher, entityManager);
-        lenient().when(entityManager.find(Fund.class, FUND_ID)).thenReturn(fund());
+        service = new VolunteerServiceImpl(repository, eventPublisher, fundRepository);
+        lenient().when(fundRepository.findById(FUND_ID)).thenReturn(Optional.of(fund()));
     }
 
     private static Fund fund() {
@@ -317,7 +317,7 @@ class VolunteerServiceImplTest {
 
         @Test
         void throwsFundNotFoundWhenFundDoesNotExist() {
-            when(entityManager.find(Fund.class, FUND_ID)).thenReturn(null);
+            when(fundRepository.findById(FUND_ID)).thenReturn(Optional.empty());
 
             assertThrows(FundNotFoundException.class, () -> service.registerVolunteer(registerCommand()));
 
