@@ -2,6 +2,7 @@ package com.example.help_bridge.users.volunteer.controller;
 
 import com.example.help_bridge.users.volunteer.command.RegisterVolunteerCommand;
 import com.example.help_bridge.users.volunteer.command.UpdateVolunteerCommand;
+import com.example.help_bridge.users.volunteer.dto.request.RegisterVolunteerRequest;
 import com.example.help_bridge.users.volunteer.dto.request.VolunteerRequest;
 import com.example.help_bridge.users.volunteer.dto.response.VolunteerResponse;
 import com.example.help_bridge.users.volunteer.service.VolunteerService;
@@ -39,14 +40,15 @@ public class VolunteerController {
     @PostMapping
     public ResponseEntity<VolunteerResponse> addVolunteer(
             @PathVariable Long fundId,
-            @RequestBody @Valid VolunteerRequest request
+            @RequestBody @Valid RegisterVolunteerRequest request
     ) {
         RegisterVolunteerCommand command = new RegisterVolunteerCommand(
                 fundId,
                 request.firstName(),
                 request.lastName(),
                 request.email(),
-                request.phone()
+                request.phone(),
+                request.password()
         );
         VolunteerResponse created = service.registerVolunteer(command);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()

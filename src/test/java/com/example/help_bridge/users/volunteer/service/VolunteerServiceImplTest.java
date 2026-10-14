@@ -23,6 +23,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
@@ -51,6 +52,7 @@ class VolunteerServiceImplTest {
     private static final String LAST_NAME = "Samana";
     private static final String EMAIL = "anna@gmail.com";
     private static final String PHONE = "+380501234567";
+    private static final String PASSWORD = "Secret123!";
 
     private static final String NEW_EMAIL = "anna.new@gmail.com";
     private static final String NEW_PHONE = "+380671112233";
@@ -68,7 +70,7 @@ class VolunteerServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new VolunteerServiceImpl(repository, eventPublisher, entityManager);
+        service = new VolunteerServiceImpl(repository, eventPublisher, entityManager, new BCryptPasswordEncoder());
         lenient().when(entityManager.find(Fund.class, FUND_ID)).thenReturn(fund());
     }
 
@@ -87,7 +89,7 @@ class VolunteerServiceImplTest {
     }
 
     private static RegisterVolunteerCommand registerCommand() {
-        return new RegisterVolunteerCommand(FUND_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE);
+        return new RegisterVolunteerCommand(FUND_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE, PASSWORD);
     }
 
     private static UpdateVolunteerCommand updateCommand(String firstName, String email, String phone) {
@@ -208,7 +210,7 @@ class VolunteerServiceImplTest {
             saveReturnsArgumentWithId(VOLUNTEER_ID);
 
             VolunteerResponse response = service.registerVolunteer(
-                    new RegisterVolunteerCommand(FUND_ID, FIRST_NAME, LAST_NAME, "Anna@Gmail.COM", PHONE));
+                    new RegisterVolunteerCommand(FUND_ID, FIRST_NAME, LAST_NAME, "Anna@Gmail.COM", PHONE, PASSWORD));
 
             assertEquals(EMAIL, capturedSavedVolunteer().getEmail());
             assertEquals(EMAIL, response.email());
@@ -221,7 +223,7 @@ class VolunteerServiceImplTest {
                     .thenReturn(Optional.of(volunteer(OTHER_VOLUNTEER_ID, VolunteerStatus.ACTIVE)));
 
             assertThrows(DuplicateVolunteerException.class, () -> service.registerVolunteer(
-                    new RegisterVolunteerCommand(FUND_ID, FIRST_NAME, LAST_NAME, "ANNA@gmail.com", PHONE)));
+                    new RegisterVolunteerCommand(FUND_ID, FIRST_NAME, LAST_NAME, "ANNA@gmail.com", PHONE, PASSWORD)));
 
             verify(repository, never()).save(any());
             verifyNoInteractions(eventPublisher);
