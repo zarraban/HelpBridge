@@ -19,12 +19,14 @@ import com.example.help_bridge.users.volunteer.exception.VolunteerNotFoundExcept
 import com.example.help_bridge.fundraising.request.exception.RequestNotFoundException;
 import com.example.help_bridge.fundraising.request.exception.InvalidRequestStateException;
 import com.example.help_bridge.fundraising.request.exception.FundNotApprovedException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.ErrorResponse;
@@ -282,6 +284,19 @@ public class GlobalExceptionHandler {
         );
         problemDetail.setTitle("Resource Not Found");
         problemDetail.setType(URI.create("https://api.example.com/errors/not-found"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ProblemDetail handleAccessDenied(HttpServletRequest request) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN,
+                "Недостатньо прав для доступу до ресурсу."
+        );
+        problemDetail.setTitle("Доступ заборонено");
+        problemDetail.setType(URI.create("https://api.example.com/errors/forbidden"));
+        problemDetail.setInstance(URI.create(request.getRequestURI()));
         problemDetail.setProperty("timestamp", Instant.now());
         return problemDetail;
     }

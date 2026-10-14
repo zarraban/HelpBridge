@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -53,6 +54,7 @@ public class FundController {
             content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
     @ApiResponse(responseCode = "409", description = "Фонд з такими даними вже існує",
             content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     @PostMapping
     public ResponseEntity<FundResponse> createFund(@RequestBody @Valid FundCreateRequest request) {
         FundResponse response = service.createFund(request);
@@ -81,6 +83,7 @@ public class FundController {
             content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
     @ApiResponse(responseCode = "409", description = "Недопустимий перехід статусу",
             content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     @PatchMapping("/{id}/status")
     public ResponseEntity<FundResponse> updateFundStatus(
             @PathVariable("id") Long id,
@@ -103,6 +106,7 @@ public class FundController {
     @ApiResponse(responseCode = "204", description = "Фонд видалено")
     @ApiResponse(responseCode = "409", description = "У фонду є запити, видалення неможливе",
             content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteFundById(@PathVariable("id") Long id) {
         service.deleteFundById(id);

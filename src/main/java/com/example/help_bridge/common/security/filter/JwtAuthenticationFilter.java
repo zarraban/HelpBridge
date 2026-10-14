@@ -1,5 +1,6 @@
-package com.example.help_bridge.common.security.jwt;
+package com.example.help_bridge.common.security.filter;
 
+import com.example.help_bridge.common.security.service.JwtValidatorService;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -11,27 +12,29 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsChecker;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-@Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtValidatorService jwtService;
     private final UserDetailsService userDetailsService;
     private final AuthenticationEntryPoint authenticationEntryPoint;
+    private final UserDetailsChecker accountStatusChecker;
 
     public JwtAuthenticationFilter(JwtValidatorService jwtService,
                                    UserDetailsService userDetailsService,
-                                   AuthenticationEntryPoint authenticationEntryPoint) {
+                                   AuthenticationEntryPoint authenticationEntryPoint,
+                                   UserDetailsChecker accountStatusChecker) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
         this.authenticationEntryPoint = authenticationEntryPoint;
+        this.accountStatusChecker = accountStatusChecker;
     }
 
     @Override
@@ -49,6 +52,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String username = jwtService.extractUsername(token);
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                accountStatusChecker.check(userDetails);
                 if (jwtService.isTokenValid(token, userDetails)) {
                     var authToken = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities());
@@ -59,7 +63,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } catch (JwtException | IllegalArgumentException | AuthenticationException ex) {
             SecurityContextHolder.clearContext();
             authenticationEntryPoint.commence(request, response,
-                    new BadCredentialsException("Невалідний або прострочений токен JWT", ex));
+                    new BadCredentialsException("Invalid or deprecated JWT token", ex));
             return;
         }
 

@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,6 +25,7 @@ public class EvidenceController {
     }
 
     // TODO volunteer can't add evidences to other fundraisers except for his own
+    @PreAuthorize("hasAnyRole('VOLUNTEER', 'FUND_REPRESENTATIVE')")
     @PostMapping("/fundraisers/{fundraiserId}/evidences")
     public ResponseEntity<EvidenceResponse> addEvidenceToFundraiser(
             @PathVariable Long fundraiserId,

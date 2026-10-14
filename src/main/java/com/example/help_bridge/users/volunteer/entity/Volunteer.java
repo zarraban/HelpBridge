@@ -12,13 +12,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "volunteers")
+@Table(name = "volunteers",
+        uniqueConstraints = @UniqueConstraint(name = "uk_volunteers_email", columnNames = "email"))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -47,6 +49,9 @@ public class Volunteer {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private VolunteerStatus status;
+
+    @Column(name = "password_hash")
+    private String passwordHash;
 
     public boolean isActive() {
         return status == VolunteerStatus.ACTIVE;

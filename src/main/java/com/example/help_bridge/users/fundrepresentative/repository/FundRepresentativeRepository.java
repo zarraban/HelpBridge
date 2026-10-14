@@ -18,6 +18,8 @@ public interface FundRepresentativeRepository extends JpaRepository<FundRepresen
 
     Optional<FundRepresentative> findByEmailIgnoreCase(String email);
 
+    Optional<FundRepresentative> findByEmail(String email);
+
     @Query("SELECT r FROM FundRepresentative r LEFT JOIN FETCH r.fund")
     List<FundRepresentative> findAllWithFund();
 

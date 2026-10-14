@@ -16,6 +16,7 @@ import com.example.help_bridge.users.volunteer.exception.DuplicateVolunteerExcep
 import com.example.help_bridge.users.volunteer.exception.VolunteerNotFoundException;
 import com.example.help_bridge.users.volunteer.repository.VolunteerRepository;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,14 +31,17 @@ public class VolunteerServiceImpl implements VolunteerService {
     private final VolunteerRepository repository;
     private final ApplicationEventPublisher eventPublisher;
     private final FundRepository fundRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public VolunteerServiceImpl(
             VolunteerRepository repository,
             ApplicationEventPublisher eventPublisher,
-            FundRepository fundRepository) {
+            FundRepository fundRepository,
+            PasswordEncoder passwordEncoder) {
         this.repository = repository;
         this.eventPublisher = eventPublisher;
         this.fundRepository = fundRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -86,6 +90,7 @@ public class VolunteerServiceImpl implements VolunteerService {
         volunteer.setEmail(email);
         volunteer.setPhone(command.phone());
         volunteer.setStatus(VolunteerStatus.ACTIVE);
+        volunteer.setPasswordHash(passwordEncoder.encode(command.password()));
 
         Volunteer saved = repository.save(volunteer);
         eventPublisher.publishEvent(new VolunteerRegisteredEvent(

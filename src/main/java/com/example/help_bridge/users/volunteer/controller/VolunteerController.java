@@ -2,11 +2,13 @@ package com.example.help_bridge.users.volunteer.controller;
 
 import com.example.help_bridge.users.volunteer.command.RegisterVolunteerCommand;
 import com.example.help_bridge.users.volunteer.command.UpdateVolunteerCommand;
+import com.example.help_bridge.users.volunteer.dto.request.RegisterVolunteerRequest;
 import com.example.help_bridge.users.volunteer.dto.request.VolunteerRequest;
 import com.example.help_bridge.users.volunteer.dto.response.VolunteerResponse;
 import com.example.help_bridge.users.volunteer.service.VolunteerService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -14,6 +16,7 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
+@PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'FUND_REPRESENTATIVE')")
 @RequestMapping("/api/funds/{fundId}/volunteers")
 public class VolunteerController {
 
@@ -39,14 +42,15 @@ public class VolunteerController {
     @PostMapping
     public ResponseEntity<VolunteerResponse> addVolunteer(
             @PathVariable Long fundId,
-            @RequestBody @Valid VolunteerRequest request
+            @RequestBody @Valid RegisterVolunteerRequest request
     ) {
         RegisterVolunteerCommand command = new RegisterVolunteerCommand(
                 fundId,
                 request.firstName(),
                 request.lastName(),
                 request.email(),
-                request.phone()
+                request.phone(),
+                request.password()
         );
         VolunteerResponse created = service.registerVolunteer(command);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
