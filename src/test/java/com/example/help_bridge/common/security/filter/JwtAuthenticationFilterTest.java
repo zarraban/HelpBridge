@@ -2,6 +2,7 @@ package com.example.help_bridge.common.security.filter;
 
 import com.example.help_bridge.common.security.service.JwtService;
 import com.example.help_bridge.common.security.service.JwtValidatorService;
+import com.example.help_bridge.fundraising.user.repository.UserRepository;
 import com.example.help_bridge.users.auth.AppUserDetailsService;
 import com.example.help_bridge.users.fundrepresentative.repository.FundRepresentativeRepository;
 import com.example.help_bridge.users.systemadmin.repository.SystemAdminRepository;
@@ -51,6 +52,9 @@ class JwtAuthenticationFilterTest {
     private SystemAdminRepository systemAdminRepository;
 
     @Mock
+    private UserRepository userRepository;
+
+    @Mock
     private AuthenticationEntryPoint authenticationEntryPoint;
 
     private AppUserDetailsService userDetailsService;
@@ -60,7 +64,7 @@ class JwtAuthenticationFilterTest {
     @BeforeEach
     void setUp() {
         SecurityContextHolder.clearContext();
-        userDetailsService = new AppUserDetailsService(fundRepresentativeRepository, systemAdminRepository, volunteerRepository);
+        userDetailsService = new AppUserDetailsService(fundRepresentativeRepository, systemAdminRepository, volunteerRepository, userRepository);
         jwtService = new JwtService(SECRET, 15);
         filter = new JwtAuthenticationFilter(new JwtValidatorService(SECRET), userDetailsService, authenticationEntryPoint,
                 new AccountStatusUserDetailsChecker());

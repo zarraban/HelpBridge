@@ -5,6 +5,7 @@ import com.example.help_bridge.fundraising.request.dto.request.RequestDocumentDt
 import com.example.help_bridge.fundraising.request.service.RequestDocumentService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -21,6 +22,7 @@ public class RequestDocumentController {
         this.documentService = documentService;
     }
 
+    @PreAuthorize("hasAnyRole('APPLICANT', 'SYSTEM_ADMIN')")
     @PostMapping
     public ResponseEntity<DocumentResponse> addDocument(
             @PathVariable Long requestId,
@@ -44,6 +46,7 @@ public class RequestDocumentController {
         return ResponseEntity.ok(documentService.getDocument(requestId, documentId));
     }
 
+    @PreAuthorize("hasAnyRole('APPLICANT', 'SYSTEM_ADMIN')")
     @PutMapping("/{documentId}")
     public ResponseEntity<DocumentResponse> updateDocument(
             @PathVariable Long requestId,
@@ -52,6 +55,7 @@ public class RequestDocumentController {
         return ResponseEntity.ok(documentService.updateDocument(requestId, documentId, request));
     }
 
+    @PreAuthorize("hasAnyRole('APPLICANT', 'SYSTEM_ADMIN')")
     @DeleteMapping("/{documentId}")
     public ResponseEntity<Void> deleteDocument(
             @PathVariable Long requestId, @PathVariable Long documentId) {

@@ -1,5 +1,7 @@
 package com.example.help_bridge.users.auth;
 
+import com.example.help_bridge.fundraising.user.entity.User;
+import com.example.help_bridge.fundraising.user.repository.UserRepository;
 import com.example.help_bridge.users.fundrepresentative.repository.FundRepresentativeRepository;
 import com.example.help_bridge.users.systemadmin.entity.SystemAdmin;
 import com.example.help_bridge.users.systemadmin.repository.SystemAdminRepository;
@@ -34,11 +36,19 @@ class AppUserDetailsServiceTest {
     @Mock
     private VolunteerRepository volunteerRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     private AppUserDetailsService service;
 
     @BeforeEach
     void setUp() {
-        service = new AppUserDetailsService(fundRepresentativeRepository, systemAdminRepository, volunteerRepository);
+        service = new AppUserDetailsService(
+                fundRepresentativeRepository,
+                systemAdminRepository,
+                volunteerRepository,
+                userRepository
+        );
     }
 
     private Volunteer volunteer(VolunteerStatus status, String passwordHash) {
@@ -113,25 +123,38 @@ class AppUserDetailsServiceTest {
     }
 
     @Test
+    void loadsApplicantWithApplicantRole() {
+        User applicant = new User("Оксана", "Афанасьєва", "applicant@helpbridge.test", "applicantHash");
+        when(userRepository.findByEmail("applicant@helpbridge.test")).thenReturn(Optional.of(applicant));
+
+        UserDetails user = service.loadUserByUsername("APPLICANT:applicant@helpbridge.test");
+
+        assertThat(user.getUsername()).isEqualTo("APPLICANT:applicant@helpbridge.test");
+        assertThat(user.getPassword()).isEqualTo("applicantHash");
+        assertThat(user.isEnabled()).isTrue();
+        assertThat(user.getAuthorities()).extracting(Object::toString).containsExactly("ROLE_APPLICANT");
+    }
+
+    @Test
     void doesNotLookEmailUpInOtherAccountTypes() {
         when(volunteerRepository.findByEmail("admin@helpbridge.test")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.loadUserByUsername("VOLUNTEER:admin@helpbridge.test"))
                 .isInstanceOf(UsernameNotFoundException.class);
-        verifyNoInteractions(systemAdminRepository, fundRepresentativeRepository);
+        verifyNoInteractions(systemAdminRepository, fundRepresentativeRepository, userRepository);
     }
 
     @Test
     void throwsNotFoundWhenUsernameHasNoAccountType() {
         assertThatThrownBy(() -> service.loadUserByUsername("vera@vol.test"))
                 .isInstanceOf(UsernameNotFoundException.class);
-        verifyNoInteractions(volunteerRepository, systemAdminRepository, fundRepresentativeRepository);
+        verifyNoInteractions(volunteerRepository, systemAdminRepository, fundRepresentativeRepository, userRepository);
     }
 
     @Test
     void throwsNotFoundForUnknownAccountType() {
         assertThatThrownBy(() -> service.loadUserByUsername("WIZARD:vera@vol.test"))
                 .isInstanceOf(UsernameNotFoundException.class);
-        verifyNoInteractions(volunteerRepository, systemAdminRepository, fundRepresentativeRepository);
+        verifyNoInteractions(volunteerRepository, systemAdminRepository, fundRepresentativeRepository, userRepository);
     }
 }

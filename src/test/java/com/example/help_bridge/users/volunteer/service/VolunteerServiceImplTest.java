@@ -23,8 +23,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 import java.util.Optional;
@@ -66,11 +66,14 @@ class VolunteerServiceImplTest {
     @Mock
     private FundRepository fundRepository;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
     private VolunteerServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new VolunteerServiceImpl(repository, eventPublisher, fundRepository);
+        service = new VolunteerServiceImpl(repository, eventPublisher, fundRepository, passwordEncoder);
         lenient().when(fundRepository.findById(FUND_ID)).thenReturn(Optional.of(fund()));
     }
 
