@@ -35,7 +35,7 @@ class ProblemDetailAuthenticationEntryPointTest {
 
         JsonNode body = objectMapper.readTree(response.getContentAsString());
         assertThat(body.get("status").asInt()).isEqualTo(401);
-        assertThat(body.get("title").asString()).isEqualTo("Unauthorized");
+        assertThat(body.get("title").asString()).isEqualTo("Помилка автентифікації");
         assertThat(body.get("type").asString()).isEqualTo("https://api.example.com/errors/unauthorized");
         assertThat(body.get("instance").asString()).isEqualTo("/api/v1/funds");
         assertThat(body.has("timestamp")).isTrue();
