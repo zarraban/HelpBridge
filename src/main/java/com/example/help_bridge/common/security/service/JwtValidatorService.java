@@ -1,4 +1,4 @@
-package com.example.help_bridge.common.security.jwt;
+package com.example.help_bridge.common.security.service;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
