@@ -101,7 +101,26 @@ class RoleAuthorizationTest {
                 new Endpoint(HttpMethod.PATCH, "/api/fundraiser-assignments/" + ID + "/return", """
                         {"returnReason":"Cannot make it in time"}""", VOLUNTEER_OR_REP),
                 new Endpoint(HttpMethod.POST, "/api/fundraisers/" + ID + "/evidences", """
-                        {"receiptNumber":"1"}""", VOLUNTEER_OR_REP)
+                        {"receiptNumber":"1"}""", VOLUNTEER_OR_REP),
+
+                new Endpoint(HttpMethod.GET, "/api/v1/requests", null, ANY_ACCOUNT),
+                new Endpoint(HttpMethod.GET, "/api/v1/requests/" + ID, null, ANY_ACCOUNT),
+                new Endpoint(HttpMethod.GET, "/api/v1/requests/shared-pool", null, ADMIN_OR_REP),
+                new Endpoint(HttpMethod.POST, "/api/v1/requests", """
+                        {"userId":9999,"assistanceType":"MEDICAL","amount":1500.00,"deadline":"2099-01-15",
+                         "situationDescription":"s","needDescription":"n","institutionName":"inst",
+                         "applicationNumber":"A-1","dataProcessingConsent":true}""", ADMIN),
+                new Endpoint(HttpMethod.PUT, "/api/v1/requests/" + ID, """
+                        {"assistanceType":"MEDICAL","amount":2000.00,"deadline":"2099-02-01",
+                         "situationDescription":"s","needDescription":"n","institutionName":"inst",
+                         "applicationNumber":"A-1"}""", ADMIN),
+                new Endpoint(HttpMethod.DELETE, "/api/v1/requests/" + ID, null, ADMIN),
+                new Endpoint(HttpMethod.GET, "/api/v1/requests/" + ID + "/documents", null, ANY_ACCOUNT),
+                new Endpoint(HttpMethod.POST, "/api/v1/requests/" + ID + "/documents", """
+                        {"fileName":"a.pdf","fileUrl":"http://x/a"}""", ADMIN),
+                new Endpoint(HttpMethod.PUT, "/api/v1/requests/" + ID + "/documents/" + ID, """
+                        {"fileName":"a.pdf","fileUrl":"http://x/a"}""", ADMIN),
+                new Endpoint(HttpMethod.DELETE, "/api/v1/requests/" + ID + "/documents/" + ID, null, ADMIN)
         );
     }
 

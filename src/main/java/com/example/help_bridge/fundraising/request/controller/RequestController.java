@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -36,8 +37,11 @@ public class RequestController {
     @ApiResponse(responseCode = "201", description = "Запит створено")
     @ApiResponse(responseCode = "400", description = "Помилка валідації",
             content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "403", description = "Недостатньо прав",
+            content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
     @ApiResponse(responseCode = "404", description = "Користувача не знайдено",
             content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+    @PreAuthorize("hasAnyRole('APPLICANT', 'SYSTEM_ADMIN')")
     @PostMapping
     public ResponseEntity<RequestResponse> createRequest(@RequestBody @Valid CreateRequestRequest request) {
         RequestResponse created = requestService.createRequest(request);
@@ -70,6 +74,7 @@ public class RequestController {
 
     @Operation(summary = "Отримати спільний пул запитів")
     @ApiResponse(responseCode = "200", description = "Список запитів зі спільного пулу")
+    @PreAuthorize("hasAnyRole('FUND_REPRESENTATIVE', 'SYSTEM_ADMIN')")
     @GetMapping("/shared-pool")
     public ResponseEntity<List<RequestResponse>> getSharedPool() {
         return ResponseEntity.ok(requestService.getSharedPool());
@@ -86,8 +91,11 @@ public class RequestController {
 
     @Operation(summary = "Оновити запит")
     @ApiResponse(responseCode = "200", description = "Запит оновлено")
+    @ApiResponse(responseCode = "403", description = "Недостатньо прав",
+            content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
     @ApiResponse(responseCode = "409", description = "Запит у стані, що не дозволяє редагування",
             content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+    @PreAuthorize("hasAnyRole('APPLICANT', 'SYSTEM_ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<RequestResponse> updateRequest(
             @PathVariable Long id,
@@ -97,6 +105,9 @@ public class RequestController {
 
     @Operation(summary = "Видалити запит")
     @ApiResponse(responseCode = "204", description = "Запит видалено")
+    @ApiResponse(responseCode = "403", description = "Недостатньо прав",
+            content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+    @PreAuthorize("hasAnyRole('APPLICANT', 'SYSTEM_ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRequest(@PathVariable Long id) {
         requestService.deleteRequest(id);
