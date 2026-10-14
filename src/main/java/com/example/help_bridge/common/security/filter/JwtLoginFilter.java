@@ -41,10 +41,6 @@ public class JwtLoginFilter extends AbstractAuthenticationProcessingFilter {
         this.authenticationEntryPoint = authenticationEntryPoint;
     }
 
-    /*
-    The username handed to the AuthenticationManager is ACCOUNT_TYPE:email,
-    the format AppUserDetailsService expects.
-     */
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
             throws AuthenticationException, IOException {

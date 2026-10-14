@@ -48,7 +48,6 @@ class RoleAuthorizationTest {
     private static final Set<AccountType> VOLUNTEER_OR_REP = EnumSet.of(AccountType.VOLUNTEER, AccountType.FUND_REPRESENTATIVE);
     private static final Set<AccountType> ANY_ACCOUNT = EnumSet.allOf(AccountType.class);
 
-    // ids that do not exist, so an allowed call ends in a 404 and never changes seeded data
     private static final String ID = "9999";
 
     record Endpoint(HttpMethod method, String path, String body, Set<AccountType> allowed) {
