@@ -3,6 +3,8 @@ package com.example.help_bridge.common.security;
 import com.example.help_bridge.common.security.service.JwtService;
 import com.example.help_bridge.fundraising.fund.entity.Fund;
 import com.example.help_bridge.fundraising.fund.repository.FundRepository;
+import com.example.help_bridge.fundraising.user.entity.User;
+import com.example.help_bridge.fundraising.user.repository.UserRepository;
 import com.example.help_bridge.users.auth.AccountType;
 import com.example.help_bridge.users.fundrepresentative.entity.FundRepresentative;
 import com.example.help_bridge.users.fundrepresentative.repository.FundRepresentativeRepository;
@@ -42,10 +44,12 @@ class RoleAuthorizationTest {
     private static final String ADMIN_EMAIL = "admin@roles.test";
     private static final String REP_EMAIL = "rita@roles.test";
     private static final String VOLUNTEER_EMAIL = "vera@roles.test";
+    private static final String APPLICANT_EMAIL = "applicant@roles.test";
 
     private static final Set<AccountType> ADMIN = EnumSet.of(AccountType.SYSTEM_ADMIN);
     private static final Set<AccountType> ADMIN_OR_REP = EnumSet.of(AccountType.SYSTEM_ADMIN, AccountType.FUND_REPRESENTATIVE);
     private static final Set<AccountType> VOLUNTEER_OR_REP = EnumSet.of(AccountType.VOLUNTEER, AccountType.FUND_REPRESENTATIVE);
+    private static final Set<AccountType> ADMIN_OR_APPLICANT = EnumSet.of(AccountType.SYSTEM_ADMIN, AccountType.APPLICANT);
     private static final Set<AccountType> ANY_ACCOUNT = EnumSet.allOf(AccountType.class);
 
     private static final String ID = "9999";
@@ -109,18 +113,18 @@ class RoleAuthorizationTest {
                 new Endpoint(HttpMethod.POST, "/api/v1/requests", """
                         {"userId":9999,"assistanceType":"MEDICAL","amount":1500.00,"deadline":"2099-01-15",
                          "situationDescription":"s","needDescription":"n","institutionName":"inst",
-                         "applicationNumber":"A-1","dataProcessingConsent":true}""", ADMIN),
+                         "applicationNumber":"A-1","dataProcessingConsent":true}""", ADMIN_OR_APPLICANT),
                 new Endpoint(HttpMethod.PUT, "/api/v1/requests/" + ID, """
                         {"assistanceType":"MEDICAL","amount":2000.00,"deadline":"2099-02-01",
                          "situationDescription":"s","needDescription":"n","institutionName":"inst",
-                         "applicationNumber":"A-1"}""", ADMIN),
-                new Endpoint(HttpMethod.DELETE, "/api/v1/requests/" + ID, null, ADMIN),
+                         "applicationNumber":"A-1"}""", ADMIN_OR_APPLICANT),
+                new Endpoint(HttpMethod.DELETE, "/api/v1/requests/" + ID, null, ADMIN_OR_APPLICANT),
                 new Endpoint(HttpMethod.GET, "/api/v1/requests/" + ID + "/documents", null, ANY_ACCOUNT),
                 new Endpoint(HttpMethod.POST, "/api/v1/requests/" + ID + "/documents", """
-                        {"fileName":"a.pdf","fileUrl":"http://x/a"}""", ADMIN),
+                        {"fileName":"a.pdf","fileUrl":"http://x/a"}""", ADMIN_OR_APPLICANT),
                 new Endpoint(HttpMethod.PUT, "/api/v1/requests/" + ID + "/documents/" + ID, """
-                        {"fileName":"a.pdf","fileUrl":"http://x/a"}""", ADMIN),
-                new Endpoint(HttpMethod.DELETE, "/api/v1/requests/" + ID + "/documents/" + ID, null, ADMIN)
+                        {"fileName":"a.pdf","fileUrl":"http://x/a"}""", ADMIN_OR_APPLICANT),
+                new Endpoint(HttpMethod.DELETE, "/api/v1/requests/" + ID + "/documents/" + ID, null, ADMIN_OR_APPLICANT)
         );
     }
 
@@ -144,6 +148,9 @@ class RoleAuthorizationTest {
 
     @Autowired
     private VolunteerRepository volunteerRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @BeforeEach
     void seedAccounts() {
@@ -173,6 +180,8 @@ class RoleAuthorizationTest {
         volunteer.setPasswordHash("hash");
         volunteer.setStatus(VolunteerStatus.ACTIVE);
         volunteerRepository.save(volunteer);
+
+        userRepository.save(new User("Anna", "Applicant", APPLICANT_EMAIL, "hash"));
     }
 
     private String tokenFor(AccountType type) {
@@ -180,6 +189,7 @@ class RoleAuthorizationTest {
             case SYSTEM_ADMIN -> ADMIN_EMAIL;
             case FUND_REPRESENTATIVE -> REP_EMAIL;
             case VOLUNTEER -> VOLUNTEER_EMAIL;
+            case APPLICANT -> APPLICANT_EMAIL;
         };
         return jwtService.generateToken(userDetailsService.loadUserByUsername(type + ":" + email));
     }

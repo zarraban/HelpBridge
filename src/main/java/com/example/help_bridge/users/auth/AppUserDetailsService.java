@@ -1,5 +1,6 @@
 package com.example.help_bridge.users.auth;
 
+import com.example.help_bridge.fundraising.user.repository.UserRepository;
 import com.example.help_bridge.users.fundrepresentative.repository.FundRepresentativeRepository;
 import com.example.help_bridge.users.systemadmin.repository.SystemAdminRepository;
 import com.example.help_bridge.users.volunteer.repository.VolunteerRepository;
@@ -17,6 +18,7 @@ public class AppUserDetailsService implements UserDetailsService {
     private final FundRepresentativeRepository fundRepresentativeRepository;
     private final SystemAdminRepository adminRepository;
     private final VolunteerRepository volunteerRepository;
+    private final UserRepository userRepository;
 
     /*
     During the login/registration user will always have to specify the type of his Account.
@@ -42,6 +44,9 @@ public class AppUserDetailsService implements UserDetailsService {
                     .orElseThrow(AppUserDetailsService::accountNotFound);
             case SYSTEM_ADMIN -> adminRepository.findByEmail(email)
                     .map(admin -> toUserDetails(principalName, admin.getPasswordHash(), accountType, true))
+                    .orElseThrow(AppUserDetailsService::accountNotFound);
+            case APPLICANT -> userRepository.findByEmail(email)
+                    .map(user -> toUserDetails(principalName, user.getPasswordHash(), accountType, true))
                     .orElseThrow(AppUserDetailsService::accountNotFound);
         };
     }
