@@ -10,7 +10,6 @@ import com.example.help_bridge.users.systemadmin.exception.SystemAdminNotFoundEx
 import com.example.help_bridge.users.systemadmin.repository.SystemAdminRepository;
 import com.example.help_bridge.users.systemadmin.service.SystemAdminService;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,10 +20,11 @@ import java.util.List;
 public class SystemAdminServiceImpl implements SystemAdminService {
 
     private final SystemAdminRepository systemAdminRepository;
-    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final PasswordEncoder passwordEncoder;
 
-    public SystemAdminServiceImpl(SystemAdminRepository systemAdminRepository) {
+    public SystemAdminServiceImpl(SystemAdminRepository systemAdminRepository, PasswordEncoder passwordEncoder) {
         this.systemAdminRepository = systemAdminRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
