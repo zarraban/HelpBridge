@@ -79,11 +79,11 @@ class VolunteerServiceImplTest {
     }
 
     private static Volunteer volunteer(Long id, VolunteerStatus status) {
-        return new Volunteer(id, fund(), FIRST_NAME, LAST_NAME, EMAIL, PHONE, status);
+        return new Volunteer(id, fund(), FIRST_NAME, LAST_NAME, EMAIL, PHONE, status, null);
     }
 
     private static Volunteer volunteer(Long id, String email, String phone, VolunteerStatus status) {
-        return new Volunteer(id, fund(), "Olena", "Koval", email, phone, status);
+        return new Volunteer(id, fund(), "Olena", "Koval", email, phone, status, null);
     }
 
     private static RegisterVolunteerCommand registerCommand() {

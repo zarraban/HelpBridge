@@ -44,12 +44,12 @@ class VolunteerRepositoryTest {
     }
 
     private Volunteer persist(Fund fund, String email, String phone, VolunteerStatus status) {
-        return em.persist(new Volunteer(null, fund, "Anna", "Samana", email, phone, status));
+        return em.persist(new Volunteer(null, fund, "Anna", "Samana", email, phone, status, null));
     }
 
     @Test
     void saveGeneratesId() {
-        Volunteer saved = repository.save(new Volunteer(null, fund, "Anna", "Samana", EMAIL, PHONE, VolunteerStatus.ACTIVE));
+        Volunteer saved = repository.save(new Volunteer(null, fund, "Anna", "Samana", EMAIL, PHONE, VolunteerStatus.ACTIVE, null));
 
         assertNotNull(saved.getId());
     }
