@@ -14,7 +14,7 @@ final class RequestMapper {
                 request.getId(),
                 request.getRequester().getId(),
                 request.getFund() != null ? request.getFund().getId() : null,
-                request.getAssistanceType(),
+                request.getAssistanceType().getCode(),
                 request.getAmount(),
                 request.getDeadline(),
                 request.getSituationDescription(),

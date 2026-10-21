@@ -5,7 +5,6 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
@@ -17,7 +16,6 @@ public record CreateRequestForm(
         Long userId,
 
         @NotBlank(message = "Оберіть тип допомоги")
-        @Pattern(regexp = "(MILITARY|MEDICAL|HOUSING|FINANCIAL|OTHER)?", message = "Оберіть допустимий тип допомоги")
         String assistanceType,
 
         @NotNull(message = "Вкажіть суму")

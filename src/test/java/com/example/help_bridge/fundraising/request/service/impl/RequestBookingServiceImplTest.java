@@ -5,6 +5,7 @@ import com.example.help_bridge.fundraising.fund.entity.FundStatus;
 import com.example.help_bridge.fundraising.fund.exception.FundNotFoundException;
 import com.example.help_bridge.fundraising.fund.repository.FundRepository;
 import com.example.help_bridge.fundraising.request.dto.request.RequestDto.RequestResponse;
+import com.example.help_bridge.fundraising.request.entity.AssistanceType;
 import com.example.help_bridge.fundraising.request.entity.Request;
 import com.example.help_bridge.fundraising.request.entity.RequestStatus;
 import com.example.help_bridge.fundraising.request.event.RequestBookedEvent;
@@ -35,6 +36,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class RequestBookingServiceImplTest {
 
+    private static final AssistanceType MEDICAL = new AssistanceType("MEDICAL", "Лікування", 2);
+
     @Mock
     private RequestRepository requestRepository;
     @Mock
@@ -50,7 +53,7 @@ class RequestBookingServiceImplTest {
     }
 
     private Request newRequest() {
-        return new Request(new User(), "MEDICAL", BigDecimal.TEN,
+        return new Request(new User(), MEDICAL, BigDecimal.TEN,
                 LocalDate.now().plusDays(5), "s", "n", "inst", "A-1", true);
     }
 
@@ -134,7 +137,7 @@ class RequestBookingServiceImplTest {
     void bookRequest_responseContainsRequesterAndFundIds() {
         User user = mock(User.class);
         when(user.getId()).thenReturn(7L);
-        Request request = new Request(user, "MEDICAL", BigDecimal.TEN,
+        Request request = new Request(user, MEDICAL, BigDecimal.TEN,
                 LocalDate.now().plusDays(5), "s", "n", "inst", "A-1", true);
         request.approve();
         Fund fund = mock(Fund.class);

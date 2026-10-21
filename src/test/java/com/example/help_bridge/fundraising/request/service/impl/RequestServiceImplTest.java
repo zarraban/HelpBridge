@@ -3,11 +3,14 @@ package com.example.help_bridge.fundraising.request.service.impl;
 import com.example.help_bridge.fundraising.request.dto.request.RequestDto.CreateRequestRequest;
 import com.example.help_bridge.fundraising.request.dto.request.RequestDto.RequestResponse;
 import com.example.help_bridge.fundraising.request.dto.request.RequestDto.UpdateRequestRequest;
+import com.example.help_bridge.fundraising.request.entity.AssistanceType;
 import com.example.help_bridge.fundraising.request.entity.Request;
 import com.example.help_bridge.fundraising.request.entity.RequestStatus;
+import com.example.help_bridge.fundraising.request.exception.InvalidAssistanceTypeException;
 import com.example.help_bridge.fundraising.request.exception.InvalidRequestStateException;
 import com.example.help_bridge.fundraising.request.exception.RequestNotFoundException;
 import com.example.help_bridge.fundraising.request.exception.RequesterNotFoundException;
+import com.example.help_bridge.fundraising.request.repository.AssistanceTypeRepository;
 import com.example.help_bridge.fundraising.request.repository.RequestRepository;
 import com.example.help_bridge.fundraising.request.service.RequestServiceImpl;
 import com.example.help_bridge.fundraising.user.entity.User;
@@ -31,20 +34,31 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class RequestServiceImplTest {
 
+    private static final AssistanceType MEDICAL = new AssistanceType("MEDICAL", "Лікування", 2);
+    private static final AssistanceType SURGERY = new AssistanceType("SURGERY", "Операція", 6);
+
     @Mock
     private RequestRepository requestRepository;
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private AssistanceTypeRepository assistanceTypeRepository;
 
     private RequestServiceImpl requestService;
 
     @BeforeEach
     void setUp() {
-        requestService = new RequestServiceImpl(requestRepository, userRepository);
+        requestService = new RequestServiceImpl(requestRepository, userRepository, assistanceTypeRepository);
+        lenient().when(assistanceTypeRepository.findById("MEDICAL")).thenReturn(Optional.of(MEDICAL));
+        lenient().when(assistanceTypeRepository.findById("SURGERY")).thenReturn(Optional.of(SURGERY));
     }
 
     private CreateRequestRequest dto(Long userId) {
-        return new CreateRequestRequest(userId, "MEDICAL", BigDecimal.TEN,
+        return dto(userId, "MEDICAL");
+    }
+
+    private CreateRequestRequest dto(Long userId, String assistanceType) {
+        return new CreateRequestRequest(userId, assistanceType, BigDecimal.TEN,
                 LocalDate.now().plusDays(10), "s", "n", "inst", "A-1", true);
     }
 
@@ -54,7 +68,7 @@ class RequestServiceImplTest {
     }
 
     private Request pendingRequest(LocalDate deadline) {
-        return new Request(new User(), "MEDICAL", BigDecimal.TEN,
+        return new Request(new User(), MEDICAL, BigDecimal.TEN,
                 deadline, "s", "n", "inst", "A-1", true);
     }
 
@@ -72,6 +86,7 @@ class RequestServiceImplTest {
         RequestResponse response = requestService.createRequest(dto(1L));
 
         assertThat(response.status()).isEqualTo(RequestStatus.PENDING_VERIFICATION);
+        assertThat(response.assistanceType()).isEqualTo("MEDICAL");
         verify(requestRepository).save(any(Request.class));
     }
 
@@ -81,6 +96,16 @@ class RequestServiceImplTest {
 
         assertThatThrownBy(() -> requestService.createRequest(dto(5L)))
                 .isInstanceOf(RequesterNotFoundException.class);
+
+        verify(requestRepository, never()).save(any());
+    }
+
+    @Test
+    void createRequest_whenAssistanceTypeUnknown_throwsInvalidAssistanceTypeAndDoesNotSave() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(new User()));
+
+        assertThatThrownBy(() -> requestService.createRequest(dto(1L, "HACK")))
+                .isInstanceOf(InvalidAssistanceTypeException.class);
 
         verify(requestRepository, never()).save(any());
     }

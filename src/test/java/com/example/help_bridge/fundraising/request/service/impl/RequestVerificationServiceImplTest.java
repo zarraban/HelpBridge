@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.example.help_bridge.fundraising.request.entity.AssistanceType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -34,7 +35,7 @@ class RequestVerificationServiceImplTest {
     @BeforeEach
     void setUp() {
         verificationService = new RequestVerificationServiceImpl(requestRepository);
-        pendingRequest = new Request(null, "MEDICAL", BigDecimal.TEN,
+        pendingRequest = new Request(null, new AssistanceType("MEDICAL", "Лікування", 2), BigDecimal.TEN,
                 LocalDate.now().plusDays(5), "s", "n", "inst", "A-1", true);
     }
 
