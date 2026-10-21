@@ -2,7 +2,6 @@ package com.example.help_bridge.common.web;
 
 import com.example.help_bridge.common.exception.handler.GlobalExceptionHandler;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -14,8 +13,11 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE;
+import static org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON;
+
 @ControllerAdvice
-@Order(Ordered.HIGHEST_PRECEDENCE)
+@Order(HIGHEST_PRECEDENCE)
 public class HtmlErrorPagesAdvice {
 
     private final GlobalExceptionHandler apiHandler;
@@ -52,6 +54,6 @@ public class HtmlErrorPagesAdvice {
     }
 
     private static ResponseEntity<ProblemDetail> json(HttpStatus status, ProblemDetail body) {
-        return ResponseEntity.status(status).contentType(org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON).body(body);
+        return ResponseEntity.status(status).contentType(APPLICATION_PROBLEM_JSON).body(body);
     }
 }
