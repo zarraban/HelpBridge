@@ -6,6 +6,7 @@ import com.example.help_bridge.fundraising.request.dto.request.RequestDto.Update
 import com.example.help_bridge.fundraising.request.entity.RequestStatus;
 
 import java.util.List;
+import java.util.Map;
 
 public interface RequestService {
     RequestResponse createRequest(CreateRequestRequest request);
@@ -16,4 +17,5 @@ public interface RequestService {
     RequestResponse getRequestById(Long id);
     RequestResponse updateRequest(Long id, UpdateRequestRequest request);
     void deleteRequest(Long id);
+    Map<String, String> getAssistanceTypes();
 }

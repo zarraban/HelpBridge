@@ -22,8 +22,9 @@ public class Request {
     @Version
     private Long version;
 
-    @Column(nullable = false)
-    private String assistanceType;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "assistance_type_code", nullable = false)
+    private AssistanceType assistanceType;
 
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
@@ -66,7 +67,7 @@ public class Request {
 
     protected Request() {}
 
-    public Request(User requester, String assistanceType, BigDecimal amount, LocalDate deadline,
+    public Request(User requester, AssistanceType assistanceType, BigDecimal amount, LocalDate deadline,
                    String situationDescription, String needDescription,
                    String institutionName, String applicationNumber,
                    boolean dataProcessingConsent) {
@@ -82,8 +83,8 @@ public class Request {
         this.createdAt = LocalDateTime.now();
         this.status = RequestStatus.PENDING_VERIFICATION;
     }
-    /** Редагувати можна лише заявку, яку адмін ще не перевірив. */
-    public void updateDetails(String assistanceType, BigDecimal amount, LocalDate deadline,
+
+    public void updateDetails(AssistanceType assistanceType, BigDecimal amount, LocalDate deadline,
                               String situationDescription, String needDescription,
                               String institutionName, String applicationNumber) {
         if (status != RequestStatus.PENDING_VERIFICATION) {
@@ -141,7 +142,7 @@ public class Request {
     }
 
     public Long getId() { return id; }
-    public String getAssistanceType() { return assistanceType; }
+    public AssistanceType getAssistanceType() { return assistanceType; }
     public BigDecimal getAmount() { return amount; }
     public LocalDate getDeadline() { return deadline; }
     public String getSituationDescription() { return situationDescription; }

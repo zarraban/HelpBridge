@@ -1,5 +1,6 @@
 package com.example.help_bridge.fundraising.request.repository;
 
+import com.example.help_bridge.fundraising.request.entity.AssistanceType;
 import com.example.help_bridge.fundraising.request.entity.Request;
 import com.example.help_bridge.fundraising.request.entity.RequestDocument;
 import com.example.help_bridge.fundraising.request.entity.RequestStatus;
@@ -40,12 +41,21 @@ class RequestRepositoryTest {
         return u;
     }
 
+    private AssistanceType medical() {
+        AssistanceType type = em.find(AssistanceType.class, "MEDICAL");
+        if (type == null) {
+            type = new AssistanceType("MEDICAL", "Лікування", 2);
+            em.persist(type);
+        }
+        return type;
+    }
+
     private Request newRequest(String institution) {
         return newRequest(user, institution);
     }
 
     private Request newRequest(User owner, String institution) {
-        return new Request(owner, "MEDICAL", BigDecimal.TEN,
+        return new Request(owner, medical(), BigDecimal.TEN,
                 LocalDate.now().plusDays(5), "s", "n", institution, "A-1", true);
     }
 
@@ -53,7 +63,6 @@ class RequestRepositoryTest {
         return em.createQuery("select count(d) from RequestDocument d", Long.class).getSingleResult();
     }
 
-    // SessionFactory спільний для всього застосунку, тому його не можна закривати через try-with-resources
     @SuppressWarnings("resource")
     private Statistics statistics() {
         return em.getEntityManagerFactory().unwrap(SessionFactory.class).getStatistics();
