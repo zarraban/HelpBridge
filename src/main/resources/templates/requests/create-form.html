@@ -1,73 +1,73 @@
 <!DOCTYPE html>
 <html lang="uk" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>Нова заявка</title>
-</head>
+<head th:replace="~{fragments/layout :: head('Нова заявка')}"></head>
 <body>
+<nav th:replace="~{fragments/layout :: nav}"></nav>
+<main>
 <h1>Нова заявка на допомогу</h1>
 
-<form th:action="@{/requests}" th:object="${form}" method="post">
+<form class="card" th:action="@{/requests}" th:object="${form}" method="post">
 
-    <div>
+    <div class="field">
         <label for="userId">ID користувача</label>
         <input id="userId" type="number" th:field="*{userId}">
-        <span th:if="${#fields.hasErrors('userId')}" th:errors="*{userId}"></span>
+        <span class="field-error" th:if="${#fields.hasErrors('userId')}" th:errors="*{userId}"></span>
     </div>
 
-    <div>
+    <div class="field">
         <label for="assistanceType">Тип допомоги</label>
         <select id="assistanceType" th:field="*{assistanceType}">
             <option value="">-- оберіть --</option>
             <option th:each="t : ${assistanceTypes}" th:value="${t.key}" th:text="${t.value}"></option>
         </select>
-        <span th:if="${#fields.hasErrors('assistanceType')}" th:errors="*{assistanceType}"></span>
+        <span class="field-error" th:if="${#fields.hasErrors('assistanceType')}" th:errors="*{assistanceType}"></span>
     </div>
 
-    <div>
+    <div class="field">
         <label for="amount">Потрібна сума, грн</label>
         <input id="amount" type="number" step="0.01" th:field="*{amount}">
-        <span th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}"></span>
+        <span class="field-error" th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}"></span>
     </div>
 
-    <div>
+    <div class="field">
         <label for="deadline">Крайній термін</label>
         <input id="deadline" type="date" th:field="*{deadline}">
-        <span th:if="${#fields.hasErrors('deadline')}" th:errors="*{deadline}"></span>
+        <span class="field-error" th:if="${#fields.hasErrors('deadline')}" th:errors="*{deadline}"></span>
     </div>
 
-    <div>
+    <div class="field">
         <label for="situationDescription">Опис ситуації</label>
         <textarea id="situationDescription" rows="4" th:field="*{situationDescription}"></textarea>
-        <span th:if="${#fields.hasErrors('situationDescription')}" th:errors="*{situationDescription}"></span>
+        <span class="field-error" th:if="${#fields.hasErrors('situationDescription')}" th:errors="*{situationDescription}"></span>
     </div>
 
-    <div>
+    <div class="field">
         <label for="needDescription">Яка саме допомога потрібна</label>
         <textarea id="needDescription" rows="3" th:field="*{needDescription}"></textarea>
-        <span th:if="${#fields.hasErrors('needDescription')}" th:errors="*{needDescription}"></span>
+        <span class="field-error" th:if="${#fields.hasErrors('needDescription')}" th:errors="*{needDescription}"></span>
     </div>
 
-    <div>
+    <div class="field">
         <label for="institutionName">Установа, яка може підтвердити обставини</label>
         <input id="institutionName" type="text" th:field="*{institutionName}">
-        <span th:if="${#fields.hasErrors('institutionName')}" th:errors="*{institutionName}"></span>
+        <span class="field-error" th:if="${#fields.hasErrors('institutionName')}" th:errors="*{institutionName}"></span>
     </div>
 
-    <div>
+    <div class="field">
         <label for="applicationNumber">Номер заяви/звернення/документа</label>
         <input id="applicationNumber" type="text" th:field="*{applicationNumber}">
-        <span th:if="${#fields.hasErrors('applicationNumber')}" th:errors="*{applicationNumber}"></span>
+        <span class="field-error" th:if="${#fields.hasErrors('applicationNumber')}" th:errors="*{applicationNumber}"></span>
     </div>
 
-    <div>
+    <div class="field checkbox">
         <input id="dataProcessingConsent" type="checkbox" th:field="*{dataProcessingConsent}">
         <label for="dataProcessingConsent">Погоджуюсь на перевірку інформації</label>
-        <span th:if="${#fields.hasErrors('dataProcessingConsent')}" th:errors="*{dataProcessingConsent}"></span>
+        <span class="field-error" th:if="${#fields.hasErrors('dataProcessingConsent')}" th:errors="*{dataProcessingConsent}"></span>
     </div>
 
-    <button type="submit">Подати заявку</button>
-    <a th:href="@{/requests}">Скасувати</a>
+    <button type="submit" class="btn">Подати заявку</button>
+    <a class="btn btn-link" th:href="@{/requests}">Скасувати</a>
 </form>
+</main>
 </body>
 </html>

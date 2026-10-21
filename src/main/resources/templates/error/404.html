@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('404')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: nav}"></nav>
+<main class="error-page">
+    <p class="code">404</p>
+    <h1>Сторінку не знайдено</h1>
+    <p>Такої сторінки не існує або її було переміщено.</p>
+    <a class="btn" th:href="@{/requests}">До списку заявок</a>
+</main>
+</body>
+</html>

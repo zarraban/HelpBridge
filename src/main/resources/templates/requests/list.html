@@ -1,15 +1,14 @@
 <!DOCTYPE html>
-<html lang="uk" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>Заявки на допомогу</title>
-</head>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Заявки на допомогу')}"></head>
 <body>
+<nav th:replace="~{fragments/layout :: nav}"></nav>
+<main>
 <h1>Заявки на допомогу</h1>
 
-<p th:if="${message}" th:text="${message}"></p>
+<p class="alert alert-success" th:if="${message}" th:text="${message}"></p>
 
-<p><a th:href="@{/requests/new}">Подати нову заявку</a></p>
+<p sec:authorize="hasRole('APPLICANT')"><a class="btn" th:href="@{/requests/new}">Подати нову заявку</a></p>
 
 <p th:if="${#lists.isEmpty(requests)}">Нових заявок поки немає.</p>
 
@@ -38,5 +37,6 @@
     </tr>
     </tbody>
 </table>
+</main>
 </body>
 </html>
