@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Вхід')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: nav}"></nav>
+<main>
+    <form class="card narrow" th:action="@{/login}" method="post">
+        <h1>Вхід</h1>
+
+        <p class="alert alert-error" th:if="${param.error}">Невірний email або пароль.</p>
+        <p class="alert alert-success" th:if="${param.logout}">Ви вийшли з системи.</p>
+
+        <input id="username" name="username" type="hidden">
+        <div class="field">
+            <label for="accountType">Тип облікового запису</label>
+            <select id="accountType">
+                <option value="APPLICANT">Заявник</option>
+                <option value="VOLUNTEER">Волонтер</option>
+                <option value="FUND_REPRESENTATIVE">Представник фонду</option>
+                <option value="SYSTEM_ADMIN">Адміністратор</option>
+            </select>
+        </div>
+        <div class="field">
+            <label for="email">Email</label>
+            <input id="email" type="text" autocomplete="username" autofocus required>
+        </div>
+        <div class="field">
+            <label for="password">Пароль</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn">Увійти</button>
+    </form>
+</main>
+<script>
+    document.querySelector('form').addEventListener('submit', function () {
+        document.getElementById('username').value =
+            document.getElementById('accountType').value + ':' + document.getElementById('email').value.trim();
+    });
+</script>
+</body>
+</html>

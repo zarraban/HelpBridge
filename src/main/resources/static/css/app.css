@@ -1,0 +1,84 @@
+:root {
+    --bg: #f5f7fa;
+    --surface: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --danger: #b91c1c;
+    --border: #d9dee7;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.site-nav {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
+
+.site-nav .brand { font-weight: 700; color: var(--primary); text-decoration: none; margin-right: auto; }
+.site-nav a { color: var(--text); text-decoration: none; }
+.site-nav a:hover { color: var(--primary); }
+.site-nav .user { color: var(--muted); }
+.site-nav form { margin: 0; }
+
+main { max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
+h1 { margin-top: 0; }
+
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.card.narrow { max-width: 420px; margin: 3rem auto; }
+
+.field { margin-bottom: 1rem; }
+.field label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
+.field input[type=text], .field input[type=password], .field input[type=number],
+.field input[type=date], .field select, .field textarea {
+    width: 100%;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font: inherit;
+}
+.field.checkbox label { display: inline; font-weight: 400; }
+.field-error, .alert-error { color: var(--danger); font-size: 0.9rem; }
+.alert { padding: 0.65rem 0.9rem; border-radius: 6px; margin-bottom: 1rem; }
+.alert-error { background: #fee2e2; }
+.alert-success { background: #dcfce7; color: #166534; }
+
+.btn {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border: 0;
+    border-radius: 6px;
+    background: var(--primary);
+    color: #fff;
+    font: inherit;
+    text-decoration: none;
+    cursor: pointer;
+}
+.btn:hover { background: var(--primary-dark); }
+.btn-link { background: none; color: var(--primary); padding: 0.5rem 0.25rem; }
+.btn-link:hover { background: none; text-decoration: underline; }
+
+table { width: 100%; border-collapse: collapse; background: var(--surface); }
+th, td { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); }
+th { background: #eef2f7; }
+
+.error-page { text-align: center; margin-top: 4rem; }
+.error-page .code { font-size: 5rem; font-weight: 800; color: var(--primary); margin: 0; }

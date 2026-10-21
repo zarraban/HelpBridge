@@ -5,7 +5,9 @@ import com.example.help_bridge.common.security.filter.JwtLoginFilter;
 import com.example.help_bridge.common.security.service.JwtService;
 import com.example.help_bridge.common.security.service.JwtValidatorService;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -40,6 +42,7 @@ public class SecurityConfiguration {
     }
 
     @Bean
+    @Order(1)
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    JwtValidatorService jwtValidatorService,
                                                    JwtService jwtService,
@@ -53,6 +56,7 @@ public class SecurityConfiguration {
         JwtAuthenticationFilter jwtAuthenticationFilter =
                 new JwtAuthenticationFilter(jwtValidatorService, userDetailsService, authenticationEntryPoint, accountStatusChecker);
         return http
+                .securityMatcher("/api/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -64,6 +68,24 @@ public class SecurityConfiguration {
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtLoginFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .build();
+    }
+
+    @Bean
+    @Order(2)
+    public SecurityFilterChain webFilterChain(HttpSecurity http,
+                                              AuthenticationManager authenticationManager) throws Exception {
+        return http
+                .authenticationManager(authenticationManager)
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/login", "/css/**", "/error", "/error/**").permitAll()
+                        .requestMatchers("/requests/new").hasRole("APPLICANT")
+                        .requestMatchers(HttpMethod.POST, "/requests").hasRole("APPLICANT")
+                        .anyRequest().authenticated())
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .defaultSuccessUrl("/requests", true))
+                .logout(logout -> logout.logoutSuccessUrl("/login?logout"))
                 .build();
     }
 }

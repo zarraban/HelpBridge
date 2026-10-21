@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' — HelpBridge'">HelpBridge</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<nav class="site-nav" th:fragment="nav">
+    <a class="brand" th:href="@{/requests}">HelpBridge</a>
+    <a th:href="@{/requests}">Заявки</a>
+    <a th:href="@{/requests/new}">Нова заявка</a>
+
+    <span sec:authorize="isAuthenticated()" class="user">
+        <span sec:authentication="name">user</span>
+    </span>
+    <form sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post">
+        <button type="submit" class="btn btn-link">Вийти</button>
+    </form>
+    <a sec:authorize="!isAuthenticated()" th:href="@{/login}">Увійти</a>
+</nav>
+</body>
+</html>
