@@ -40,6 +40,7 @@ import com.example.help_bridge.fundraising.fund.exception.DuplicateFundException
 import com.example.help_bridge.users.fundrepresentative.exception.DuplicateFundRepresentativeException;
 import com.example.help_bridge.users.fundrepresentative.exception.FundRepresentativeNotFoundException;
 import com.example.help_bridge.users.systemadmin.exception.SystemAdminHasVerificationActsException;
+import com.example.help_bridge.fundraising.request.exception.InvalidAssistanceTypeException;
 
 import java.net.URI;
 import java.time.Instant;
@@ -348,6 +349,18 @@ public class GlobalExceptionHandler {
         );
         problemDetail.setTitle("Concurrent Modification");
         problemDetail.setType(URI.create("https://api.example.com/errors/concurrent-modification"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler(InvalidAssistanceTypeException.class)
+    public ProblemDetail handleInvalidAssistanceType(InvalidAssistanceTypeException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage()
+        );
+        problemDetail.setTitle("Invalid Assistance Type");
+        problemDetail.setType(URI.create("https://api.example.com/errors/invalid-assistance-type"));
         problemDetail.setProperty("timestamp", Instant.now());
         return problemDetail;
     }
