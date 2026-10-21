@@ -10,7 +10,7 @@
 <nav class="site-nav" th:fragment="nav">
     <a class="brand" th:href="@{/requests}">HelpBridge</a>
     <a th:href="@{/requests}">Заявки</a>
-    <a th:href="@{/requests/new}">Нова заявка</a>
+    <a sec:authorize="hasRole('APPLICANT')" th:href="@{/requests/new}">Нова заявка</a>
 
     <span sec:authorize="isAuthenticated()" class="user">
         <span sec:authentication="name">user</span>
