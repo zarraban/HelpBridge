@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 
 @Schema(description = "Облікові дані для входу")
 public record LoginRequest(
-        @Schema(description = "Тип облікового запису", example = "VOLUNTEER")
+        @Schema(description = "Тип облікового запису", example = "APPLICANT")
         @NotNull(message = "This field is necessary")
         AccountType accountType,
 

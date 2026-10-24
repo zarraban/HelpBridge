@@ -4,39 +4,98 @@
 <body>
 <nav th:replace="~{fragments/layout :: nav}"></nav>
 <main>
-<h1>Заявки на допомогу</h1>
+    <h1 th:if="${ownRequests}">Мої заявки на допомогу</h1>
+    <h1 th:unless="${ownRequests}">Спільний пул заявок</h1>
 
-<p class="alert alert-success" th:if="${message}" th:text="${message}"></p>
+    <p class="alert alert-success" th:if="${message}" th:text="${message}"></p>
+    <p class="alert alert-error" th:if="${error}" th:text="${error}"></p>
 
-<p sec:authorize="hasRole('APPLICANT')"><a class="btn" th:href="@{/requests/new}">Подати нову заявку</a></p>
+    <p sec:authorize="hasRole('APPLICANT')"><a class="btn" th:href="@{/requests/new}">Подати нову заявку</a></p>
 
-<p th:if="${#lists.isEmpty(requests)}">Нових заявок поки немає.</p>
+    <p class="muted" sec:authorize="hasRole('FUND_REPRESENTATIVE')">
+        Тут показано верифіковані заявки. Спочатку йдуть заявки з простроченим терміном.
+    </p>
+    <p class="muted" sec:authorize="hasRole('SYSTEM_ADMIN')">
+        Режим адміністратора: додатково показано ID заявника.
+    </p>
 
-<table th:unless="${#lists.isEmpty(requests)}">
-    <thead>
-    <tr>
-        <th>Тип допомоги</th>
-        <th>Яка допомога</th>
-        <th>Сума, грн</th>
-        <th>Установа</th>
-        <th>Крайній термін</th>
-        <th>Статус</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="r : ${requests}">
-        <td th:text="${assistanceTypes[#strings.toString(r.assistanceType)] ?: r.assistanceType}"></td>
-        <td th:text="${r.needDescription}"></td>
-        <td th:text="${r.amount}"></td>
-        <td th:text="${r.institutionName}"></td>
-        <td th:text="${#temporals.format(r.deadline, 'dd.MM.yyyy')}"></td>
-        <td>
-            <span th:if="${r.hot}">Гаряча</span>
-            <span th:unless="${r.hot}" th:text="${r.status}"></span>
-        </td>
-    </tr>
-    </tbody>
-</table>
+    <section sec:authorize="hasRole('SYSTEM_ADMIN')" th:if="${pendingRequests != null}">
+        <h2>Очікують підтвердження</h2>
+        <p th:if="${#lists.isEmpty(pendingRequests)}">Заявок на підтвердження немає.</p>
+        <table th:unless="${#lists.isEmpty(pendingRequests)}">
+            <thead>
+            <tr>
+                <th>Тип допомоги</th>
+                <th>Яка допомога</th>
+                <th>Сума, грн</th>
+                <th>Установа</th>
+                <th>Крайній термін</th>
+                <th>ID заявника</th>
+                <th>Дія</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="p : ${pendingRequests}">
+                <td th:text="${assistanceTypes[#strings.toString(p.assistanceType)] ?: p.assistanceType}"></td>
+                <td th:text="${p.needDescription}"></td>
+                <td th:text="${p.amount}"></td>
+                <td th:text="${p.institutionName}"></td>
+                <td th:text="${#temporals.format(p.deadline, 'dd.MM.yyyy')}"></td>
+                <td th:text="${p.requesterId}"></td>
+                <td>
+                    <form th:action="@{/requests/{id}/review(id=${p.id})}" method="post" style="display:inline">
+                        <input type="hidden" name="approved" value="true">
+                        <button type="submit" class="btn">Підтвердити</button>
+                    </form>
+                    <form th:action="@{/requests/{id}/review(id=${p.id})}" method="post" style="display:inline">
+                        <input type="hidden" name="approved" value="false">
+                        <button type="submit" class="btn btn-link">Відхилити</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <h2>Спільний пул</h2>
+    </section>
+
+    <p th:if="${#lists.isEmpty(requests)}" th:text="${ownRequests} ? 'Ви ще не подавали заявок.' : 'Нових заявок поки немає.'"></p>
+
+    <table th:unless="${#lists.isEmpty(requests)}">
+        <thead>
+        <tr>
+            <th>Тип допомоги</th>
+            <th>Яка допомога</th>
+            <th>Сума, грн</th>
+            <th>Установа</th>
+            <th>Крайній термін</th>
+            <th>Статус</th>
+            <th sec:authorize="hasRole('SYSTEM_ADMIN')">ID заявника</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="r : ${requests}">
+            <td th:text="${assistanceTypes[#strings.toString(r.assistanceType)] ?: r.assistanceType}"></td>
+            <td th:text="${r.needDescription}"></td>
+            <td th:text="${r.amount}"></td>
+            <td th:text="${r.institutionName}"></td>
+            <td th:text="${#temporals.format(r.deadline, 'dd.MM.yyyy')}"></td>
+            <td>
+                <span th:if="${r.hot}">Гаряча</span>
+                <th:block th:unless="${r.hot}">
+                <span th:switch="${r.status.name()}">
+                    <span th:case="'PENDING_VERIFICATION'">Очікує перевірки</span>
+                    <span th:case="'NEW'">Нова</span>
+                    <span th:case="'IN_PROGRESS'">В роботі</span>
+                    <span th:case="'CLOSED'">Закрита</span>
+                    <span th:case="'REJECTED'">Відхилена</span>
+                    <span th:case="*" th:text="${r.status}"></span>
+                </span>
+                </th:block>
+            </td>
+            <td sec:authorize="hasRole('SYSTEM_ADMIN')" th:text="${r.requesterId}"></td>
+        </tr>
+        </tbody>
+    </table>
 </main>
 </body>
 </html>

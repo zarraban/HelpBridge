@@ -77,10 +77,14 @@ public class SecurityConfiguration {
                                               AuthenticationManager authenticationManager) throws Exception {
         return http
                 .authenticationManager(authenticationManager)
+                .csrf(Customizer.withDefaults())
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/login", "/css/**", "/error", "/error/**").permitAll()
                         .requestMatchers("/requests/new").hasRole("APPLICANT")
                         .requestMatchers(HttpMethod.POST, "/requests").hasRole("APPLICANT")
+                        .requestMatchers(HttpMethod.POST, "/requests/*/review").hasRole("SYSTEM_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/requests")
+                        .hasAnyRole("APPLICANT", "FUND_REPRESENTATIVE", "SYSTEM_ADMIN")
                         .anyRequest().authenticated())
                 .formLogin(form -> form
                         .loginPage("/login")

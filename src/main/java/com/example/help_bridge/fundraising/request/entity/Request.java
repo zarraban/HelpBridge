@@ -102,6 +102,9 @@ public class Request {
     public void approve() {
         transitionTo(RequestStatus.NEW);
     }
+    public void reject() {
+        transitionTo(RequestStatus.REJECTED);
+    }
     public void book(Fund fund) {
         Objects.requireNonNull(fund, "fund must not be null");
         transitionTo(RequestStatus.IN_PROGRESS);
@@ -138,7 +141,9 @@ public class Request {
     }
 
     public boolean isExpired() {
-        return deadline.isBefore(LocalDate.now()) && status != RequestStatus.CLOSED;
+        return deadline.isBefore(LocalDate.now())
+                && status != RequestStatus.CLOSED
+                && status != RequestStatus.REJECTED;
     }
 
     public Long getId() { return id; }

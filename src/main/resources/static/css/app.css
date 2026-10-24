@@ -31,6 +31,16 @@ body {
 .site-nav a { color: var(--text); text-decoration: none; }
 .site-nav a:hover { color: var(--primary); }
 .site-nav .user { color: var(--muted); }
+.role-badge {
+    display: inline-block;
+    margin-left: 0.4rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    background: #e0e7ff;
+    color: var(--primary-dark);
+    font-size: 0.8rem;
+}
+.muted { color: var(--muted); }
 .site-nav form { margin: 0; }
 
 main { max-width: 960px; margin: 2rem auto; padding: 0 1rem; }

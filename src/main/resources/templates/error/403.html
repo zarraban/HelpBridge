@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<html lang="uk" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/layout :: head('403')}"></head>
 <body>
 <nav th:replace="~{fragments/layout :: nav}"></nav>
@@ -7,7 +7,8 @@
     <p class="code">403</p>
     <h1>Доступ заборонено</h1>
     <p>У вас немає прав для перегляду цієї сторінки.</p>
-    <a class="btn" th:href="@{/requests}">До списку заявок</a>
+    <a class="btn" sec:authorize="hasAnyRole('APPLICANT', 'FUND_REPRESENTATIVE', 'SYSTEM_ADMIN')"
+       th:href="@{/requests}">До списку заявок</a>
 </main>
 </body>
 </html>
