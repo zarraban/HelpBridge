@@ -1,6 +1,7 @@
 package com.example.help_bridge.fundraising.request.service.impl;
 
 import com.example.help_bridge.fundraising.request.dto.request.RequestVerificationDto;
+import com.example.help_bridge.fundraising.request.entity.AssistanceType;
 import com.example.help_bridge.fundraising.request.entity.Request;
 import com.example.help_bridge.fundraising.request.entity.RequestStatus;
 import com.example.help_bridge.fundraising.request.exception.InvalidRequestStateException;
@@ -12,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import com.example.help_bridge.fundraising.request.entity.AssistanceType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -50,13 +50,14 @@ class RequestVerificationServiceImplTest {
     }
 
     @Test
-    void reviewRequest_whenRejected_deletesRequest() {
+    void reviewRequest_whenRejected_marksRejectedAndSaves() {
         when(requestRepository.findById(1L)).thenReturn(Optional.of(pendingRequest));
 
         verificationService.reviewRequest(1L, new RequestVerificationDto(false, "fraud"));
 
-        verify(requestRepository).deleteById(1L);
-        verify(requestRepository, never()).save(any());
+        assertThat(pendingRequest.getStatus()).isEqualTo(RequestStatus.REJECTED);
+        verify(requestRepository).save(pendingRequest);
+        verify(requestRepository, never()).deleteById(any());
     }
 
     @Test
@@ -69,7 +70,9 @@ class RequestVerificationServiceImplTest {
                 verificationService.reviewRequest(1L, new RequestVerificationDto(false, "late")))
                 .isInstanceOf(InvalidRequestStateException.class);
 
+        assertThat(pendingRequest.getStatus()).isEqualTo(RequestStatus.IN_PROGRESS);
         verify(requestRepository, never()).deleteById(any());
+        verify(requestRepository, never()).save(any());
     }
 
     @Test
