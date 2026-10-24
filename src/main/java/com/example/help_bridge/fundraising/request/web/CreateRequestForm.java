@@ -12,11 +12,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record CreateRequestForm(
-        @NotNull(message = "Вкажіть ID користувача")
-        Long userId,
-
         @NotBlank(message = "Оберіть тип допомоги")
         String assistanceType,
+
+        @Size(max = 200, message = "Опис типу занадто довгий (максимум 200 символів)")
+        String otherAssistanceType,
 
         @NotNull(message = "Вкажіть суму")
         @Positive(message = "Сума має бути більшою за нуль")
@@ -46,19 +46,27 @@ public record CreateRequestForm(
         @AssertTrue(message = "Потрібна згода на перевірку інформації")
         Boolean dataProcessingConsent
 ) {
+    private static final String OTHER_KEY = "OTHER";
 
     public static CreateRequestForm empty() {
         return new CreateRequestForm(null, null, null, null, null, null, null, null, false);
     }
 
-    public CreateRequestRequest toDto() {
+    public boolean requiresOtherText() {
+        return OTHER_KEY.equals(assistanceType);
+    }
+
+    public CreateRequestRequest toDto(Long requesterId) {
+        String need = requiresOtherText()
+                ? "[Інше: " + otherAssistanceType.trim() + "] " + needDescription
+                : needDescription;
         return new CreateRequestRequest(
-                userId,
+                requesterId,
                 assistanceType,
                 amount,
                 deadline,
                 situationDescription,
-                needDescription,
+                need,
                 institutionName,
                 applicationNumber,
                 dataProcessingConsent

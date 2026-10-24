@@ -24,10 +24,9 @@ public class RequestVerificationServiceImpl implements RequestVerificationServic
 
         if (Boolean.TRUE.equals(reviewRequest.approved())) {
             request.approve();
-            requestRepository.save(request);
         } else {
-            request.ensureRejectable();
-            requestRepository.deleteById(id);
+            request.reject();
         }
+        requestRepository.save(request);
     }
 }

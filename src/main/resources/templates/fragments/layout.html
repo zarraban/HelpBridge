@@ -9,11 +9,18 @@
 <body>
 <nav class="site-nav" th:fragment="nav">
     <a class="brand" th:href="@{/requests}">HelpBridge</a>
-    <a th:href="@{/requests}">Заявки</a>
+    <a sec:authorize="hasAnyRole('APPLICANT', 'FUND_REPRESENTATIVE', 'SYSTEM_ADMIN')"
+       th:href="@{/requests}">
+        <span sec:authorize="hasRole('APPLICANT')">Мої заявки</span>
+        <span sec:authorize="hasAnyRole('FUND_REPRESENTATIVE', 'SYSTEM_ADMIN')">Спільний пул</span>
+    </a>
     <a sec:authorize="hasRole('APPLICANT')" th:href="@{/requests/new}">Нова заявка</a>
 
     <span sec:authorize="isAuthenticated()" class="user">
         <span sec:authentication="name">user</span>
+        <span class="role-badge" sec:authorize="hasRole('APPLICANT')">Заявник</span>
+        <span class="role-badge" sec:authorize="hasRole('FUND_REPRESENTATIVE')">Представник фонду</span>
+        <span class="role-badge" sec:authorize="hasRole('SYSTEM_ADMIN')">Адміністратор</span>
     </span>
     <form sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post">
         <button type="submit" class="btn btn-link">Вийти</button>

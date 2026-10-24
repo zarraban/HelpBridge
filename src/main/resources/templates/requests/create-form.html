@@ -4,70 +4,83 @@
 <body>
 <nav th:replace="~{fragments/layout :: nav}"></nav>
 <main>
-<h1>Нова заявка на допомогу</h1>
+    <h1>Нова заявка на допомогу</h1>
 
-<form class="card" th:action="@{/requests}" th:object="${form}" method="post">
+    <form class="card" th:action="@{/requests}" th:object="${form}" method="post">
 
-    <div class="field">
-        <label for="userId">ID користувача</label>
-        <input id="userId" type="number" th:field="*{userId}">
-        <span class="field-error" th:if="${#fields.hasErrors('userId')}" th:errors="*{userId}"></span>
-    </div>
+        <p class="alert alert-error" th:each="err : ${#fields.globalErrors()}" th:text="${err}"></p>
 
-    <div class="field">
-        <label for="assistanceType">Тип допомоги</label>
-        <select id="assistanceType" th:field="*{assistanceType}">
-            <option value="">-- оберіть --</option>
-            <option th:each="t : ${assistanceTypes}" th:value="${t.key}" th:text="${t.value}"></option>
-        </select>
-        <span class="field-error" th:if="${#fields.hasErrors('assistanceType')}" th:errors="*{assistanceType}"></span>
-    </div>
+        <div class="field">
+            <label for="assistanceType">Тип допомоги</label>
+            <select id="assistanceType" th:field="*{assistanceType}">
+                <option value="">-- оберіть --</option>
+                <option th:each="t : ${assistanceTypes}" th:value="${t.key}" th:text="${t.value}"></option>
+            </select>
+            <span class="field-error" th:if="${#fields.hasErrors('assistanceType')}" th:errors="*{assistanceType}"></span>
+        </div>
 
-    <div class="field">
-        <label for="amount">Потрібна сума, грн</label>
-        <input id="amount" type="number" step="0.01" th:field="*{amount}">
-        <span class="field-error" th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}"></span>
-    </div>
+        <div class="field" id="otherTypeField" style="display:none">
+            <label for="otherAssistanceType">Опишіть, який саме тип допомоги</label>
+            <input id="otherAssistanceType" type="text" th:field="*{otherAssistanceType}">
+            <span class="field-error" th:if="${#fields.hasErrors('otherAssistanceType')}" th:errors="*{otherAssistanceType}"></span>
+        </div>
 
-    <div class="field">
-        <label for="deadline">Крайній термін</label>
-        <input id="deadline" type="date" th:field="*{deadline}">
-        <span class="field-error" th:if="${#fields.hasErrors('deadline')}" th:errors="*{deadline}"></span>
-    </div>
+        <div class="field">
+            <label for="amount">Потрібна сума, грн</label>
+            <input id="amount" type="number" step="0.01" th:field="*{amount}">
+            <span class="field-error" th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}"></span>
+        </div>
 
-    <div class="field">
-        <label for="situationDescription">Опис ситуації</label>
-        <textarea id="situationDescription" rows="4" th:field="*{situationDescription}"></textarea>
-        <span class="field-error" th:if="${#fields.hasErrors('situationDescription')}" th:errors="*{situationDescription}"></span>
-    </div>
+        <div class="field">
+            <label for="deadline">Крайній термін</label>
+            <input id="deadline" type="date" th:field="*{deadline}">
+            <span class="field-error" th:if="${#fields.hasErrors('deadline')}" th:errors="*{deadline}"></span>
+        </div>
 
-    <div class="field">
-        <label for="needDescription">Яка саме допомога потрібна</label>
-        <textarea id="needDescription" rows="3" th:field="*{needDescription}"></textarea>
-        <span class="field-error" th:if="${#fields.hasErrors('needDescription')}" th:errors="*{needDescription}"></span>
-    </div>
+        <div class="field">
+            <label for="situationDescription">Опис ситуації</label>
+            <textarea id="situationDescription" rows="4" th:field="*{situationDescription}"></textarea>
+            <span class="field-error" th:if="${#fields.hasErrors('situationDescription')}" th:errors="*{situationDescription}"></span>
+        </div>
 
-    <div class="field">
-        <label for="institutionName">Установа, яка може підтвердити обставини</label>
-        <input id="institutionName" type="text" th:field="*{institutionName}">
-        <span class="field-error" th:if="${#fields.hasErrors('institutionName')}" th:errors="*{institutionName}"></span>
-    </div>
+        <div class="field">
+            <label for="needDescription">Яка саме допомога потрібна</label>
+            <textarea id="needDescription" rows="3" th:field="*{needDescription}"></textarea>
+            <span class="field-error" th:if="${#fields.hasErrors('needDescription')}" th:errors="*{needDescription}"></span>
+        </div>
 
-    <div class="field">
-        <label for="applicationNumber">Номер заяви/звернення/документа</label>
-        <input id="applicationNumber" type="text" th:field="*{applicationNumber}">
-        <span class="field-error" th:if="${#fields.hasErrors('applicationNumber')}" th:errors="*{applicationNumber}"></span>
-    </div>
+        <div class="field">
+            <label for="institutionName">Установа, яка може підтвердити обставини</label>
+            <input id="institutionName" type="text" th:field="*{institutionName}">
+            <span class="field-error" th:if="${#fields.hasErrors('institutionName')}" th:errors="*{institutionName}"></span>
+        </div>
 
-    <div class="field checkbox">
-        <input id="dataProcessingConsent" type="checkbox" th:field="*{dataProcessingConsent}">
-        <label for="dataProcessingConsent">Погоджуюсь на перевірку інформації</label>
-        <span class="field-error" th:if="${#fields.hasErrors('dataProcessingConsent')}" th:errors="*{dataProcessingConsent}"></span>
-    </div>
+        <div class="field">
+            <label for="applicationNumber">Номер заяви/звернення/документа</label>
+            <input id="applicationNumber" type="text" th:field="*{applicationNumber}">
+            <span class="field-error" th:if="${#fields.hasErrors('applicationNumber')}" th:errors="*{applicationNumber}"></span>
+        </div>
 
-    <button type="submit" class="btn">Подати заявку</button>
-    <a class="btn btn-link" th:href="@{/requests}">Скасувати</a>
-</form>
+        <div class="field checkbox">
+            <input id="dataProcessingConsent" type="checkbox" th:field="*{dataProcessingConsent}">
+            <label for="dataProcessingConsent">Погоджуюсь на перевірку інформації</label>
+            <span class="field-error" th:if="${#fields.hasErrors('dataProcessingConsent')}" th:errors="*{dataProcessingConsent}"></span>
+        </div>
+
+        <button type="submit" class="btn">Подати заявку</button>
+        <a class="btn btn-link" th:href="@{/requests}">Скасувати</a>
+    </form>
 </main>
+<script>
+    (function () {
+        const select = document.getElementById('assistanceType');
+        const box = document.getElementById('otherTypeField');
+        function toggle() {
+            box.style.display = select.options[select.selectedIndex].text.trim() === 'Інше' ? 'block' : 'none';
+        }
+        select.addEventListener('change', toggle);
+        toggle();
+    })();
+</script>
 </body>
 </html>
