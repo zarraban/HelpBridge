@@ -9,6 +9,7 @@ import com.example.help_bridge.users.volunteer.service.VolunteerService;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -33,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(VolunteerController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class VolunteerControllerTest {
 
     private static final String BASE_URL = "/api/funds/{fundId}/volunteers";
