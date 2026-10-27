@@ -6,7 +6,6 @@ import com.microsoft.playwright.options.AriaRole;
 
 import java.time.LocalDate;
 
-// Fields are located by id: label texts overlap ("Тип допомоги" is also a part of the "Інше" field label)
 public class CreateRequestPage {
 
     private final Page page;
@@ -69,7 +68,6 @@ public class CreateRequestPage {
         page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Подати заявку")).click();
     }
 
-    // Shown only when the "Інше" option is selected (toggled by JS)
     public Locator otherTypeField() {
         return page.locator("#otherTypeField");
     }
