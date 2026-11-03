@@ -79,7 +79,7 @@ public class SecurityConfiguration {
                 .authenticationManager(authenticationManager)
                 .csrf(Customizer.withDefaults())
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/login", "/css/**", "/error", "/error/**").permitAll()
+                        .requestMatchers("/login", "/css/**", "/error", "/error/**", "/actuator/health").permitAll()
                         .requestMatchers("/requests/new").hasRole("APPLICANT")
                         .requestMatchers(HttpMethod.POST, "/requests").hasRole("APPLICANT")
                         .requestMatchers(HttpMethod.POST, "/requests/*/review").hasRole("SYSTEM_ADMIN")
