@@ -11,6 +11,7 @@ RUN ./mvnw package -DskipTests -q -P prod
 FROM eclipse-temurin:25-jre
 WORKDIR /app
 RUN groupadd --system app && useradd --system --gid app --no-create-home app
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*   # НОВИЙ РЯДОК
 COPY --from=build --chown=app:app /app/target/*.jar app.jar
 ENV SPRING_PROFILES_ACTIVE=prod
 USER app
