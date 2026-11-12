@@ -5,27 +5,73 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${title} + ' — HelpBridge'">HelpBridge</title>
     <link rel="stylesheet" th:href="@{/css/app.css}">
+    <script defer th:src="@{/js/forms.js}"></script>
 </head>
 <body>
-<nav class="site-nav" th:fragment="nav">
-    <a class="brand" th:href="@{/requests}">HelpBridge</a>
-    <a sec:authorize="hasAnyRole('APPLICANT', 'FUND_REPRESENTATIVE', 'SYSTEM_ADMIN')"
-       th:href="@{/requests}">
-        <span sec:authorize="hasRole('APPLICANT')">Мої заявки</span>
-        <span sec:authorize="hasAnyRole('FUND_REPRESENTATIVE', 'SYSTEM_ADMIN')">Спільний пул</span>
-    </a>
-    <a sec:authorize="hasRole('APPLICANT')" th:href="@{/requests/new}">Нова заявка</a>
+<a class="skip-link" th:fragment="skipLink" href="#main-content">Перейти до вмісту</a>
+<nav class="site-nav" th:fragment="nav(activePage)" aria-label="Основна навігація">
+    <a class="brand" th:href="@{/home}">HelpBridge</a>
+
+    <ul class="nav-links" sec:authorize="hasAnyRole('APPLICANT', 'FUND_REPRESENTATIVE', 'SYSTEM_ADMIN')">
+        <li sec:authorize="hasRole('APPLICANT')">
+            <a th:href="@{/requests}" th:attr="aria-current=${activePage == 'requests' ? 'page' : null}">Мої заявки</a>
+        </li>
+        <li sec:authorize="hasRole('APPLICANT')">
+            <a th:href="@{/requests/new}" th:attr="aria-current=${activePage == 'new-request' ? 'page' : null}">Нова заявка</a>
+        </li>
+        <li sec:authorize="hasAnyRole('FUND_REPRESENTATIVE', 'SYSTEM_ADMIN')">
+            <a th:href="@{/requests}" th:attr="aria-current=${activePage == 'requests' ? 'page' : null}">Спільний пул</a>
+        </li>
+        <li sec:authorize="hasRole('SYSTEM_ADMIN')">
+            <a th:href="@{/requests#verification}">Перевірка заявок</a>
+        </li>
+    </ul>
+
+    <a class="nav-item" sec:authorize="hasRole('VOLUNTEER')" th:href="@{/home}"
+       th:attr="aria-current=${activePage == 'home' ? 'page' : null}">Мій кабінет</a>
 
     <span sec:authorize="isAuthenticated()" class="user">
-        <span sec:authentication="name">user</span>
+        <span th:text="${#strings.contains(#authentication.name, ':') ? #strings.substringAfter(#authentication.name, ':') : #authentication.name}">user</span>
         <span class="role-badge" sec:authorize="hasRole('APPLICANT')">Заявник</span>
         <span class="role-badge" sec:authorize="hasRole('FUND_REPRESENTATIVE')">Представник фонду</span>
         <span class="role-badge" sec:authorize="hasRole('SYSTEM_ADMIN')">Адміністратор</span>
+        <span class="role-badge" sec:authorize="hasRole('VOLUNTEER')">Волонтер</span>
+        <span class="role-badge" sec:authorize="hasRole('DONOR')">Донор</span>
     </span>
     <form sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post">
         <button type="submit" class="btn btn-link">Вийти</button>
     </form>
-    <a sec:authorize="!isAuthenticated()" th:href="@{/login}">Увійти</a>
+    <a sec:authorize="!isAuthenticated()" th:href="@{/login}"
+       th:attr="aria-current=${activePage == 'login' ? 'page' : null}">Увійти</a>
 </nav>
+<header class="page-header" th:fragment="pageHeader(title, description, actions)">
+    <div class="page-heading">
+        <h1 th:text="${title}">Заголовок</h1>
+        <p class="muted" th:if="${!#strings.isEmpty(description)}" th:text="${description}"></p>
+    </div>
+    <div class="page-actions" th:if="${actions != null}">
+        <th:block th:replace="${actions}"></th:block>
+    </div>
+</header>
+
+<p th:fragment="alert(kind, text)" class="alert" th:classappend="${'alert-' + kind}"
+   th:attr="role=${kind == 'error' ? 'alert' : 'status'}" th:text="${text}"></p>
+
+<th:block th:fragment="messages">
+    <th:block th:if="${message}"><p th:replace="~{fragments/layout :: alert('success', ${message})}"></p></th:block>
+    <th:block th:if="${error}"><p th:replace="~{fragments/layout :: alert('error', ${error})}"></p></th:block>
+</th:block>
+<section class="card empty-state" th:fragment="emptyState(title, description, actions)">
+    <h3 th:text="${title}"></h3>
+    <p class="muted" th:text="${description}"></p>
+    <div class="form-actions" th:if="${actions != null}"><th:block th:replace="${actions}"></th:block></div>
+</section>
+
+<div class="form-actions error-actions" th:fragment="errorActions">
+    <a class="btn" sec:authorize="isAuthenticated()" th:href="@{/home}">На головну</a>
+    <a class="btn" sec:authorize="!isAuthenticated()" th:href="@{/login}">Увійти</a>
+    <a class="btn btn-secondary" sec:authorize="hasAnyRole('APPLICANT', 'FUND_REPRESENTATIVE', 'SYSTEM_ADMIN')"
+       th:href="@{/requests}">До списку заявок</a>
+</div>
 </body>
 </html>

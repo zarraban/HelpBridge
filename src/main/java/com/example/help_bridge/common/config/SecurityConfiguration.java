@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
+import com.example.help_bridge.common.web.WebLoginFailureHandler;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -79,7 +80,7 @@ public class SecurityConfiguration {
                 .authenticationManager(authenticationManager)
                 .csrf(Customizer.withDefaults())
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/login", "/css/**", "/error", "/error/**", "/actuator/health").permitAll()
+                        .requestMatchers("/login", "/css/**", "/js/**", "/error", "/error/**", "/actuator/health").permitAll()
                         .requestMatchers("/requests/new").hasRole("APPLICANT")
                         .requestMatchers(HttpMethod.POST, "/requests").hasRole("APPLICANT")
                         .requestMatchers(HttpMethod.POST, "/requests/*/review").hasRole("SYSTEM_ADMIN")
@@ -88,8 +89,12 @@ public class SecurityConfiguration {
                         .anyRequest().authenticated())
                 .formLogin(form -> form
                         .loginPage("/login")
-                        .defaultSuccessUrl("/requests", true))
-                .logout(logout -> logout.logoutSuccessUrl("/login?logout"))
+                        .defaultSuccessUrl("/home", true)
+                        .failureHandler(new WebLoginFailureHandler()))
+                .sessionManagement(session -> session.invalidSessionUrl("/login?expired"))
+                .logout(logout -> logout
+                        .deleteCookies("JSESSIONID")
+                        .logoutSuccessUrl("/login?logout"))
                 .build();
     }
 }
