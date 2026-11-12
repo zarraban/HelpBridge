@@ -2,9 +2,10 @@
 <html lang="uk" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('Нова заявка')}"></head>
 <body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
 <nav th:replace="~{fragments/layout :: nav('new-request')}"></nav>
-<main>
-    <h1>Нова заявка на допомогу</h1>
+<main id="main-content" tabindex="-1">
+    <header th:replace="~{fragments/layout :: pageHeader('Нова заявка на допомогу', 'Опишіть вашу ситуацію та допомогу, якої потребуєте.', ~{})}"></header>
 
     <form class="card" th:action="@{/requests}" th:object="${form}" method="post">
 

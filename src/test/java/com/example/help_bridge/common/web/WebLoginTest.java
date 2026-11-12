@@ -1,5 +1,9 @@
 package com.example.help_bridge.common.web;
 
+import com.example.help_bridge.fundraising.request.web.RequestWebController;
+import com.example.help_bridge.fundraising.request.service.RequestService;
+import com.example.help_bridge.fundraising.request.service.RequestVerificationService;
+import com.example.help_bridge.fundraising.user.repository.UserRepository;
 import com.example.help_bridge.common.config.SecurityConfiguration;
 import com.example.help_bridge.common.security.service.JwtService;
 import com.example.help_bridge.common.security.service.JwtValidatorService;
@@ -24,16 +28,43 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(LoginController.class)
+@WebMvcTest({LoginController.class, RequestWebController.class})
 @Import(SecurityConfiguration.class)
 class WebLoginTest {
     @Autowired MockMvc mvc;
+    @MockitoBean RequestService requestService;
+    @MockitoBean RequestVerificationService verificationService;
+    @MockitoBean UserRepository userRepository;
     @MockitoBean AuthenticationManager authenticationManager;
     @MockitoBean UserDetailsService userDetailsService;
     @MockitoBean JwtService jwtService;
     @MockitoBean JwtValidatorService jwtValidatorService;
     @MockitoBean AuthenticationEntryPoint entryPoint;
     @MockitoBean AccessDeniedHandler deniedHandler;
+
+    @Test
+    void sharedLayoutRendersRequestPagesAndMessages() throws Exception {
+        mvc.perform(get("/requests").with(user("representative").roles("FUND_REPRESENTATIVE"))
+                        .flashAttr("message", "Заявку збережено"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Заявку збережено")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("page-header")));
+        var applicant = new com.example.help_bridge.fundraising.user.entity.User();
+        org.springframework.test.util.ReflectionTestUtils.setField(applicant, "id", 1L);
+        when(userRepository.findByEmail("applicant@test.com")).thenReturn(java.util.Optional.of(applicant));
+        mvc.perform(get("/requests").with(user("APPLICANT:applicant@test.com").roles("APPLICANT")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Мої заявки на допомогу")))
+                .andDo(result -> {
+                    String html = result.getResponse().getContentAsString();
+                    String header = html.substring(html.indexOf("<header"), html.indexOf("</header>"));
+                    assertThat(header).contains("href=\"/requests/new\"");
+                    assertThat(html.split("Подати нову заявку", -1)).hasSize(2);
+                });
+        mvc.perform(get("/requests/new").with(user("applicant").roles("APPLICANT")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Опишіть вашу ситуацію")));
+    }
 
     @Test
     void redirectsEveryRoleToItsAvailablePage() throws Exception {

@@ -2,9 +2,10 @@
 <html lang="uk" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/layout :: head('Мій кабінет')}"></head>
 <body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
 <nav th:replace="~{fragments/layout :: nav('home')}"></nav>
-<main>
-    <h1>Мій кабінет</h1>
+<main id="main-content" tabindex="-1">
+    <header th:replace="~{fragments/layout :: pageHeader('Мій кабінет', 'Ваш робочий простір у HelpBridge.', ~{})}"></header>
     <section class="card">
         <h2>Вітаємо в HelpBridge</h2>
         <p sec:authorize="hasRole('VOLUNTEER')">Ви увійшли як волонтер. Розділи ваших призначень і особистої статистики ще готуються.</p>

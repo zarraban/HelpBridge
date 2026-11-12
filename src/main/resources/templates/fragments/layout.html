@@ -7,6 +7,7 @@
     <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
+<a class="skip-link" th:fragment="skipLink" href="#main-content">Перейти до вмісту</a>
 <nav class="site-nav" th:fragment="nav(activePage)" aria-label="Основна навігація">
     <a class="brand" th:href="@{/home}">HelpBridge</a>
 
@@ -29,7 +30,7 @@
        th:attr="aria-current=${activePage == 'home' ? 'page' : null}">Мій кабінет</a>
 
     <span sec:authorize="isAuthenticated()" class="user">
-        <span sec:authentication="name">user</span>
+        <span th:text="${#strings.contains(#authentication.name, ':') ? #strings.substringAfter(#authentication.name, ':') : #authentication.name}">user</span>
         <span class="role-badge" sec:authorize="hasRole('APPLICANT')">Заявник</span>
         <span class="role-badge" sec:authorize="hasRole('FUND_REPRESENTATIVE')">Представник фонду</span>
         <span class="role-badge" sec:authorize="hasRole('SYSTEM_ADMIN')">Адміністратор</span>
@@ -42,5 +43,22 @@
     <a sec:authorize="!isAuthenticated()" th:href="@{/login}"
        th:attr="aria-current=${activePage == 'login' ? 'page' : null}">Увійти</a>
 </nav>
+<header class="page-header" th:fragment="pageHeader(title, description, actions)">
+    <div class="page-heading">
+        <h1 th:text="${title}">Заголовок</h1>
+        <p class="muted" th:if="${!#strings.isEmpty(description)}" th:text="${description}"></p>
+    </div>
+    <div class="page-actions" th:if="${actions != null}">
+        <th:block th:replace="${actions}"></th:block>
+    </div>
+</header>
+
+<p th:fragment="alert(kind, text)" class="alert" th:classappend="${'alert-' + kind}"
+   th:attr="role=${kind == 'error' ? 'alert' : 'status'}" th:text="${text}"></p>
+
+<th:block th:fragment="messages">
+    <th:block th:if="${message}"><p th:replace="~{fragments/layout :: alert('success', ${message})}"></p></th:block>
+    <th:block th:if="${error}"><p th:replace="~{fragments/layout :: alert('error', ${error})}"></p></th:block>
+</th:block>
 </body>
 </html>

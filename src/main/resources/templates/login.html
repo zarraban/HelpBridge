@@ -2,15 +2,16 @@
 <html lang="uk" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('Вхід')}"></head>
 <body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
 <nav th:replace="~{fragments/layout :: nav('login')}"></nav>
-<main>
+<main id="main-content" tabindex="-1">
     <form id="login-form" class="card narrow" th:action="@{/login}" method="post">
-        <h1>Вхід</h1>
+        <header th:replace="~{fragments/layout :: pageHeader('Вхід', 'Оберіть тип облікового запису та введіть дані для входу.', ~{})}"></header>
 
-        <p class="alert alert-error" th:if="${param.error}">Не вдалося увійти. Перевірте тип облікового запису, email і пароль.</p>
-        <p class="alert alert-error" th:if="${param.disabled}">Обліковий запис неактивний. Зверніться до представника вашого фонду.</p>
-        <p class="alert" th:if="${param.expired}">Сесію завершено. Увійдіть знову, щоб продовжити роботу.</p>
-        <p class="alert alert-success" th:if="${param.logout}">Ви вийшли з системи.</p>
+        <th:block th:if="${param.error}"><p th:replace="~{fragments/layout :: alert('error', 'Не вдалося увійти. Перевірте тип облікового запису, email і пароль.')}"></p></th:block>
+        <th:block th:if="${param.disabled}"><p th:replace="~{fragments/layout :: alert('error', 'Обліковий запис неактивний. Зверніться до представника вашого фонду.')}"></p></th:block>
+        <th:block th:if="${param.expired}"><p th:replace="~{fragments/layout :: alert('info', 'Сесію завершено. Увійдіть знову, щоб продовжити роботу.')}"></p></th:block>
+        <th:block th:if="${param.logout}"><p th:replace="~{fragments/layout :: alert('success', 'Ви вийшли з системи.')}"></p></th:block>
 
         <input id="username" name="username" type="hidden">
         <div class="field">
