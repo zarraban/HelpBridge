@@ -80,7 +80,7 @@ h1 { margin-top: 0; }
 
 .field { margin-bottom: 1rem; }
 .field label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
-.field input[type=text], .field input[type=email], .field input[type=password], .field input[type=number],
+.field input[type=text], .field input[type=email], .field input[type=url], .field input[type=password], .field input[type=number],
 .field input[type=date], .field select, .field textarea {
     width: 100%;
     padding: 0.5rem 0.65rem;
@@ -258,3 +258,6 @@ main > section + h2 { margin-top: 2rem; }
 @media (max-width: 640px) {
     .details-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+.document-actions { margin-top: 0.5rem; }
+#documents { scroll-margin-top: 1rem; }

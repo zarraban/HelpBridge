@@ -43,8 +43,9 @@
         </dl>
     </section>
 
-    <section class="card details-section" aria-labelledby="documents-heading">
+    <section id="documents" class="card details-section" aria-labelledby="documents-heading">
         <h2 id="documents-heading">Документи заявки</h2>
+        <p th:if="${permissions.manageDocuments}"><a class="btn" th:href="@{/requests/{id}/documents/new(id=${request.id})}">Додати документ</a></p>
         <p class="muted" th:if="${#lists.isEmpty(documents)}">До цієї заявки ще не додано документів.</p>
         <th:block th:unless="${#lists.isEmpty(documents)}">
             <p class="field-hint">Посилання на документи відкриваються в новій вкладці.</p>
@@ -57,6 +58,10 @@
                         <span th:text="${document.name}"></span>
                         <span class="field-hint">Посилання недоступне.</span>
                     </th:block>
+                    <div class="form-actions document-actions" th:if="${permissions.manageDocuments}">
+                        <a class="btn btn-secondary" th:href="@{/requests/{id}/documents/{docId}/edit(id=${request.id}, docId=${document.id})}" th:aria-label="${'Редагувати документ: ' + document.name}">Редагувати</a>
+                        <a class="btn btn-danger" th:href="@{/requests/{id}/documents/{docId}/delete(id=${request.id}, docId=${document.id})}" th:aria-label="${'Видалити документ: ' + document.name}">Видалити</a>
+                    </div>
                 </li>
             </ul>
         </th:block>

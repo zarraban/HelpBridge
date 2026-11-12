@@ -28,10 +28,11 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest({LoginController.class, RequestWebController.class})
+@WebMvcTest({LoginController.class, RequestWebController.class, com.example.help_bridge.fundraising.request.web.RequestDocumentWebController.class})
 @Import(SecurityConfiguration.class)
 class MobileLayoutE2EIT {
     @MockitoBean com.example.help_bridge.fundraising.request.security.RequestAccessPolicy access;
+    @MockitoBean com.example.help_bridge.fundraising.request.service.RequestDocumentService documentService;
     @Autowired MockMvc mvc;
     @MockitoBean RequestService requestService;
     @MockitoBean RequestVerificationService verificationService;
@@ -73,6 +74,15 @@ class MobileLayoutE2EIT {
                 .andReturn().getResponse().getContentAsString();
         String deletion = mvc.perform(get("/requests/1/delete").with(user("applicant").roles("APPLICANT")))
                 .andReturn().getResponse().getContentAsString();
+        var proof = new com.example.help_bridge.fundraising.request.dto.request.RequestDocumentDto.DocumentResponse(
+                1L, "Медичний висновок", "https://files.test/proof.pdf");
+        when(documentService.getDocument(1L, 1L)).thenReturn(proof);
+        String documentNew = mvc.perform(get("/requests/1/documents/new").with(user("applicant").roles("APPLICANT")))
+                .andReturn().getResponse().getContentAsString();
+        String documentEdit = mvc.perform(get("/requests/1/documents/1/edit").with(user("applicant").roles("APPLICANT")))
+                .andReturn().getResponse().getContentAsString();
+        String documentDelete = mvc.perform(get("/requests/1/documents/1/delete").with(user("applicant").roles("APPLICANT")))
+                .andReturn().getResponse().getContentAsString();
         String css = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources/static/css/app.css"));
         String js = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources/static/js/forms.js"));
         try (var playwright = com.microsoft.playwright.Playwright.create();
@@ -88,6 +98,9 @@ class MobileLayoutE2EIT {
                     case "/requests/1" -> details;
                     case "/requests/1/edit" -> edit;
                     case "/requests/1/delete" -> deletion;
+                    case "/requests/1/documents/new" -> documentNew;
+                    case "/requests/1/documents/1/edit" -> documentEdit;
+                    case "/requests/1/documents/1/delete" -> documentDelete;
                     default -> login;
                 };
                 String type = path.endsWith(".css") ? "text/css" : path.endsWith(".js") ? "application/javascript" : "text/html";
@@ -95,7 +108,7 @@ class MobileLayoutE2EIT {
             });
             for (int width : new int[]{320, 390, 768, 1280}) {
                 page.setViewportSize(width, 900);
-                for (String path : new String[]{"/login", "/requests", "/requests/new", "/requests/1", "/requests/1/edit", "/requests/1/delete"}) {
+                for (String path : new String[]{"/login", "/requests", "/requests/new", "/requests/1", "/requests/1/edit", "/requests/1/delete", "/requests/1/documents/new", "/requests/1/documents/1/edit", "/requests/1/documents/1/delete"}) {
                     page.navigate("https://helpbridge.test" + path);
                     assertThat((Boolean) page.evaluate("document.documentElement.scrollWidth <= innerWidth")).as(path + " at " + width).isTrue();
                 }
@@ -127,6 +140,16 @@ class MobileLayoutE2EIT {
                     .setPath(java.nio.file.Path.of("target/playwright/mobile-request-delete.png")).setFullPage(true));
             page.getByText("Скасувати", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
             assertThat(page.url()).endsWith("/requests/1");
+            page.navigate("https://helpbridge.test/requests/1/documents/1/edit");
+            com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("#fileName")).hasValue(proof.fileName());
+            com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("#fileUrl")).hasValue(proof.fileUrl());
+            page.screenshot(new com.microsoft.playwright.Page.ScreenshotOptions()
+                    .setPath(java.nio.file.Path.of("target/playwright/mobile-document-edit.png")).setFullPage(true));
+            page.getByText("Скасувати", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
+            assertThat(page.url()).endsWith("/requests/1#documents");
+            page.navigate("https://helpbridge.test/requests/1/documents/1/delete");
+            page.screenshot(new com.microsoft.playwright.Page.ScreenshotOptions()
+                    .setPath(java.nio.file.Path.of("target/playwright/mobile-document-delete.png")).setFullPage(true));
             page.navigate("https://helpbridge.test/login");
             com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("[data-submit-status]")).isHidden();
             page.locator("#email").focus();

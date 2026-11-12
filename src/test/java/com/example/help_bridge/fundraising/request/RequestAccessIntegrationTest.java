@@ -101,6 +101,94 @@ class RequestAccessIntegrationTest {
                 .param("institutionName", "New clinic").param("applicationNumber", "DOC-2");
     }
 
+    private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder documentPost(String suffix) {
+        return post("/requests/" + own.getId() + "/documents" + suffix)
+                .with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT"))
+                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                .param("fileName", "Updated proof").param("fileUrl", "https://files.test/updated.pdf");
+    }
+
+    @Test
+    void documentFormsCreateUpdateAndConfirmDeletion() throws Exception {
+        String base = "/requests/" + own.getId() + "/documents";
+        mvc.perform(get(base + "/new").with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
+                .andExpect(status().isOk()).andExpect(view().name("requests/document-form"));
+        mvc.perform(documentPost(""))
+                .andExpect(redirectedUrl("/requests/" + own.getId() + "#documents"));
+        var document = documentRepository.findByRequestId(own.getId()).getFirst();
+        mvc.perform(get(base + "/" + document.getId() + "/edit").with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"Updated proof\"")));
+        mvc.perform(documentPost("/" + document.getId()).with(request -> {
+            request.setParameter("fileName", "  New title  "); return request;
+        })).andExpect(redirectedUrl("/requests/" + own.getId() + "#documents"));
+        assertThat(documentRepository.findById(document.getId()).orElseThrow().getFileName()).isEqualTo("New title");
+        mvc.perform(get(base + "/" + document.getId() + "/delete").with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
+                .andExpect(status().isOk()).andExpect(view().name("requests/document-delete"));
+        assertThat(documentRepository.existsById(document.getId())).isTrue();
+        mvc.perform(documentPost("/" + document.getId() + "/delete"))
+                .andExpect(redirectedUrl("/requests/" + own.getId() + "#documents"));
+        requests.flush();
+        assertThat(documentRepository.existsById(document.getId())).isFalse();
+        mvc.perform(documentPost("/" + document.getId() + "/delete"))
+                .andExpect(flash().attribute("error", org.hamcrest.Matchers.containsString("уже видалено")));
+    }
+
+    @Test
+    void documentFormsRejectUnsafeUrlsAndPreserveValues() throws Exception {
+        for (String url : List.of("javascript:alert(1)", "//files.test/proof.pdf", "file:///private/proof.pdf", "https://user:password@files.test/proof.pdf")) {
+            mvc.perform(documentPost("").with(request -> { request.setParameter("fileUrl", url); return request; }))
+                    .andExpect(status().isOk()).andExpect(view().name("requests/document-form"))
+                    .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"Updated proof\"")))
+                    .andExpect(content().string(org.hamcrest.Matchers.containsString("aria-invalid=\"true\"")));
+        }
+        mvc.perform(documentPost("").with(request -> { request.setParameter("fileName", " "); return request; }))
+                .andExpect(status().isOk()).andExpect(content().string(org.hamcrest.Matchers.containsString("Вкажіть назву документа")));
+        assertThat(documentRepository.findByRequestId(own.getId())).isEmpty();
+    }
+
+    @Test
+    void documentFormsProtectParentOwnershipRolesAndCsrf() throws Exception {
+        var proof = documents.addDocument(own.getId(), document());
+        var secondOwn = requests.save(request(owner));
+        String otherPath = "/requests/" + foreign.getId() + "/documents";
+        mvc.perform(post(otherPath).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT"))
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                        .param("fileName", "Proof").param("fileUrl", "https://files.test/proof.pdf")
+                        .accept(org.springframework.http.MediaType.TEXT_HTML))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/requests/" + secondOwn.getId() + "/documents/" + proof.id() + "/edit")
+                        .with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
+                .andExpect(status().isNotFound());
+        mvc.perform(documentPost("").with(user("representative").roles("FUND_REPRESENTATIVE")))
+                .andExpect(status().isForbidden());
+        mvc.perform(documentPost("").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf().useInvalidToken()))
+                .andExpect(status().isForbidden());
+        mvc.perform(post(otherPath).with(user("admin").roles("SYSTEM_ADMIN"))
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                        .param("fileName", "Admin proof").param("fileUrl", "https://files.test/proof.pdf"))
+                .andExpect(status().is3xxRedirection());
+        assertThat(documentRepository.findByRequestId(foreign.getId())).hasSize(1);
+    }
+
+    @Test
+    void reviewedRequestBlocksDocumentFormsAndPreservesSubmittedData() throws Exception {
+        var proof = documents.addDocument(own.getId(), document());
+        own.approve();
+        mvc.perform(documentPost(""))
+                .andExpect(status().isConflict()).andExpect(view().name("requests/document-form"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"Updated proof\"")));
+        mvc.perform(documentPost("/" + proof.id())).andExpect(status().isConflict());
+        mvc.perform(documentPost("/" + proof.id() + "/delete"))
+                .andExpect(flash().attribute("error", org.hamcrest.Matchers.containsString("Стан заявки змінився")));
+        assertThat(documentRepository.existsById(proof.id())).isTrue();
+        mvc.perform(get("/requests/" + own.getId() + "/documents/new")
+                        .with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
+                .andExpect(status().isConflict());
+        mvc.perform(get("/requests/" + own.getId()).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString(">Додати документ</a>"))));
+    }
+
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.EnumSource(value = RequestStatus.class, names = {"PENDING_VERIFICATION", "NEW"})
     void confirmationDoesNotDeleteAndPostDeletesRequestWithDocuments(RequestStatus status) throws Exception {

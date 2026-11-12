@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Видалення документа')}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('requests')}"></nav>
+<main id="main-content" tabindex="-1">
+    <header th:replace="~{fragments/layout :: pageHeader('Видалити документ?', ${'Документ заявки №' + requestId}, ~{})}"></header>
+    <section class="card details-section" aria-labelledby="document-name">
+        <h2 id="document-name" th:text="${document.fileName}"></h2>
+        <p class="details-text" th:text="${document.fileUrl}"></p>
+    </section>
+    <p id="document-delete-warning" class="alert alert-warning">Запис документа буде видалено із заявки без можливості відновлення. Файл за зовнішнім посиланням залишиться доступним.</p>
+    <form data-submit-once th:action="@{/requests/{id}/documents/{docId}/delete(id=${requestId},docId=${documentId})}" method="post" aria-describedby="document-delete-warning">
+        <div class="form-actions">
+            <a class="btn btn-secondary" th:href="@{/requests/{id}#documents(id=${requestId})}">Скасувати</a>
+            <button type="submit" class="btn btn-danger">Так, видалити документ</button>
+        </div>
+        <p class="field-hint" data-submit-status role="status" hidden>Видаляємо документ…</p>
+    </form>
+</main>
+</body>
+</html>

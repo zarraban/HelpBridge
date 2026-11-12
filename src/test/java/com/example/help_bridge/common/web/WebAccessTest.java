@@ -28,10 +28,11 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest({LoginController.class, RequestWebController.class})
+@WebMvcTest({LoginController.class, RequestWebController.class, com.example.help_bridge.fundraising.request.web.RequestDocumentWebController.class})
 @Import(SecurityConfiguration.class)
 class WebAccessTest {
     @MockitoBean com.example.help_bridge.fundraising.request.security.RequestAccessPolicy access;
+    @MockitoBean com.example.help_bridge.fundraising.request.service.RequestDocumentService documentService;
     @Autowired MockMvc mvc;
     @MockitoBean RequestService requestService;
     @MockitoBean RequestVerificationService verificationService;
@@ -45,7 +46,7 @@ class WebAccessTest {
 
     @Test
     void guestsMustLogInBeforeOpeningPagesOrPerformingActions() throws Exception {
-        for (String path : new String[]{"/", "/home", "/requests", "/requests/new", "/requests/1", "/requests/1/delete"}) {
+        for (String path : new String[]{"/", "/home", "/requests", "/requests/new", "/requests/1", "/requests/1/delete", "/requests/1/documents/new"}) {
             mvc.perform(get(path)).andExpect(redirectedUrl("/login"));
         }
         mvc.perform(post("/requests").with(csrf())).andExpect(redirectedUrl("/login"));
@@ -64,6 +65,12 @@ class WebAccessTest {
                         .andExpect(status().isForbidden());
             }
             if (!role.equals("APPLICANT") && !role.equals("SYSTEM_ADMIN")) {
+                mvc.perform(get("/requests/1/documents/new").with(user("test").roles(role)))
+                        .andExpect(status().isForbidden());
+                mvc.perform(post("/requests/1/documents").with(user("test").roles(role)).with(csrf()))
+                        .andExpect(status().isForbidden());
+                mvc.perform(post("/requests/1/documents/1/delete").with(user("test").roles(role)).with(csrf()))
+                        .andExpect(status().isForbidden());
                 mvc.perform(get("/requests/1/delete").with(user("test").roles(role)))
                         .andExpect(status().isForbidden());
                 mvc.perform(post("/requests/1/delete").with(user("test").roles(role)).with(csrf()))

@@ -28,10 +28,11 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest({LoginController.class, RequestWebController.class})
+@WebMvcTest({LoginController.class, RequestWebController.class, com.example.help_bridge.fundraising.request.web.RequestDocumentWebController.class})
 @Import(SecurityConfiguration.class)
 class WebLoginTest {
     @MockitoBean com.example.help_bridge.fundraising.request.security.RequestAccessPolicy access;
+    @MockitoBean com.example.help_bridge.fundraising.request.service.RequestDocumentService documentService;
     @Autowired MockMvc mvc;
     @MockitoBean RequestService requestService;
     @MockitoBean RequestVerificationService verificationService;
