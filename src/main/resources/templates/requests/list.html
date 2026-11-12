@@ -23,16 +23,17 @@
     <section id="verification" sec:authorize="hasRole('SYSTEM_ADMIN')" th:if="${pendingRequests != null}">
         <h2>Очікують підтвердження</h2>
         <p th:if="${#lists.isEmpty(pendingRequests)}">Заявок на підтвердження немає.</p>
-        <table th:unless="${#lists.isEmpty(pendingRequests)}">
+        <div class="table-container" th:unless="${#lists.isEmpty(pendingRequests)}" role="region" aria-label="Заявки на підтвердження" tabindex="0">
+        <table>
             <thead>
             <tr>
-                <th>Тип допомоги</th>
-                <th>Яка допомога</th>
-                <th>Сума, грн</th>
-                <th>Установа</th>
-                <th>Крайній термін</th>
-                <th>ID заявника</th>
-                <th>Дія</th>
+                <th scope="col">Тип допомоги</th>
+                <th scope="col">Яка допомога</th>
+                <th scope="col">Сума, грн</th>
+                <th scope="col">Установа</th>
+                <th scope="col">Крайній термін</th>
+                <th scope="col">ID заявника</th>
+                <th scope="col">Дія</th>
             </tr>
             </thead>
             <tbody>
@@ -44,33 +45,37 @@
                 <td th:text="${#temporals.format(p.deadline, 'dd.MM.yyyy')}"></td>
                 <td th:text="${p.requesterId}"></td>
                 <td>
-                    <form th:action="@{/requests/{id}/review(id=${p.id})}" method="post" style="display:inline">
+                    <div class="table-actions">
+                    <form th:action="@{/requests/{id}/review(id=${p.id})}" method="post">
                         <input type="hidden" name="approved" value="true">
                         <button type="submit" class="btn">Підтвердити</button>
                     </form>
-                    <form th:action="@{/requests/{id}/review(id=${p.id})}" method="post" style="display:inline">
+                    <form th:action="@{/requests/{id}/review(id=${p.id})}" method="post">
                         <input type="hidden" name="approved" value="false">
-                        <button type="submit" class="btn btn-link">Відхилити</button>
+                        <button type="submit" class="btn btn-danger">Відхилити</button>
                     </form>
+                    </div>
                 </td>
             </tr>
             </tbody>
         </table>
+        </div>
     </section>
     <h2 sec:authorize="hasRole('SYSTEM_ADMIN')">Спільний пул</h2>
 
     <p th:if="${#lists.isEmpty(requests)}" th:text="${ownRequests} ? 'Ви ще не подавали заявок.' : 'Нових заявок поки немає.'"></p>
 
-    <table th:unless="${#lists.isEmpty(requests)}">
+    <div class="table-container" th:unless="${#lists.isEmpty(requests)}" role="region" aria-label="Список заявок" tabindex="0">
+    <table>
         <thead>
         <tr>
-            <th>Тип допомоги</th>
-            <th>Яка допомога</th>
-            <th>Сума, грн</th>
-            <th>Установа</th>
-            <th>Крайній термін</th>
-            <th>Статус</th>
-            <th sec:authorize="hasRole('SYSTEM_ADMIN')">ID заявника</th>
+            <th scope="col">Тип допомоги</th>
+            <th scope="col">Яка допомога</th>
+            <th scope="col">Сума, грн</th>
+            <th scope="col">Установа</th>
+            <th scope="col">Крайній термін</th>
+            <th scope="col">Статус</th>
+            <th scope="col" sec:authorize="hasRole('SYSTEM_ADMIN')">ID заявника</th>
         </tr>
         </thead>
         <tbody>
@@ -81,22 +86,23 @@
             <td th:text="${r.institutionName}"></td>
             <td th:text="${#temporals.format(r.deadline, 'dd.MM.yyyy')}"></td>
             <td>
-                <span th:if="${r.hot}">Гаряча</span>
-                <th:block th:unless="${r.hot}">
-                <span th:switch="${r.status.name()}">
-                    <span th:case="'PENDING_VERIFICATION'">Очікує перевірки</span>
-                    <span th:case="'NEW'">Нова</span>
-                    <span th:case="'IN_PROGRESS'">В роботі</span>
-                    <span th:case="'CLOSED'">Закрита</span>
-                    <span th:case="'REJECTED'">Відхилена</span>
-                    <span th:case="*" th:text="${r.status}"></span>
-                </span>
-                </th:block>
+                <div class="badge-group">
+                    <span th:switch="${r.status.name()}">
+                        <span class="badge badge-warning" th:case="'PENDING_VERIFICATION'">Очікує перевірки</span>
+                        <span class="badge" th:case="'NEW'">Нова</span>
+                        <span class="badge" th:case="'IN_PROGRESS'">В роботі</span>
+                        <span class="badge badge-success" th:case="'CLOSED'">Закрита</span>
+                        <span class="badge badge-danger" th:case="'REJECTED'">Відхилена</span>
+                        <span class="badge badge-neutral" th:case="*" th:text="${r.status}"></span>
+                    </span>
+                    <span class="badge badge-danger" th:if="${r.hot}">Гаряча</span>
+                </div>
             </td>
             <td sec:authorize="hasRole('SYSTEM_ADMIN')" th:text="${r.requesterId}"></td>
         </tr>
         </tbody>
     </table>
+    </div>
 </main>
 </body>
 </html>

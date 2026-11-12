@@ -43,6 +43,25 @@ class WebLoginTest {
     @MockitoBean AccessDeniedHandler deniedHandler;
 
     @Test
+    void hotRequestKeepsItsStatusAndInvalidFieldsAreMarked() throws Exception {
+        var request = new com.example.help_bridge.fundraising.request.dto.request.RequestDto.RequestResponse(
+                1L, 1L, null, "MEDICAL", java.math.BigDecimal.TEN,
+                java.time.LocalDate.now().minusDays(1), "Ситуація", "Допомога", "Установа", "DOC-1",
+                com.example.help_bridge.fundraising.request.entity.RequestStatus.NEW, true,
+                java.time.LocalDateTime.now(), java.util.List.of());
+        when(requestService.getSharedPool()).thenReturn(java.util.List.of(request));
+        when(requestService.getAssistanceTypes()).thenReturn(java.util.Map.of("MEDICAL", "Лікування"));
+        mvc.perform(get("/requests").with(user("representative").roles("FUND_REPRESENTATIVE")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("class=\"badge\">Нова")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Гаряча")));
+        mvc.perform(post("/requests").with(user("applicant").roles("APPLICANT")).with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("aria-invalid=\"true\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("field-invalid")));
+    }
+
+    @Test
     void sharedLayoutRendersRequestPagesAndMessages() throws Exception {
         mvc.perform(get("/requests").with(user("representative").roles("FUND_REPRESENTATIVE"))
                         .flashAttr("message", "Заявку збережено"))
