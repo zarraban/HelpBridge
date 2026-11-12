@@ -21,9 +21,9 @@ class RequestLifecycleIntegrationTest {
 
     private static final String URL = "/api/v1/requests";
 
-    private static final RequestPostProcessor APPLICANT = user("applicant").roles("APPLICANT");
+    private static final RequestPostProcessor APPLICANT = user("APPLICANT:applicant@lifecycle.test").roles("APPLICANT");
     private static final RequestPostProcessor ADMIN = user("admin").roles("SYSTEM_ADMIN");
-    private static final RequestPostProcessor FUND_REP = user("rep").roles("FUND_REPRESENTATIVE");
+    private static final RequestPostProcessor FUND_REP = user("FUND_REPRESENTATIVE:rep@lifecycle.test").roles("FUND_REPRESENTATIVE");
     private static final RequestPostProcessor VOLUNTEER = user("volunteer").roles("VOLUNTEER");
     private static final RequestPostProcessor DONOR = user("donor").roles("DONOR");
 
@@ -307,6 +307,12 @@ class RequestLifecycleIntegrationTest {
 
     @Test
     void sharedPool_ShouldBeAvailableOnlyToFundRepresentativeAndAdmin() throws Exception {
+        long fundId = data.insertFund("79999999", "APPROVED");
+        jdbc.sql("""
+                insert into fund_representatives (first_name, last_name, email, phone, password_hash, fund_id)
+                values ('Test', 'Representative', 'rep@lifecycle.test', '+380501112233', 'hash', ?)
+                """).param(fundId).update();
+
         data.insertRequest(userId, "NEW");
 
         mockMvc.perform(get(URL + "/shared-pool").with(FUND_REP)).andExpect(status().isOk());

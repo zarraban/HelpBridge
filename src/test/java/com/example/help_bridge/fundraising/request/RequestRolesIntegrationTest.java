@@ -23,7 +23,7 @@ class RequestRolesIntegrationTest {
 
     private static final String URL = "/api/v1/requests";
 
-    private static final RequestPostProcessor APPLICANT = user("applicant").roles("APPLICANT");
+    private static final RequestPostProcessor APPLICANT = user("APPLICANT:applicant@roles.test").roles("APPLICANT");
     private static final RequestPostProcessor ADMIN = user("admin").roles("SYSTEM_ADMIN");
     private static final RequestPostProcessor[] FORBIDDEN_ROLES = {
             user("rep").roles("FUND_REPRESENTATIVE"),

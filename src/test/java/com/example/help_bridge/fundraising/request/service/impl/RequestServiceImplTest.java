@@ -44,11 +44,14 @@ class RequestServiceImplTest {
     @Mock
     private AssistanceTypeRepository assistanceTypeRepository;
 
+    @Mock
+    private com.example.help_bridge.fundraising.request.security.RequestAccessPolicy access;
     private RequestServiceImpl requestService;
 
     @BeforeEach
     void setUp() {
-        requestService = new RequestServiceImpl(requestRepository, userRepository, assistanceTypeRepository);
+        requestService = new RequestServiceImpl(requestRepository, userRepository, assistanceTypeRepository, access);
+        lenient().when(access.currentViewer()).thenReturn(new com.example.help_bridge.fundraising.request.security.RequestAccessPolicy.Viewer("SYSTEM_ADMIN", null, null));
         lenient().when(assistanceTypeRepository.findById("MEDICAL")).thenReturn(Optional.of(MEDICAL));
         lenient().when(assistanceTypeRepository.findById("SURGERY")).thenReturn(Optional.of(SURGERY));
     }

@@ -113,7 +113,7 @@ public class RequestWebController {
         try {
             verificationService.reviewRequest(id, new RequestVerificationDto(approved, null));
             redirectAttributes.addFlashAttribute("message",
-                    approved ? "Заявку підтверджено, вона у спільному пулі." : "Заявку відхилено та видалено.");
+                    approved ? "Заявку підтверджено, вона у спільному пулі." : "Заявку відхилено. Вона зберігається зі статусом «Відхилена».");
         } catch (RequestNotFoundException e) {
             redirectAttributes.addFlashAttribute("error", "Заявку вже видалено або її не знайдено. Список оновлено — перевірте актуальні заявки.");
         } catch (InvalidRequestStateException e) {

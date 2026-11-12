@@ -8,6 +8,7 @@ import com.example.help_bridge.fundraising.request.exception.RequestDocumentNotF
 import com.example.help_bridge.fundraising.request.exception.RequestNotFoundException;
 import com.example.help_bridge.fundraising.request.repository.RequestDocumentRepository;
 import com.example.help_bridge.fundraising.request.repository.RequestRepository;
+import com.example.help_bridge.fundraising.request.security.RequestAccessPolicy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,19 +18,21 @@ import java.util.List;
 @Transactional
 public class RequestDocumentServiceImpl implements RequestDocumentService {
 
+    private final RequestAccessPolicy access;
     private final RequestRepository requestRepository;
     private final RequestDocumentRepository documentRepository;
 
     public RequestDocumentServiceImpl(RequestRepository requestRepository,
-                                      RequestDocumentRepository documentRepository) {
+                                      RequestDocumentRepository documentRepository,
+                                      RequestAccessPolicy access) {
+        this.access = access;
         this.requestRepository = requestRepository;
         this.documentRepository = documentRepository;
     }
 
     @Override
     public DocumentResponse addDocument(Long requestId, CreateDocumentRequest dto) {
-        Request request = requestRepository.findByIdWithDocuments(requestId)
-                .orElseThrow(() -> new RequestNotFoundException(requestId));
+        Request request = writableRequest(requestId);
 
         RequestDocument document = new RequestDocument(dto.fileName(), dto.fileUrl());
         request.addDocument(document);
@@ -40,9 +43,7 @@ public class RequestDocumentServiceImpl implements RequestDocumentService {
     @Override
     @Transactional(readOnly = true)
     public List<DocumentResponse> getDocuments(Long requestId) {
-        if (!requestRepository.existsById(requestId)) {
-            throw new RequestNotFoundException(requestId);
-        }
+        readableRequest(requestId);
         return documentRepository.findByRequestId(requestId).stream()
                 .map(RequestDocumentServiceImpl::toResponse)
                 .toList();
@@ -56,15 +57,16 @@ public class RequestDocumentServiceImpl implements RequestDocumentService {
 
     @Override
     public DocumentResponse updateDocument(Long requestId, Long documentId, CreateDocumentRequest dto) {
-        RequestDocument document = findDocument(requestId, documentId);
+        writableRequest(requestId);
+        RequestDocument document = documentRepository.findByIdAndRequestId(documentId, requestId)
+                .orElseThrow(() -> new RequestDocumentNotFoundException(documentId));
         document.update(dto.fileName(), dto.fileUrl());
         return toResponse(document);
     }
 
     @Override
     public void deleteDocument(Long requestId, Long documentId) {
-        Request request = requestRepository.findByIdWithDocuments(requestId)
-                .orElseThrow(() -> new RequestNotFoundException(requestId));
+        Request request = writableRequest(requestId);
 
         RequestDocument document = request.getDocuments().stream()
                 .filter(d -> documentId.equals(d.getId()))
@@ -74,10 +76,25 @@ public class RequestDocumentServiceImpl implements RequestDocumentService {
         request.removeDocument(document);
     }
 
+    private Request readableRequest(Long requestId) {
+        var viewer = access.currentViewer();
+        Request request = requestRepository.findByIdWithDetails(requestId)
+                .orElseThrow(() -> new RequestNotFoundException(requestId));
+        viewer.requireRead(request);
+        return request;
+    }
+
+    private Request writableRequest(Long requestId) {
+        var viewer = access.currentViewer();
+        Request request = requestRepository.findByIdWithDetails(requestId)
+                .orElseThrow(() -> new RequestNotFoundException(requestId));
+        viewer.requireManage(request);
+        request.ensureDocumentsEditable();
+        return request;
+    }
+
     private RequestDocument findDocument(Long requestId, Long documentId) {
-        if (!requestRepository.existsById(requestId)) {
-            throw new RequestNotFoundException(requestId);
-        }
+        readableRequest(requestId);
         return documentRepository.findByIdAndRequestId(documentId, requestId)
                 .orElseThrow(() -> new RequestDocumentNotFoundException(documentId));
     }

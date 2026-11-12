@@ -13,6 +13,7 @@ import com.example.help_bridge.fundraising.request.repository.AssistanceTypeRepo
 import com.example.help_bridge.fundraising.request.repository.RequestRepository;
 import com.example.help_bridge.fundraising.user.entity.User;
 import com.example.help_bridge.fundraising.user.repository.UserRepository;
+import com.example.help_bridge.fundraising.request.security.RequestAccessPolicy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,13 +26,16 @@ import java.util.Map;
 @Transactional
 public class RequestServiceImpl implements RequestService {
 
+    private final RequestAccessPolicy access;
     private final RequestRepository requestRepository;
     private final UserRepository userRepository;
     private final AssistanceTypeRepository assistanceTypeRepository;
 
     public RequestServiceImpl(RequestRepository requestRepository,
                               UserRepository userRepository,
-                              AssistanceTypeRepository assistanceTypeRepository) {
+                              AssistanceTypeRepository assistanceTypeRepository,
+                              RequestAccessPolicy access) {
+        this.access = access;
         this.requestRepository = requestRepository;
         this.userRepository = userRepository;
         this.assistanceTypeRepository = assistanceTypeRepository;
@@ -39,6 +43,7 @@ public class RequestServiceImpl implements RequestService {
 
     @Override
     public RequestResponse createRequest(CreateRequestRequest dto) {
+        access.currentViewer().requireCreateFor(dto.userId());
         User requester = userRepository.findById(dto.userId())
                 .orElseThrow(() -> new RequesterNotFoundException(dto.userId()));
         AssistanceType assistanceType = findAssistanceType(dto.assistanceType());
@@ -61,15 +66,17 @@ public class RequestServiceImpl implements RequestService {
     @Override
     @Transactional(readOnly = true)
     public List<RequestResponse> getAllRequests(RequestStatus status) {
+        var viewer = access.currentViewer();
         List<Request> requests = (status == null)
                 ? requestRepository.findAllWithDetails()
                 : requestRepository.findAllByStatusWithDetails(status);
-        return requests.stream().map(RequestMapper::toResponse).toList();
+        return requests.stream().filter(viewer::canRead).map(RequestMapper::toResponse).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<RequestResponse> getSharedPool() {
+        access.currentViewer().requireSharedPool();
         return requestRepository.findAllByStatusWithDetails(RequestStatus.NEW).stream()
                 .sorted(Comparator
                         .comparing((Request r) -> !r.isExpired())
@@ -81,7 +88,9 @@ public class RequestServiceImpl implements RequestService {
     @Override
     @Transactional(readOnly = true)
     public List<RequestResponse> searchByInstitution(String institution) {
+        var viewer = access.currentViewer();
         return requestRepository.searchByInstitutionWithDetails(institution.trim()).stream()
+                .filter(viewer::canRead)
                 .map(RequestMapper::toResponse)
                 .toList();
     }
@@ -89,10 +98,13 @@ public class RequestServiceImpl implements RequestService {
     @Override
     @Transactional(readOnly = true)
     public List<RequestResponse> getRequestsByUser(Long userId) {
+        var viewer = access.currentViewer();
+        if (!viewer.isRepresentative()) viewer.requireCreateFor(userId);
         if (!userRepository.existsById(userId)) {
             throw new RequesterNotFoundException(userId);
         }
         return requestRepository.findByRequesterIdWithDetails(userId).stream()
+                .filter(viewer::canRead)
                 .map(RequestMapper::toResponse)
                 .toList();
     }
@@ -100,15 +112,19 @@ public class RequestServiceImpl implements RequestService {
     @Override
     @Transactional(readOnly = true)
     public RequestResponse getRequestById(Long id) {
+        var viewer = access.currentViewer();
         Request request = requestRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new RequestNotFoundException(id));
+        viewer.requireRead(request);
         return RequestMapper.toResponse(request);
     }
 
     @Override
     public RequestResponse updateRequest(Long id, UpdateRequestRequest dto) {
+        var viewer = access.currentViewer();
         Request request = requestRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new RequestNotFoundException(id));
+        viewer.requireManage(request);
         AssistanceType assistanceType = findAssistanceType(dto.assistanceType());
 
         request.updateDetails(
@@ -126,8 +142,10 @@ public class RequestServiceImpl implements RequestService {
 
     @Override
     public void deleteRequest(Long id) {
+        var viewer = access.currentViewer();
         Request request = requestRepository.findById(id)
                 .orElseThrow(() -> new RequestNotFoundException(id));
+        viewer.requireManage(request);
         request.ensureDeletable();
         requestRepository.delete(request);
     }
