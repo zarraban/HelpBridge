@@ -5,7 +5,7 @@
 <a th:replace="~{fragments/layout :: skipLink}"></a>
 <nav th:replace="~{fragments/layout :: nav('login')}"></nav>
 <main id="main-content" tabindex="-1">
-    <form id="login-form" class="card narrow" th:action="@{/login}" method="post">
+    <form id="login-form" data-submit-once class="card narrow" th:action="@{/login}" method="post">
         <header th:replace="~{fragments/layout :: pageHeader('Вхід', 'Оберіть тип облікового запису та введіть дані для входу.', ~{})}"></header>
 
         <th:block th:if="${param.error}"><p th:replace="~{fragments/layout :: alert('error', 'Не вдалося увійти. Перевірте тип облікового запису, email і пароль.')}"></p></th:block>
@@ -16,29 +16,26 @@
         <input id="username" name="username" type="hidden">
         <div class="field">
             <label for="accountType">Тип облікового запису</label>
-            <select id="accountType">
-                <option value="APPLICANT">Заявник</option>
-                <option value="FUND_REPRESENTATIVE">Представник фонду</option>
-                <option value="VOLUNTEER">Волонтер</option>
-                <option value="SYSTEM_ADMIN">Адміністратор</option>
+            <select id="accountType" required aria-describedby="accountType-hint">
+                <option value="APPLICANT" th:selected="${loginAccountType == 'APPLICANT'}">Заявник</option>
+                <option value="FUND_REPRESENTATIVE" th:selected="${loginAccountType == 'FUND_REPRESENTATIVE'}">Представник фонду</option>
+                <option value="VOLUNTEER" th:selected="${loginAccountType == 'VOLUNTEER'}">Волонтер</option>
+                <option value="SYSTEM_ADMIN" th:selected="${loginAccountType == 'SYSTEM_ADMIN'}">Адміністратор</option>
             </select>
+            <span id="accountType-hint" class="field-hint">Оберіть роль, для якої створено ваш обліковий запис.</span>
         </div>
         <div class="field">
             <label for="email">Email</label>
-            <input id="email" type="email" autocomplete="username" autofocus required>
+            <input id="email" type="email" autocomplete="username" th:value="${loginEmail}" maxlength="254" aria-describedby="email-hint" autofocus required>
+            <span id="email-hint" class="field-hint">Наприклад, name@example.com.</span>
         </div>
         <div class="field">
             <label for="password">Пароль</label>
             <input id="password" name="password" type="password" autocomplete="current-password" required>
         </div>
-        <button type="submit" class="btn">Увійти</button>
+        <div class="form-actions"><button type="submit" class="btn">Увійти</button></div>
+        <p class="field-hint" data-submit-status role="status" hidden>Виконуємо вхід…</p>
     </form>
 </main>
-<script>
-    document.getElementById('login-form').addEventListener('submit', function () {
-        document.getElementById('username').value =
-            document.getElementById('accountType').value + ':' + document.getElementById('email').value.trim();
-    });
-</script>
 </body>
 </html>

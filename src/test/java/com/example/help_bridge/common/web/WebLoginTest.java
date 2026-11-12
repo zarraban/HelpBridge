@@ -43,6 +43,35 @@ class WebLoginTest {
     @MockitoBean AccessDeniedHandler deniedHandler;
 
     @Test
+    void failedLoginRetainsEmailAndRoleWithoutPassword() throws Exception {
+        when(authenticationManager.authenticate(any())).thenThrow(
+                new org.springframework.security.authentication.BadCredentialsException("bad credentials"));
+        var failed = mvc.perform(post("/login").with(csrf())
+                        .param("username", "VOLUNTEER:vera@test.com").param("password", "private-password"))
+                .andExpect(redirectedUrl("/login?error")).andReturn();
+        var session = (org.springframework.mock.web.MockHttpSession) failed.getRequest().getSession(false);
+        mvc.perform(get("/login?error").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"vera@test.com\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"VOLUNTEER\" selected=\"selected\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("private-password"))));
+    }
+
+    @Test
+    void invalidRequestKeepsValuesAndShowsOtherTypeField() throws Exception {
+        when(requestService.getAssistanceTypes()).thenReturn(java.util.Map.of("OTHER", "Інше"));
+        mvc.perform(post("/requests").with(user("applicant").roles("APPLICANT")).with(csrf())
+                        .param("assistanceType", "OTHER").param("otherAssistanceType", "Обладнання")
+                        .param("needDescription", "Потрібен генератор").param("amount", "-5"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"Обладнання\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Потрібен генератор")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"-5\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("введені дані збережено")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("style=\"display:none\""))));
+    }
+
+    @Test
     void hotRequestKeepsItsStatusAndInvalidFieldsAreMarked() throws Exception {
         var request = new com.example.help_bridge.fundraising.request.dto.request.RequestDto.RequestResponse(
                 1L, 1L, null, "MEDICAL", java.math.BigDecimal.TEN,
