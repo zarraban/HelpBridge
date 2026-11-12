@@ -31,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest({LoginController.class, RequestWebController.class})
 @Import(SecurityConfiguration.class)
 class WebAccessTest {
+    @MockitoBean com.example.help_bridge.fundraising.request.security.RequestAccessPolicy access;
     @Autowired MockMvc mvc;
     @MockitoBean RequestService requestService;
     @MockitoBean RequestVerificationService verificationService;
@@ -60,6 +61,12 @@ class WebAccessTest {
                 mvc.perform(get("/requests/new").with(user("test").roles(role)))
                         .andExpect(status().isForbidden());
                 mvc.perform(post("/requests").with(user("test").roles(role)).with(csrf()))
+                        .andExpect(status().isForbidden());
+            }
+            if (!role.equals("APPLICANT") && !role.equals("SYSTEM_ADMIN")) {
+                mvc.perform(get("/requests/1/edit").with(user("test").roles(role)))
+                        .andExpect(status().isForbidden());
+                mvc.perform(post("/requests/1").with(user("test").roles(role)).with(csrf()))
                         .andExpect(status().isForbidden());
             }
             if (!role.equals("SYSTEM_ADMIN")) {

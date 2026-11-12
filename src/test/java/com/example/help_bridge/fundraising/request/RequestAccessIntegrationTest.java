@@ -90,6 +90,85 @@ class RequestAccessIntegrationTest {
 
     private CreateDocumentRequest document() { return new CreateDocumentRequest("Proof", "https://files.test/proof.pdf"); }
 
+    private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder editRequest(Long id) {
+        return post("/requests/{id}", id)
+                .with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT"))
+                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                .param("assistanceType", "MEDICAL").param("amount", "1250.50")
+                .param("deadline", LocalDate.now().plusDays(30).toString())
+                .param("situationDescription", "Updated situation").param("needDescription", "Updated need")
+                .param("institutionName", "New clinic").param("applicationNumber", "DOC-2");
+    }
+
+    @Test
+    void editFormLoadsExistingDataAndSavesBackToDetails() throws Exception {
+        mvc.perform(get("/requests/{id}/edit", own.getId()).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
+                .andExpect(status().isOk()).andExpect(view().name("requests/edit-form"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"Access Clinic\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Situation")));
+        mvc.perform(editRequest(own.getId()))
+                .andExpect(redirectedUrl("/requests/" + own.getId()))
+                .andExpect(flash().attribute("message", "Зміни до заявки збережено."));
+        assertThat(requests.findById(own.getId()).orElseThrow().getInstitutionName()).isEqualTo("New clinic");
+        assertThat(own.getRequester().getId()).isEqualTo(owner.getId());
+        assertThat(own.getStatus()).isEqualTo(RequestStatus.PENDING_VERIFICATION);
+        mvc.perform(get("/requests/{id}", own.getId()).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Редагувати")));
+    }
+
+    @Test
+    void editingPreservesOtherDescriptionAndInvalidValues() throws Exception {
+        own.updateDetails(types.findById("OTHER").orElseThrow(), BigDecimal.TEN, LocalDate.now().plusDays(10),
+                "Situation", "[Інше: Обладнання] Генератор", "Clinic", "DOC");
+        mvc.perform(get("/requests/{id}/edit", own.getId()).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"Обладнання\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Генератор</textarea>")));
+        mvc.perform(editRequest(own.getId()).with(request -> {
+                    request.setParameter("assistanceType", "OTHER");
+                    request.setParameter("otherAssistanceType", "Ліки");
+                    request.setParameter("needDescription", "Доставка");
+                    return request;
+                }))
+                .andExpect(status().is3xxRedirection());
+        assertThat(own.getNeedDescription()).isEqualTo("[Інше: Ліки] Доставка");
+        mvc.perform(editRequest(own.getId())).andExpect(status().is3xxRedirection());
+        assertThat(own.getNeedDescription()).isEqualTo("Updated need");
+        mvc.perform(editRequest(own.getId()).with(request -> { request.setParameter("amount", "-1"); return request; }))
+                .andExpect(status().isOk()).andExpect(view().name("requests/edit-form"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"-1\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"New clinic\"")));
+    }
+
+    @Test
+    void changedStatusKeepsSubmittedValuesButPreventsSaving() throws Exception {
+        own.approve();
+        mvc.perform(editRequest(own.getId()))
+                .andExpect(status().isConflict()).andExpect(view().name("requests/edit-form"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"New clinic\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString(">Зберегти зміни</button>"))));
+        assertThat(own.getInstitutionName()).isEqualTo("Access Clinic");
+        mvc.perform(get("/requests/{id}/edit", own.getId()).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
+                .andExpect(status().isConflict());
+        mvc.perform(get("/requests/{id}", own.getId()).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString(">Редагувати</a>"))));
+    }
+
+    @Test
+    void foreignEditsAreForbiddenAndAdminCanEditPendingRequests() throws Exception {
+        mvc.perform(editRequest(foreign.getId()).accept(org.springframework.http.MediaType.TEXT_HTML))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/requests/{id}/edit", foreign.getId()).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT"))
+                        .accept(org.springframework.http.MediaType.TEXT_HTML))
+                .andExpect(status().isForbidden());
+        mvc.perform(editRequest(foreign.getId()).with(user("admin").roles("SYSTEM_ADMIN")))
+                .andExpect(redirectedUrl("/requests/" + foreign.getId()));
+        assertThat(foreign.getInstitutionName()).isEqualTo("New clinic");
+        mvc.perform(editRequest(own.getId())
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf().useInvalidToken()))
+                .andExpect(status().isForbidden());
+    }
+
     @Test
     void detailsRenderFullRequestAndOnlySafeDocumentLinks() throws Exception {
         own.addDocument(new RequestDocument("Медичний висновок", "https://files.test/proof.pdf"));

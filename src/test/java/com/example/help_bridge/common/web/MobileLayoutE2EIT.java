@@ -31,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest({LoginController.class, RequestWebController.class})
 @Import(SecurityConfiguration.class)
 class MobileLayoutE2EIT {
+    @MockitoBean com.example.help_bridge.fundraising.request.security.RequestAccessPolicy access;
     @Autowired MockMvc mvc;
     @MockitoBean RequestService requestService;
     @MockitoBean RequestVerificationService verificationService;
@@ -52,13 +53,23 @@ class MobileLayoutE2EIT {
                 java.time.LocalDateTime.now(), java.util.List.of(new com.example.help_bridge.fundraising.request.dto.request.RequestDocumentDto.DocumentResponse(
                         1L, "ДовгаНазваДокумента".repeat(12), "https://files.test/proof.pdf")));
         when(requestService.getSharedPool()).thenReturn(java.util.List.of(request));
-        when(requestService.getAssistanceTypes()).thenReturn(java.util.Map.of("MEDICAL", "Лікування"));
+        when(requestService.getAssistanceTypes()).thenReturn(java.util.Map.of("MEDICAL", "Лікування", "OTHER", "Інше"));
         String list = mvc.perform(get("/requests").with(user("a".repeat(150) + "@test.com").roles("FUND_REPRESENTATIVE")))
                 .andReturn().getResponse().getContentAsString();
         String form = mvc.perform(get("/requests/new").with(user("applicant").roles("APPLICANT")))
                 .andReturn().getResponse().getContentAsString();
+        when(access.currentViewer()).thenReturn(new com.example.help_bridge.fundraising.request.security.RequestAccessPolicy.Viewer("FUND_REPRESENTATIVE", null, 1L));
         when(requestService.getRequestById(1L)).thenReturn(request);
         String details = mvc.perform(get("/requests/1").with(user("representative").roles("FUND_REPRESENTATIVE")))
+                .andReturn().getResponse().getContentAsString();
+        var pending = new com.example.help_bridge.fundraising.request.dto.request.RequestDto.RequestResponse(
+                1L, 1L, null, "MEDICAL", java.math.BigDecimal.TEN, java.time.LocalDate.now().plusDays(10),
+                "Ситуація", "Потрібна допомога", "Установа", "DOC-1",
+                com.example.help_bridge.fundraising.request.entity.RequestStatus.PENDING_VERIFICATION, false,
+                java.time.LocalDateTime.now(), java.util.List.of());
+        when(access.currentViewer()).thenReturn(new com.example.help_bridge.fundraising.request.security.RequestAccessPolicy.Viewer("APPLICANT", 1L, null));
+        when(requestService.getRequestById(1L)).thenReturn(pending);
+        String edit = mvc.perform(get("/requests/1/edit").with(user("applicant").roles("APPLICANT")))
                 .andReturn().getResponse().getContentAsString();
         String css = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources/static/css/app.css"));
         String js = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources/static/js/forms.js"));
@@ -73,6 +84,7 @@ class MobileLayoutE2EIT {
                     case "/requests" -> list;
                     case "/requests/new" -> form;
                     case "/requests/1" -> details;
+                    case "/requests/1/edit" -> edit;
                     default -> login;
                 };
                 String type = path.endsWith(".css") ? "text/css" : path.endsWith(".js") ? "application/javascript" : "text/html";
@@ -80,7 +92,7 @@ class MobileLayoutE2EIT {
             });
             for (int width : new int[]{320, 390, 768, 1280}) {
                 page.setViewportSize(width, 900);
-                for (String path : new String[]{"/login", "/requests", "/requests/new", "/requests/1"}) {
+                for (String path : new String[]{"/login", "/requests", "/requests/new", "/requests/1", "/requests/1/edit"}) {
                     page.navigate("https://helpbridge.test" + path);
                     assertThat((Boolean) page.evaluate("document.documentElement.scrollWidth <= innerWidth")).as(path + " at " + width).isTrue();
                 }
@@ -98,6 +110,15 @@ class MobileLayoutE2EIT {
             page.navigate("https://helpbridge.test/requests/1");
             page.screenshot(new com.microsoft.playwright.Page.ScreenshotOptions()
                     .setPath(java.nio.file.Path.of("target/playwright/mobile-request-details.png")).setFullPage(true));
+            page.navigate("https://helpbridge.test/requests/1/edit");
+            com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("#institutionName")).hasValue("Установа");
+            com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("#deadline")).hasValue(pending.deadline().toString());
+            page.locator("#assistanceType").selectOption("OTHER");
+            com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("#otherTypeField")).isVisible();
+            page.screenshot(new com.microsoft.playwright.Page.ScreenshotOptions()
+                    .setPath(java.nio.file.Path.of("target/playwright/mobile-request-edit.png")).setFullPage(true));
+            page.getByText("Скасувати", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
+            assertThat(page.url()).endsWith("/requests/1");
             page.navigate("https://helpbridge.test/login");
             com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("[data-submit-status]")).isHidden();
             page.locator("#email").focus();

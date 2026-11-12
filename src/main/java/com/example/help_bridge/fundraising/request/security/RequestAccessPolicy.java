@@ -81,6 +81,10 @@ public class RequestAccessPolicy {
             requireCreateFor(request.getRequester().getId());
         }
 
+        public void requireManage(RequestResponse request) {
+            requireCreateFor(request.requesterId());
+        }
+
         public void requireCreateFor(Long userId) {
             if (!isAdmin() && !ownsUser(userId)) throw denied();
         }

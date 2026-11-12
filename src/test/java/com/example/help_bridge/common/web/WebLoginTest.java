@@ -31,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest({LoginController.class, RequestWebController.class})
 @Import(SecurityConfiguration.class)
 class WebLoginTest {
+    @MockitoBean com.example.help_bridge.fundraising.request.security.RequestAccessPolicy access;
     @Autowired MockMvc mvc;
     @MockitoBean RequestService requestService;
     @MockitoBean RequestVerificationService verificationService;
@@ -41,6 +42,26 @@ class WebLoginTest {
     @MockitoBean JwtValidatorService jwtValidatorService;
     @MockitoBean AuthenticationEntryPoint entryPoint;
     @MockitoBean AccessDeniedHandler deniedHandler;
+
+    @Test
+    void concurrentEditKeepsSubmittedDataAndBlocksRepeatSave() throws Exception {
+        var request = new com.example.help_bridge.fundraising.request.dto.request.RequestDto.RequestResponse(
+                1L, 1L, null, "MEDICAL", java.math.BigDecimal.TEN, java.time.LocalDate.now().plusDays(10),
+                "Situation", "Need", "Clinic", "DOC", com.example.help_bridge.fundraising.request.entity.RequestStatus.PENDING_VERIFICATION,
+                false, java.time.LocalDateTime.now(), java.util.List.of());
+        when(requestService.getRequestById(1L)).thenReturn(request);
+        when(access.currentViewer()).thenReturn(new com.example.help_bridge.fundraising.request.security.RequestAccessPolicy.Viewer("APPLICANT", 1L, null));
+        when(requestService.updateRequest(org.mockito.ArgumentMatchers.eq(1L), any()))
+                .thenThrow(new org.springframework.orm.ObjectOptimisticLockingFailureException("Request", 1L));
+        mvc.perform(post("/requests/1").with(user("applicant").roles("APPLICANT")).with(csrf())
+                        .param("assistanceType", "MEDICAL").param("amount", "100")
+                        .param("deadline", java.time.LocalDate.now().plusDays(10).toString())
+                        .param("situationDescription", "Submitted situation").param("needDescription", "Submitted need")
+                        .param("institutionName", "Submitted clinic").param("applicationNumber", "DOC"))
+                .andExpect(status().isConflict()).andExpect(view().name("requests/edit-form"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"Submitted clinic\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString(">Зберегти зміни</button>"))));
+    }
 
     @Test
     void webErrorsHaveCorrectStatusesAndSafeRecoveryActions() throws Exception {

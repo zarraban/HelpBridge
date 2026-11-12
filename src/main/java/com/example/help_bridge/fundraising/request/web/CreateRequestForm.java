@@ -3,6 +3,7 @@ package com.example.help_bridge.fundraising.request.web;
 import com.example.help_bridge.fundraising.request.dto.request.RequestDto.CreateRequestRequest;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Future;
+import org.springframework.format.annotation.DateTimeFormat;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -24,6 +25,7 @@ public record CreateRequestForm(
 
         @NotNull(message = "Вкажіть крайній термін")
         @Future(message = "Крайній термін має бути в майбутньому")
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
         LocalDate deadline,
 
         @NotBlank(message = "Опишіть ситуацію")
