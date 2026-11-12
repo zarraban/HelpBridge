@@ -27,7 +27,8 @@
                 <a th:fragment="refreshVerification" class="btn btn-secondary" th:href="@{/requests#verification}">Оновити чергу</a>
             </section>
         </th:block>
-        <div class="table-container" th:unless="${#lists.isEmpty(pendingRequests)}" role="region" aria-label="Заявки на підтвердження" tabindex="0">
+        <p id="verification-scroll-hint" class="field-hint table-scroll-hint" th:unless="${#lists.isEmpty(pendingRequests)}">Гортайте таблицю вбік. З клавіатури: перейдіть до таблиці клавішею Tab і використовуйте стрілки ← →.</p>
+        <div class="table-container" aria-describedby="verification-scroll-hint" th:unless="${#lists.isEmpty(pendingRequests)}" role="region" aria-label="Заявки на підтвердження" tabindex="0">
         <table>
             <thead>
             <tr>
@@ -76,7 +77,8 @@
         </section>
     </th:block>
 
-    <div class="table-container" th:unless="${#lists.isEmpty(requests)}" role="region" aria-label="Список заявок" tabindex="0">
+    <p id="requests-scroll-hint" class="field-hint table-scroll-hint" th:unless="${#lists.isEmpty(requests)}">Гортайте таблицю вбік. З клавіатури: перейдіть до таблиці клавішею Tab і використовуйте стрілки ← →.</p>
+    <div class="table-container" aria-describedby="requests-scroll-hint" th:unless="${#lists.isEmpty(requests)}" role="region" aria-label="Список заявок" tabindex="0">
     <table>
         <thead>
         <tr>

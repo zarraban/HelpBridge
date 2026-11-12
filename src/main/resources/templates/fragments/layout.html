@@ -27,7 +27,7 @@
         </li>
     </ul>
 
-    <a sec:authorize="hasRole('VOLUNTEER')" th:href="@{/home}"
+    <a class="nav-item" sec:authorize="hasRole('VOLUNTEER')" th:href="@{/home}"
        th:attr="aria-current=${activePage == 'home' ? 'page' : null}">Мій кабінет</a>
 
     <span sec:authorize="isAuthenticated()" class="user">

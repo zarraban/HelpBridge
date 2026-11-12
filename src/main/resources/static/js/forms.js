@@ -42,6 +42,7 @@
         window.addEventListener('pageshow', reset);
     });
 
-    const invalidField = document.querySelector('[aria-invalid="true"]');
-    if (invalidField && !invalidField.closest('[style*="display:none"]')) invalidField.focus();
+    const invalidField = [...document.querySelectorAll('[aria-invalid="true"]')]
+        .find(field => !field.disabled && field.getClientRects().length > 0);
+    if (invalidField) invalidField.focus();
 })();
