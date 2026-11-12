@@ -1,8 +1,10 @@
 package com.example.help_bridge.fundraising.request.security;
 
 import com.example.help_bridge.fundraising.request.entity.Request;
+import com.example.help_bridge.fundraising.fund.entity.FundStatus;
 import com.example.help_bridge.fundraising.request.dto.request.RequestDto.RequestResponse;
 import com.example.help_bridge.fundraising.request.entity.RequestStatus;
+import com.example.help_bridge.fundraising.request.exception.InvalidRequestStateException;
 import com.example.help_bridge.fundraising.user.repository.UserRepository;
 import com.example.help_bridge.users.fundrepresentative.repository.FundRepresentativeRepository;
 import org.springframework.security.access.AccessDeniedException;
@@ -39,7 +41,7 @@ public class RequestAccessPolicy {
         }
         if (hasRole(auth, "FUND_REPRESENTATIVE")) {
             var rep = representatives.findByEmailIgnoreCase(email).orElseThrow(RequestAccessPolicy::denied);
-            return new Viewer("FUND_REPRESENTATIVE", null, rep.getFund().getId());
+            return new Viewer("FUND_REPRESENTATIVE", null, rep.getFund().getId(), rep.getFund().getStatus());
         }
         throw denied();
     }
@@ -52,9 +54,30 @@ public class RequestAccessPolicy {
         return new AccessDeniedException("You do not have access to this request");
     }
 
-    public record Permissions(boolean view, boolean edit, boolean delete, boolean manageDocuments, boolean review) {}
+    public record Permissions(boolean view, boolean edit, boolean delete, boolean manageDocuments, boolean review,
+                              boolean book, boolean ownFundInProgress) {}
 
-    public record Viewer(String role, Long requesterId, Long fundId) {
+    public record Viewer(String role, Long requesterId, Long fundId, FundStatus fundStatus) {
+        public Viewer(String role, Long requesterId, Long fundId) {
+            this(role, requesterId, fundId, null);
+        }
+
+        public void requireReview(Request request) {
+            if (!isAdmin()) throw denied();
+            if (!permissions(request).review()) {
+                throw new InvalidRequestStateException(
+                        "Request is no longer pending verification");
+            }
+        }
+
+        public void requireBook(Request request) {
+            if (!isRepresentative() || fundId == null || fundStatus != FundStatus.APPROVED) throw denied();
+            if (!permissions(request).book()) {
+                throw new InvalidRequestStateException(
+                        "Request is no longer available for booking");
+            }
+        }
+
         public boolean isAdmin() { return "SYSTEM_ADMIN".equals(role); }
         public boolean isRepresentative() { return "FUND_REPRESENTATIVE".equals(role); }
 
@@ -107,7 +130,11 @@ public class RequestAccessPolicy {
             boolean pending = status == RequestStatus.PENDING_VERIFICATION;
             return new Permissions(canRead(ownerId, status, bookedFundId), manager && pending,
                     manager && (pending || status == RequestStatus.NEW),
-                    manager && pending, isAdmin() && pending);
+                    manager && pending, isAdmin() && pending,
+                    isRepresentative() && fundId != null && fundStatus == FundStatus.APPROVED
+                            && status == RequestStatus.NEW && bookedFundId == null,
+                    isRepresentative() && fundId != null && Objects.equals(fundId, bookedFundId)
+                            && status == RequestStatus.IN_PROGRESS);
         }
     }
 }
