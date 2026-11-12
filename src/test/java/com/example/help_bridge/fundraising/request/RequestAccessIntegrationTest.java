@@ -44,6 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class RequestAccessIntegrationTest {
     @Autowired UserRepository users;
     @Autowired RequestRepository requests;
+    @Autowired RequestDocumentRepository documentRepository;
     @Autowired AssistanceTypeRepository types;
     @Autowired FundRepository funds;
     @Autowired FundRepresentativeRepository representatives;
@@ -98,6 +99,67 @@ class RequestAccessIntegrationTest {
                 .param("deadline", LocalDate.now().plusDays(30).toString())
                 .param("situationDescription", "Updated situation").param("needDescription", "Updated need")
                 .param("institutionName", "New clinic").param("applicationNumber", "DOC-2");
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(value = RequestStatus.class, names = {"PENDING_VERIFICATION", "NEW"})
+    void confirmationDoesNotDeleteAndPostDeletesRequestWithDocuments(RequestStatus status) throws Exception {
+        var document = documents.addDocument(own.getId(), document());
+        if (status == RequestStatus.NEW) own.approve();
+        requests.saveAndFlush(own);
+        mvc.perform(get("/requests/{id}/delete", own.getId()).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
+                .andExpect(status().isOk()).andExpect(view().name("requests/delete-confirmation"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Access Clinic")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("без можливості відновлення")));
+        assertThat(requests.existsById(own.getId())).isTrue();
+        mvc.perform(post("/requests/{id}/delete", own.getId()).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT"))
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(redirectedUrl("/requests"))
+                .andExpect(flash().attribute("message", org.hamcrest.Matchers.containsString("видалено")));
+        requests.flush();
+        assertThat(requests.existsById(own.getId())).isFalse();
+        assertThat(documentRepository.existsById(document.id())).isFalse();
+        mvc.perform(post("/requests/{id}/delete", own.getId()).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT"))
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(redirectedUrl("/requests"))
+                .andExpect(flash().attribute("error", org.hamcrest.Matchers.containsString("вже видалено")));
+    }
+
+    @Test
+    void deletionProtectsOwnershipAndCsrfAndAllowsAdmin() throws Exception {
+        mvc.perform(get("/requests/{id}/delete", foreign.getId()).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT"))
+                        .accept(org.springframework.http.MediaType.TEXT_HTML)).andExpect(status().isForbidden());
+        mvc.perform(post("/requests/{id}/delete", foreign.getId()).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT"))
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                        .accept(org.springframework.http.MediaType.TEXT_HTML)).andExpect(status().isForbidden());
+        mvc.perform(post("/requests/{id}/delete", own.getId()).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT"))
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf().useInvalidToken()))
+                .andExpect(status().isForbidden());
+        assertThat(requests.existsById(own.getId())).isTrue();
+        assertThat(requests.existsById(foreign.getId())).isTrue();
+        mvc.perform(post("/requests/{id}/delete", foreign.getId()).with(user("admin").roles("SYSTEM_ADMIN"))
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(redirectedUrl("/requests"));
+        assertThat(requests.existsById(foreign.getId())).isFalse();
+    }
+
+    @Test
+    void changedStatusAndRepeatedDeletionReturnHelpfulMessages() throws Exception {
+        own.approve();
+        own.transitionTo(RequestStatus.IN_PROGRESS);
+        mvc.perform(get("/requests/{id}/delete", own.getId()).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
+                .andExpect(status().isConflict());
+        mvc.perform(post("/requests/{id}/delete", own.getId()).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT"))
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(redirectedUrl("/requests"))
+                .andExpect(flash().attribute("error", org.hamcrest.Matchers.containsString("Стан заявки змінився")));
+        assertThat(requests.existsById(own.getId())).isTrue();
+        mvc.perform(post("/requests/999999/delete").with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT"))
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(redirectedUrl("/requests"))
+                .andExpect(flash().attribute("error", org.hamcrest.Matchers.containsString("вже видалено")));
+        mvc.perform(get("/requests/{id}", own.getId()).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString(">Видалити</a>"))));
     }
 
     @Test

@@ -71,6 +71,8 @@ class MobileLayoutE2EIT {
         when(requestService.getRequestById(1L)).thenReturn(pending);
         String edit = mvc.perform(get("/requests/1/edit").with(user("applicant").roles("APPLICANT")))
                 .andReturn().getResponse().getContentAsString();
+        String deletion = mvc.perform(get("/requests/1/delete").with(user("applicant").roles("APPLICANT")))
+                .andReturn().getResponse().getContentAsString();
         String css = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources/static/css/app.css"));
         String js = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources/static/js/forms.js"));
         try (var playwright = com.microsoft.playwright.Playwright.create();
@@ -85,6 +87,7 @@ class MobileLayoutE2EIT {
                     case "/requests/new" -> form;
                     case "/requests/1" -> details;
                     case "/requests/1/edit" -> edit;
+                    case "/requests/1/delete" -> deletion;
                     default -> login;
                 };
                 String type = path.endsWith(".css") ? "text/css" : path.endsWith(".js") ? "application/javascript" : "text/html";
@@ -92,7 +95,7 @@ class MobileLayoutE2EIT {
             });
             for (int width : new int[]{320, 390, 768, 1280}) {
                 page.setViewportSize(width, 900);
-                for (String path : new String[]{"/login", "/requests", "/requests/new", "/requests/1", "/requests/1/edit"}) {
+                for (String path : new String[]{"/login", "/requests", "/requests/new", "/requests/1", "/requests/1/edit", "/requests/1/delete"}) {
                     page.navigate("https://helpbridge.test" + path);
                     assertThat((Boolean) page.evaluate("document.documentElement.scrollWidth <= innerWidth")).as(path + " at " + width).isTrue();
                 }
@@ -117,6 +120,11 @@ class MobileLayoutE2EIT {
             com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("#otherTypeField")).isVisible();
             page.screenshot(new com.microsoft.playwright.Page.ScreenshotOptions()
                     .setPath(java.nio.file.Path.of("target/playwright/mobile-request-edit.png")).setFullPage(true));
+            page.getByText("Скасувати", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
+            assertThat(page.url()).endsWith("/requests/1");
+            page.navigate("https://helpbridge.test/requests/1/delete");
+            page.screenshot(new com.microsoft.playwright.Page.ScreenshotOptions()
+                    .setPath(java.nio.file.Path.of("target/playwright/mobile-request-delete.png")).setFullPage(true));
             page.getByText("Скасувати", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
             assertThat(page.url()).endsWith("/requests/1");
             page.navigate("https://helpbridge.test/login");

@@ -118,6 +118,34 @@ public class RequestWebController {
         return "redirect:/requests/" + id;
     }
 
+    @PreAuthorize("hasAnyRole('APPLICANT', 'SYSTEM_ADMIN')")
+    @GetMapping("/{id}/delete")
+    public String deleteConfirmation(@PathVariable Long id, Model model) {
+        var request = requestService.getRequestById(id);
+        var viewer = access.currentViewer();
+        viewer.requireManage(request);
+        if (!viewer.permissions(request).delete()) {
+            throw new InvalidRequestStateException("Request cannot be deleted in its current status");
+        }
+        model.addAttribute("request", request);
+        model.addAttribute("assistanceTypes", requestService.getAssistanceTypes());
+        return "requests/delete-confirmation";
+    }
+
+    @PreAuthorize("hasAnyRole('APPLICANT', 'SYSTEM_ADMIN')")
+    @PostMapping("/{id}/delete")
+    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            requestService.deleteRequest(id);
+            redirectAttributes.addFlashAttribute("message", "Заявку №" + id + " та її документи видалено.");
+        } catch (RequestNotFoundException exception) {
+            redirectAttributes.addFlashAttribute("error", "Заявку вже видалено або її не знайдено. Список оновлено.");
+        } catch (InvalidRequestStateException | ObjectOptimisticLockingFailureException exception) {
+            redirectAttributes.addFlashAttribute("error", "Стан заявки змінився або її одночасно опрацювали. Видалення не виконано. Перевірте актуальний список заявок.");
+        }
+        return "redirect:/requests";
+    }
+
     private void prepareEditForm(Long id, Model model) {
         model.addAttribute("requestId", id);
         model.addAttribute("conflict", false);

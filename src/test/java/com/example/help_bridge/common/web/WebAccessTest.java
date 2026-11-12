@@ -45,7 +45,7 @@ class WebAccessTest {
 
     @Test
     void guestsMustLogInBeforeOpeningPagesOrPerformingActions() throws Exception {
-        for (String path : new String[]{"/", "/home", "/requests", "/requests/new", "/requests/1"}) {
+        for (String path : new String[]{"/", "/home", "/requests", "/requests/new", "/requests/1", "/requests/1/delete"}) {
             mvc.perform(get(path)).andExpect(redirectedUrl("/login"));
         }
         mvc.perform(post("/requests").with(csrf())).andExpect(redirectedUrl("/login"));
@@ -64,6 +64,10 @@ class WebAccessTest {
                         .andExpect(status().isForbidden());
             }
             if (!role.equals("APPLICANT") && !role.equals("SYSTEM_ADMIN")) {
+                mvc.perform(get("/requests/1/delete").with(user("test").roles(role)))
+                        .andExpect(status().isForbidden());
+                mvc.perform(post("/requests/1/delete").with(user("test").roles(role)).with(csrf()))
+                        .andExpect(status().isForbidden());
                 mvc.perform(get("/requests/1/edit").with(user("test").roles(role)))
                         .andExpect(status().isForbidden());
                 mvc.perform(post("/requests/1").with(user("test").roles(role)).with(csrf()))

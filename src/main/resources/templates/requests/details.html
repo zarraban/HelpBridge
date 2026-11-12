@@ -8,6 +8,7 @@
     <header th:replace="~{fragments/layout :: pageHeader(${'Заявка №' + request.id}, 'Повна інформація про заявку на допомогу.', ~{::detailsActions})}">
         <th:block th:fragment="detailsActions">
             <a th:if="${permissions.edit}" class="btn" th:href="@{/requests/{id}/edit(id=${request.id})}">Редагувати</a>
+            <a th:if="${permissions.delete}" class="btn btn-danger" th:href="@{/requests/{id}/delete(id=${request.id})}">Видалити</a>
             <a class="btn btn-secondary" th:href="@{/requests}">До списку заявок</a>
         </th:block>
     </header>
