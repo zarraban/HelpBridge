@@ -39,6 +39,8 @@ class LoginBrowserE2EIT extends BrowserTestSupport {
         loginPage.loginAs(AccountType.APPLICANT, APPLICANT_EMAIL, "wrongPassword");
 
         assertThat(loginPage.errorMessage()).isVisible();
-        assertThat(loginPage.errorMessage()).hasText("Невірний email або пароль.");
+        assertThat(page.locator("#email")).hasValue(APPLICANT_EMAIL);
+        assertThat(page.locator("#password")).hasValue("");
+        assertThat(loginPage.errorMessage()).hasText("Не вдалося увійти. Перевірте тип облікового запису, email і пароль.");
     }
 }

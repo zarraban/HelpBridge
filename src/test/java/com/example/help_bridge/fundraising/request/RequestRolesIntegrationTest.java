@@ -167,17 +167,48 @@ class RequestRolesIntegrationTest {
     }
 
     @Test
-    void readEndpoints_AsAnyAuthenticatedRole_ShouldReturn200() throws Exception {
+    void readEndpoints_AsOwnerAndAdmin_ShouldReturn200() throws Exception {
         long requestId = data.insertRequest(userId, "NEW");
         long documentId = data.insertDocument(requestId, "a.pdf", "https://files.test/a.pdf");
-
-        for (RequestPostProcessor role : FORBIDDEN_ROLES) {
+        for (RequestPostProcessor role : new RequestPostProcessor[]{APPLICANT, ADMIN}) {
             mockMvc.perform(get(URL).with(role)).andExpect(status().isOk());
             mockMvc.perform(get(URL + "/{id}", requestId).with(role)).andExpect(status().isOk());
             mockMvc.perform(get(URL + "/{id}/documents", requestId).with(role)).andExpect(status().isOk());
-            mockMvc.perform(get(URL + "/{id}/documents/{docId}", requestId, documentId).with(role))
-                    .andExpect(status().isOk());
+            mockMvc.perform(get(URL + "/{id}/documents/{docId}", requestId, documentId).with(role)).andExpect(status().isOk());
         }
+    }
+
+    @Test
+    void readEndpoints_AsVolunteerOrDonor_ShouldReturn403() throws Exception {
+        long requestId = data.insertRequest(userId, "NEW");
+        long documentId = data.insertDocument(requestId, "a.pdf", "https://files.test/a.pdf");
+        for (RequestPostProcessor role : new RequestPostProcessor[]{user("volunteer").roles("VOLUNTEER"), user("donor").roles("DONOR")}) {
+            mockMvc.perform(get(URL).with(role)).andExpect(status().isForbidden());
+            mockMvc.perform(get(URL + "/{id}", requestId).with(role)).andExpect(status().isForbidden());
+            mockMvc.perform(get(URL + "/{id}/documents", requestId).with(role)).andExpect(status().isForbidden());
+            mockMvc.perform(get(URL + "/{id}/documents/{docId}", requestId, documentId).with(role)).andExpect(status().isForbidden());
+        }
+    }
+
+    @Test
+    void representativeReadsPoolButCannotReadUnverifiedRequests() throws Exception {
+        long fundId = data.insertFund("78888888", "APPROVED");
+        jdbc.sql("""
+                insert into fund_representatives (first_name, last_name, email, phone, password_hash, fund_id)
+                values ('Test', 'Representative', 'rep@roles.test', '+380501112233', 'hash', ?)
+                """).param(fundId).update();
+        var representative = user("FUND_REPRESENTATIVE:rep@roles.test").roles("FUND_REPRESENTATIVE");
+        long verified = data.insertRequest(userId, "NEW");
+        long proof = data.insertDocument(verified, "proof.pdf", "https://files.test/proof.pdf");
+        long pending = data.insertRequest(userId, "PENDING_VERIFICATION");
+        long privateProof = data.insertDocument(pending, "private.pdf", "https://files.test/private.pdf");
+        mockMvc.perform(get(URL).with(representative)).andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.size()").value(1));
+        mockMvc.perform(get(URL + "/{id}", verified).with(representative)).andExpect(status().isOk());
+        mockMvc.perform(get(URL + "/{id}/documents/{docId}", verified, proof).with(representative)).andExpect(status().isOk());
+        mockMvc.perform(get(URL + "/{id}", pending).with(representative)).andExpect(status().isForbidden());
+        mockMvc.perform(get(URL + "/{id}/documents", pending).with(representative)).andExpect(status().isForbidden());
+        mockMvc.perform(get(URL + "/{id}/documents/{docId}", pending, privateProof).with(representative)).andExpect(status().isForbidden());
     }
 
     @Test

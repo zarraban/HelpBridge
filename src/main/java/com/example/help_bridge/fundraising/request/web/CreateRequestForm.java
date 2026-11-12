@@ -3,6 +3,7 @@ package com.example.help_bridge.fundraising.request.web;
 import com.example.help_bridge.fundraising.request.dto.request.RequestDto.CreateRequestRequest;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.Digits;
 import org.springframework.format.annotation.DateTimeFormat;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -21,6 +22,7 @@ public record CreateRequestForm(
 
         @NotNull(message = "Вкажіть суму")
         @Positive(message = "Сума має бути більшою за нуль")
+        @Digits(integer = 17, fraction = 2, message = "Сума може містити до 17 цифр до коми та до 2 після коми")
         BigDecimal amount,
 
         @NotNull(message = "Вкажіть крайній термін")

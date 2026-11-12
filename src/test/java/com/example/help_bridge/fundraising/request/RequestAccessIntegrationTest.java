@@ -108,6 +108,64 @@ class RequestAccessIntegrationTest {
                 .param("fileName", "Updated proof").param("fileUrl", "https://files.test/updated.pdf");
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(value = RequestStatus.class, names = {"CLOSED", "REJECTED"})
+    void terminalRequestsRemainReadableButCannotBeEditedOrDeleted(RequestStatus status) throws Exception {
+        if (status == RequestStatus.REJECTED) own.reject();
+        else {
+            own.approve();
+            own.transitionTo(RequestStatus.IN_PROGRESS);
+            own.transitionTo(RequestStatus.CLOSED);
+        }
+        mvc.perform(get("/requests/" + own.getId()).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString(">Редагувати</a>"))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString(">Видалити</a>"))));
+        mvc.perform(editRequest(own.getId())).andExpect(status().isConflict());
+        mvc.perform(post("/requests/" + own.getId() + "/delete").with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT"))
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(redirectedUrl("/requests"))
+                .andExpect(flash().attribute("error", org.hamcrest.Matchers.containsString("Видалення не виконано")));
+        assertThat(requests.existsById(own.getId())).isTrue();
+    }
+
+    @Test
+    void documentApiCannotModifyADocumentUnderAnotherParent() throws Exception {
+        var proof = documents.addDocument(own.getId(), document());
+        var secondOwn = requests.save(request(owner));
+        String path = "/api/v1/requests/" + secondOwn.getId() + "/documents/" + proof.id();
+        mvc.perform(put(path).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT"))
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"fileName\":\"Wrong parent\",\"fileUrl\":\"https://files.test/proof.pdf\"}"))
+                .andExpect(status().isNotFound());
+        mvc.perform(delete(path).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
+                .andExpect(status().isNotFound());
+        assertThat(documentRepository.findById(proof.id()).orElseThrow().getFileName()).isEqualTo("Proof");
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"100000000000000000", "1.001"})
+    void amountsOutsideDatabasePrecisionShowValidationErrors(String amount) throws Exception {
+        mvc.perform(editRequest(own.getId()).with(request -> { request.setParameter("amount", amount); return request; }))
+                .andExpect(status().isOk()).andExpect(view().name("requests/edit-form"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Сума може містити")));
+        mvc.perform(post("/requests").with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT"))
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                        .param("assistanceType", "MEDICAL").param("amount", amount)
+                        .param("deadline", LocalDate.now().plusDays(10).toString()).param("situationDescription", "Situation")
+                        .param("needDescription", "Need").param("institutionName", "Clinic").param("applicationNumber", "DOC")
+                        .param("dataProcessingConsent", "true"))
+                .andExpect(status().isOk()).andExpect(view().name("requests/create-form"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Сума може містити")));
+        String body = "{\"assistanceType\":\"MEDICAL\",\"amount\":" + amount
+                + ",\"deadline\":\"" + LocalDate.now().plusDays(10)
+                + "\",\"situationDescription\":\"Situation\",\"needDescription\":\"Need\",\"institutionName\":\"Clinic\",\"applicationNumber\":\"DOC\"}";
+        mvc.perform(put("/api/v1/requests/" + own.getId()).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT"))
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest());
+        assertThat(own.getAmount()).isEqualByComparingTo(BigDecimal.TEN);
+    }
+
     @Test
     void reviewReturnsToQueueAndShowsMessageInsideThatSection() throws Exception {
         var result = mvc.perform(post("/requests/{id}/review", own.getId()).with(user("admin").roles("SYSTEM_ADMIN"))
