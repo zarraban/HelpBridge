@@ -8,7 +8,7 @@
 </head>
 <body>
 <nav class="site-nav" th:fragment="nav(activePage)" aria-label="Основна навігація">
-    <a class="brand" th:href="${#authorization.expression('hasAnyRole(''APPLICANT'', ''FUND_REPRESENTATIVE'', ''SYSTEM_ADMIN'')')} ? @{/requests} : @{/login}">HelpBridge</a>
+    <a class="brand" th:href="@{/home}">HelpBridge</a>
 
     <ul class="nav-links" sec:authorize="hasAnyRole('APPLICANT', 'FUND_REPRESENTATIVE', 'SYSTEM_ADMIN')">
         <li sec:authorize="hasRole('APPLICANT')">
@@ -24,6 +24,9 @@
             <a th:href="@{/requests#verification}">Перевірка заявок</a>
         </li>
     </ul>
+
+    <a sec:authorize="hasRole('VOLUNTEER')" th:href="@{/home}"
+       th:attr="aria-current=${activePage == 'home' ? 'page' : null}">Мій кабінет</a>
 
     <span sec:authorize="isAuthenticated()" class="user">
         <span sec:authentication="name">user</span>

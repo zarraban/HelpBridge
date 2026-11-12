@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -88,8 +89,15 @@ public class SecurityConfiguration {
                         .anyRequest().authenticated())
                 .formLogin(form -> form
                         .loginPage("/login")
-                        .defaultSuccessUrl("/requests", true))
-                .logout(logout -> logout.logoutSuccessUrl("/login?logout"))
+                        .defaultSuccessUrl("/home", true)
+                        .failureHandler((request, response, exception) ->
+                                response.sendRedirect(request.getContextPath() +
+                                        (exception instanceof DisabledException
+                                                ? "/login?disabled" : "/login?error"))))
+                .sessionManagement(session -> session.invalidSessionUrl("/login?expired"))
+                .logout(logout -> logout
+                        .deleteCookies("JSESSIONID")
+                        .logoutSuccessUrl("/login?logout"))
                 .build();
     }
 }

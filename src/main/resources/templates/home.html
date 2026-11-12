@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Мій кабінет')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: nav('home')}"></nav>
+<main>
+    <h1>Мій кабінет</h1>
+    <section class="card">
+        <h2>Вітаємо в HelpBridge</h2>
+        <p sec:authorize="hasRole('VOLUNTEER')">Ви увійшли як волонтер. Розділи ваших призначень і особистої статистики ще готуються.</p>
+        <p sec:authorize="!hasRole('VOLUNTEER')">Для вашої ролі поки немає доступних робочих розділів.</p>
+        <p class="muted">Ви можете завершити сеанс кнопкою «Вийти» у верхньому меню.</p>
+    </section>
+</main>
+</body>
+</html>

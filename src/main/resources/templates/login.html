@@ -4,10 +4,12 @@
 <body>
 <nav th:replace="~{fragments/layout :: nav('login')}"></nav>
 <main>
-    <form class="card narrow" th:action="@{/login}" method="post">
+    <form id="login-form" class="card narrow" th:action="@{/login}" method="post">
         <h1>Вхід</h1>
 
-        <p class="alert alert-error" th:if="${param.error}">Невірний email або пароль.</p>
+        <p class="alert alert-error" th:if="${param.error}">Не вдалося увійти. Перевірте тип облікового запису, email і пароль.</p>
+        <p class="alert alert-error" th:if="${param.disabled}">Обліковий запис неактивний. Зверніться до представника вашого фонду.</p>
+        <p class="alert" th:if="${param.expired}">Сесію завершено. Увійдіть знову, щоб продовжити роботу.</p>
         <p class="alert alert-success" th:if="${param.logout}">Ви вийшли з системи.</p>
 
         <input id="username" name="username" type="hidden">
@@ -16,12 +18,13 @@
             <select id="accountType">
                 <option value="APPLICANT">Заявник</option>
                 <option value="FUND_REPRESENTATIVE">Представник фонду</option>
+                <option value="VOLUNTEER">Волонтер</option>
                 <option value="SYSTEM_ADMIN">Адміністратор</option>
             </select>
         </div>
         <div class="field">
             <label for="email">Email</label>
-            <input id="email" type="text" autocomplete="username" autofocus required>
+            <input id="email" type="email" autocomplete="username" autofocus required>
         </div>
         <div class="field">
             <label for="password">Пароль</label>
@@ -31,7 +34,7 @@
     </form>
 </main>
 <script>
-    document.querySelector('form').addEventListener('submit', function () {
+    document.getElementById('login-form').addEventListener('submit', function () {
         document.getElementById('username').value =
             document.getElementById('accountType').value + ':' + document.getElementById('email').value.trim();
     });
