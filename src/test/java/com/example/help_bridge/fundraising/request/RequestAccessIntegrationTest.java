@@ -167,6 +167,66 @@ class RequestAccessIntegrationTest {
     }
 
     @Test
+    void adminSeesDocumentsAndReviewActionsOnDetails() throws Exception {
+        own.addDocument(new RequestDocument("Medical proof", "https://files.test/proof.pdf"));
+        requests.saveAndFlush(own);
+        var page = mvc.perform(get("/requests/" + own.getId()).with(user("admin").roles("SYSTEM_ADMIN")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(page).contains("Рішення щодо заявки", "Підтвердити заявку", "Відхилити заявку",
+                "Medical proof", "https://files.test/proof.pdf", "name=\"fromDetails\"", "name=\"_csrf\"");
+        var queue = mvc.perform(get("/requests").with(user("admin").roles("SYSTEM_ADMIN")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(queue).contains("Перевірити заявку та документи").doesNotContain("name=\"approved\"");
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = {true, false})
+    void decisionFromDetailsUpdatesStatusAndRemovesReviewActions(boolean approved) throws Exception {
+        var result = mvc.perform(post("/requests/" + own.getId() + "/review")
+                        .with(user("admin").roles("SYSTEM_ADMIN"))
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                        .param("approved", Boolean.toString(approved)).param("fromDetails", "true"))
+                .andExpect(redirectedUrl("/requests/" + own.getId()))
+                .andExpect(flash().attributeExists("message")).andReturn();
+        assertThat(own.getStatus()).isEqualTo(approved ? RequestStatus.NEW : RequestStatus.REJECTED);
+        var page = mvc.perform(get("/requests/" + own.getId())
+                        .session((org.springframework.mock.web.MockHttpSession) result.getRequest().getSession(false))
+                        .with(user("admin").roles("SYSTEM_ADMIN")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(page).contains(approved ? "Заявку підтверджено" : "Заявку відхилено")
+                .doesNotContain("id=\"review\"", "Підтвердити заявку");
+        mvc.perform(post("/requests/" + own.getId() + "/review").with(user("admin").roles("SYSTEM_ADMIN"))
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                        .param("approved", Boolean.toString(!approved)).param("fromDetails", "true"))
+                .andExpect(redirectedUrl("/requests/" + own.getId())).andExpect(flash().attributeExists("error"));
+        assertThat(own.getStatus()).isEqualTo(approved ? RequestStatus.NEW : RequestStatus.REJECTED);
+    }
+
+    @Test
+    void rejectionConfirmationDoesNotChangeStateAndRejectsStaleRequest() throws Exception {
+        mvc.perform(get("/requests/" + own.getId() + "/reject").with(user("admin").roles("SYSTEM_ADMIN")))
+                .andExpect(status().isOk()).andExpect(view().name("requests/reject-confirmation"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Так, відхилити заявку")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Скасувати")));
+        assertThat(own.getStatus()).isEqualTo(RequestStatus.PENDING_VERIFICATION);
+        own.approve();
+        mvc.perform(get("/requests/" + own.getId() + "/reject").with(user("admin").roles("SYSTEM_ADMIN")))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void applicantCannotReviewEvenOwnRequest() throws Exception {
+        var applicant = user("APPLICANT:" + owner.getEmail()).roles("APPLICANT");
+        mvc.perform(get("/requests/" + own.getId()).with(applicant)).andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("id=\"review\""))));
+        mvc.perform(get("/requests/" + own.getId() + "/reject").with(applicant)).andExpect(status().isForbidden());
+        mvc.perform(post("/requests/" + own.getId() + "/review").with(applicant)
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                        .param("approved", "true")).andExpect(status().isForbidden());
+        assertThat(own.getStatus()).isEqualTo(RequestStatus.PENDING_VERIFICATION);
+    }
+
+    @Test
     void reviewReturnsToQueueAndShowsMessageInsideThatSection() throws Exception {
         var result = mvc.perform(post("/requests/{id}/review", own.getId()).with(user("admin").roles("SYSTEM_ADMIN"))
                         .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())

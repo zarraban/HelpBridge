@@ -95,15 +95,7 @@
                 <td th:text="${p.requesterId}"></td>
                 <td>
                     <div class="table-actions">
-                    <a class="btn btn-secondary" th:href="@{/requests/{id}(id=${p.id})}" th:aria-label="${'Переглянути заявку №' + p.id}">Переглянути</a>
-                    <form th:action="@{/requests/{id}/review(id=${p.id})}" method="post">
-                        <input type="hidden" name="approved" value="true">
-                        <button type="submit" class="btn">Підтвердити</button>
-                    </form>
-                    <form th:action="@{/requests/{id}/review(id=${p.id})}" method="post">
-                        <input type="hidden" name="approved" value="false">
-                        <button type="submit" class="btn btn-danger">Відхилити</button>
-                    </form>
+                    <a class="btn" th:href="@{/requests/{id}(id=${p.id})}" th:aria-label="${'Перевірити заявку №' + p.id + ' та документи'}">Перевірити заявку та документи</a>
                     </div>
                 </td>
             </tr>

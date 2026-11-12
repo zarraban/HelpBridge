@@ -83,6 +83,11 @@ class MobileLayoutE2EIT {
                 .andReturn().getResponse().getContentAsString();
         String documentDelete = mvc.perform(get("/requests/1/documents/1/delete").with(user("applicant").roles("APPLICANT")))
                 .andReturn().getResponse().getContentAsString();
+        when(access.currentViewer()).thenReturn(new com.example.help_bridge.fundraising.request.security.RequestAccessPolicy.Viewer("SYSTEM_ADMIN", null, null));
+        String reviewDetails = mvc.perform(get("/requests/1").with(user("admin").roles("SYSTEM_ADMIN")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        String rejectConfirmation = mvc.perform(get("/requests/1/reject").with(user("admin").roles("SYSTEM_ADMIN")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         String css = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources/static/css/app.css"));
         String js = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources/static/js/forms.js"));
         try (var playwright = com.microsoft.playwright.Playwright.create();
@@ -96,6 +101,8 @@ class MobileLayoutE2EIT {
                     case "/requests" -> list;
                     case "/requests/new" -> form;
                     case "/requests/1" -> details;
+                    case "/requests/1/review-details" -> reviewDetails;
+                    case "/requests/1/reject" -> rejectConfirmation;
                     case "/requests/1/edit" -> edit;
                     case "/requests/1/delete" -> deletion;
                     case "/requests/1/documents/new" -> documentNew;
@@ -108,7 +115,7 @@ class MobileLayoutE2EIT {
             });
             for (int width : new int[]{320, 390, 768, 1280}) {
                 page.setViewportSize(width, 900);
-                for (String path : new String[]{"/login", "/requests", "/requests/new", "/requests/1", "/requests/1/edit", "/requests/1/delete", "/requests/1/documents/new", "/requests/1/documents/1/edit", "/requests/1/documents/1/delete"}) {
+                for (String path : new String[]{"/login", "/requests", "/requests/new", "/requests/1", "/requests/1/edit", "/requests/1/delete", "/requests/1/documents/new", "/requests/1/documents/1/edit", "/requests/1/documents/1/delete", "/requests/1/review-details", "/requests/1/reject"}) {
                     page.navigate("https://helpbridge.test" + path);
                     assertThat((Boolean) page.evaluate("document.documentElement.scrollWidth <= innerWidth")).as(path + " at " + width).isTrue();
                 }
@@ -150,6 +157,16 @@ class MobileLayoutE2EIT {
             page.navigate("https://helpbridge.test/requests/1/documents/1/delete");
             page.screenshot(new com.microsoft.playwright.Page.ScreenshotOptions()
                     .setPath(java.nio.file.Path.of("target/playwright/mobile-document-delete.png")).setFullPage(true));
+            page.navigate("https://helpbridge.test/requests/1/review-details");
+            com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("#review")).isVisible();
+            page.screenshot(new com.microsoft.playwright.Page.ScreenshotOptions()
+                    .setPath(java.nio.file.Path.of("target/playwright/mobile-request-review.png")).setFullPage(true));
+            page.getByText("Відхилити заявку", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
+            com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.getByText("Так, відхилити заявку")).isVisible();
+            page.screenshot(new com.microsoft.playwright.Page.ScreenshotOptions()
+                    .setPath(java.nio.file.Path.of("target/playwright/mobile-request-reject.png")).setFullPage(true));
+            page.getByText("Скасувати", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
+            assertThat(page.url()).endsWith("/requests/1");
             page.navigate("https://helpbridge.test/login");
             com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("[data-submit-status]")).isHidden();
             page.locator("#email").focus();

@@ -208,9 +208,21 @@ public class RequestWebController {
     }
 
     @PreAuthorize(ADMIN_ROLE)
+    @GetMapping("/{id}/reject")
+    public String rejectConfirmation(@PathVariable Long id, Model model) {
+        var request = requestService.getRequestById(id);
+        if (!access.currentViewer().permissions(request).review()) {
+            throw new InvalidRequestStateException("Request is no longer pending verification");
+        }
+        model.addAttribute("request", request);
+        return "requests/reject-confirmation";
+    }
+
+    @PreAuthorize(ADMIN_ROLE)
     @PostMapping("/{id}/review")
     public String review(@PathVariable Long id,
                          @RequestParam boolean approved,
+                         @RequestParam(defaultValue = "false") boolean fromDetails,
                          RedirectAttributes redirectAttributes) {
         try {
             verificationService.reviewRequest(id, new RequestVerificationDto(approved, null));
@@ -218,9 +230,14 @@ public class RequestWebController {
                     approved ? "Заявку підтверджено, вона у спільному пулі." : "Заявку відхилено. Вона зберігається зі статусом «Відхилена».");
         } catch (RequestNotFoundException e) {
             redirectAttributes.addFlashAttribute("error", "Заявку вже видалено або її не знайдено. Список оновлено — перевірте актуальні заявки.");
-        } catch (InvalidRequestStateException e) {
-            redirectAttributes.addFlashAttribute("error", "Стан заявки змінився або її вже опрацювали. Список оновлено — перевірте доступні дії.");
+            redirectAttributes.addFlashAttribute("messageSection", "verification");
+            return "redirect:/requests#verification";
+        } catch (InvalidRequestStateException | ObjectOptimisticLockingFailureException e) {
+            redirectAttributes.addFlashAttribute("error", fromDetails
+                    ? "Стан заявки змінився або її вже опрацювали. Перевірте актуальний статус заявки."
+                    : "Стан заявки змінився або її вже опрацювали. Список оновлено — перевірте доступні дії.");
         }
+        if (fromDetails) return "redirect:/requests/" + id;
         redirectAttributes.addFlashAttribute("messageSection", "verification");
         return "redirect:/requests#verification";
     }

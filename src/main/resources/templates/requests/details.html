@@ -67,6 +67,21 @@
             </ul>
         </th:block>
     </section>
+    <section id="review" class="card details-section" th:if="${permissions.review}" aria-labelledby="review-heading">
+        <h2 id="review-heading">Рішення щодо заявки</h2>
+        <p>Перевірте інформацію та <a href="#documents">документи заявки</a> перед ухваленням рішення.</p>
+        <p class="field-hint">Після підтвердження заявка з’явиться у спільному пулі й стане доступною для бронювання фондами.</p>
+        <div class="form-actions">
+            <form data-submit-once th:action="@{/requests/{id}/review(id=${request.id})}" method="post">
+                <input type="hidden" name="approved" value="true">
+                <input type="hidden" name="fromDetails" value="true">
+                <button type="submit" class="btn">Підтвердити заявку</button>
+                <p class="field-hint" data-submit-status role="status" hidden>Зберігаємо рішення…</p>
+            </form>
+            <a class="btn btn-danger" th:href="@{/requests/{id}/reject(id=${request.id})}">Відхилити заявку</a>
+            <a class="btn btn-secondary" th:href="@{/requests#verification}">До черги перевірки</a>
+        </div>
+    </section>
 </main>
 </body>
 </html>

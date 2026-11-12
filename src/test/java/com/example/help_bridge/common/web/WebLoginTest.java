@@ -88,6 +88,27 @@ class WebLoginTest {
     }
 
     @Test
+    void concurrentReviewReturnsToDetailsWithError() throws Exception {
+        org.mockito.Mockito.doThrow(new org.springframework.orm.ObjectOptimisticLockingFailureException("Request", 1L))
+                .when(verificationService).reviewRequest(org.mockito.ArgumentMatchers.eq(1L), any());
+        mvc.perform(post("/requests/1/review").with(user("admin").roles("SYSTEM_ADMIN"))
+                        .with(csrf()).param("approved", "false").param("fromDetails", "true"))
+                .andExpect(redirectedUrl("/requests/1"))
+                .andExpect(flash().attribute("error", org.hamcrest.Matchers.containsString("актуальний статус")))
+                .andExpect(flash().attributeCount(1));
+    }
+
+    @Test
+    void deletedRequestReviewReturnsToQueue() throws Exception {
+        org.mockito.Mockito.doThrow(new com.example.help_bridge.fundraising.request.exception.RequestNotFoundException(1L))
+                .when(verificationService).reviewRequest(org.mockito.ArgumentMatchers.eq(1L), any());
+        mvc.perform(post("/requests/1/review").with(user("admin").roles("SYSTEM_ADMIN"))
+                        .with(csrf()).param("approved", "true").param("fromDetails", "true"))
+                .andExpect(redirectedUrl("/requests#verification"))
+                .andExpect(flash().attributeExists("error"));
+    }
+
+    @Test
     void emptyPoolAndReviewConflictOfferNextActions() throws Exception {
         mvc.perform(get("/requests").with(user("admin").roles("SYSTEM_ADMIN")))
                 .andExpect(status().isOk())
