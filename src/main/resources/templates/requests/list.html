@@ -2,7 +2,7 @@
 <html lang="uk" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/layout :: head('Заявки на допомогу')}"></head>
 <body>
-<nav th:replace="~{fragments/layout :: nav}"></nav>
+<nav th:replace="~{fragments/layout :: nav('requests')}"></nav>
 <main>
     <h1 th:if="${ownRequests}">Мої заявки на допомогу</h1>
     <h1 th:unless="${ownRequests}">Спільний пул заявок</h1>
@@ -19,7 +19,7 @@
         Режим адміністратора: додатково показано ID заявника.
     </p>
 
-    <section sec:authorize="hasRole('SYSTEM_ADMIN')" th:if="${pendingRequests != null}">
+    <section id="verification" sec:authorize="hasRole('SYSTEM_ADMIN')" th:if="${pendingRequests != null}">
         <h2>Очікують підтвердження</h2>
         <p th:if="${#lists.isEmpty(pendingRequests)}">Заявок на підтвердження немає.</p>
         <table th:unless="${#lists.isEmpty(pendingRequests)}">

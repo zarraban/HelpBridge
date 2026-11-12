@@ -2,7 +2,7 @@
 <html lang="uk" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('Вхід')}"></head>
 <body>
-<nav th:replace="~{fragments/layout :: nav}"></nav>
+<nav th:replace="~{fragments/layout :: nav('login')}"></nav>
 <main>
     <form class="card narrow" th:action="@{/login}" method="post">
         <h1>Вхід</h1>
