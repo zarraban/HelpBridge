@@ -73,5 +73,16 @@
     <a class="btn btn-secondary" sec:authorize="hasAnyRole('APPLICANT', 'FUND_REPRESENTATIVE', 'SYSTEM_ADMIN')"
        th:href="@{/requests}">До списку заявок</a>
 </div>
+                <div class="badge-group" th:fragment="requestStatus(status, hot)">
+                    <span th:switch="${status.name()}">
+                        <span class="badge badge-warning" th:case="'PENDING_VERIFICATION'">Очікує перевірки</span>
+                        <span class="badge" th:case="'NEW'">Нова</span>
+                        <span class="badge" th:case="'IN_PROGRESS'">В роботі</span>
+                        <span class="badge badge-success" th:case="'CLOSED'">Закрита</span>
+                        <span class="badge badge-danger" th:case="'REJECTED'">Відхилена</span>
+                        <span class="badge badge-neutral" th:case="*" th:text="${status}"></span>
+                    </span>
+                    <span class="badge badge-danger" th:if="${hot}">Гаряча</span>
+                </div>
 </body>
 </html>

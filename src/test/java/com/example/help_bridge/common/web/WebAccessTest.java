@@ -44,7 +44,7 @@ class WebAccessTest {
 
     @Test
     void guestsMustLogInBeforeOpeningPagesOrPerformingActions() throws Exception {
-        for (String path : new String[]{"/", "/home", "/requests", "/requests/new"}) {
+        for (String path : new String[]{"/", "/home", "/requests", "/requests/new", "/requests/1"}) {
             mvc.perform(get(path)).andExpect(redirectedUrl("/login"));
         }
         mvc.perform(post("/requests").with(csrf())).andExpect(redirectedUrl("/login"));

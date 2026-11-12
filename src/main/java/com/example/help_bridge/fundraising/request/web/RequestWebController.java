@@ -61,6 +61,16 @@ public class RequestWebController {
         return "requests/list";
     }
 
+    @PreAuthorize(LIST_ROLES)
+    @GetMapping("/{id}")
+    public String details(@PathVariable Long id, Model model) {
+        var request = requestService.getRequestById(id);
+        model.addAttribute("request", request);
+        model.addAttribute("assistanceTypes", requestService.getAssistanceTypes());
+        model.addAttribute("documents", request.documents().stream().map(RequestDocumentLink::from).toList());
+        return "requests/details";
+    }
+
     @PreAuthorize(APPLICANT_ROLE)
     @GetMapping("/new")
     public String newForm(Model model) {

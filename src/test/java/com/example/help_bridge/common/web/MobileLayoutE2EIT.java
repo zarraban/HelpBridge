@@ -49,12 +49,16 @@ class MobileLayoutE2EIT {
                 1L, 1L, null, "MEDICAL", java.math.BigDecimal.TEN, java.time.LocalDate.now(),
                 "Ситуація", "ДовгийОпис".repeat(60), "Установа", "DOC-1",
                 com.example.help_bridge.fundraising.request.entity.RequestStatus.NEW, true,
-                java.time.LocalDateTime.now(), java.util.List.of());
+                java.time.LocalDateTime.now(), java.util.List.of(new com.example.help_bridge.fundraising.request.dto.request.RequestDocumentDto.DocumentResponse(
+                        1L, "ДовгаНазваДокумента".repeat(12), "https://files.test/proof.pdf")));
         when(requestService.getSharedPool()).thenReturn(java.util.List.of(request));
         when(requestService.getAssistanceTypes()).thenReturn(java.util.Map.of("MEDICAL", "Лікування"));
         String list = mvc.perform(get("/requests").with(user("a".repeat(150) + "@test.com").roles("FUND_REPRESENTATIVE")))
                 .andReturn().getResponse().getContentAsString();
         String form = mvc.perform(get("/requests/new").with(user("applicant").roles("APPLICANT")))
+                .andReturn().getResponse().getContentAsString();
+        when(requestService.getRequestById(1L)).thenReturn(request);
+        String details = mvc.perform(get("/requests/1").with(user("representative").roles("FUND_REPRESENTATIVE")))
                 .andReturn().getResponse().getContentAsString();
         String css = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources/static/css/app.css"));
         String js = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources/static/js/forms.js"));
@@ -68,6 +72,7 @@ class MobileLayoutE2EIT {
                     case "/js/forms.js" -> js;
                     case "/requests" -> list;
                     case "/requests/new" -> form;
+                    case "/requests/1" -> details;
                     default -> login;
                 };
                 String type = path.endsWith(".css") ? "text/css" : path.endsWith(".js") ? "application/javascript" : "text/html";
@@ -75,7 +80,7 @@ class MobileLayoutE2EIT {
             });
             for (int width : new int[]{320, 390, 768, 1280}) {
                 page.setViewportSize(width, 900);
-                for (String path : new String[]{"/login", "/requests", "/requests/new"}) {
+                for (String path : new String[]{"/login", "/requests", "/requests/new", "/requests/1"}) {
                     page.navigate("https://helpbridge.test" + path);
                     assertThat((Boolean) page.evaluate("document.documentElement.scrollWidth <= innerWidth")).as(path + " at " + width).isTrue();
                 }
@@ -90,6 +95,9 @@ class MobileLayoutE2EIT {
             page.waitForCondition(() -> ((Number) page.locator(".table-container").evaluate("el => el.scrollLeft")).intValue() > 0);
             page.screenshot(new com.microsoft.playwright.Page.ScreenshotOptions()
                     .setPath(java.nio.file.Path.of("target/playwright/mobile-requests.png")).setFullPage(true));
+            page.navigate("https://helpbridge.test/requests/1");
+            page.screenshot(new com.microsoft.playwright.Page.ScreenshotOptions()
+                    .setPath(java.nio.file.Path.of("target/playwright/mobile-request-details.png")).setFullPage(true));
             page.navigate("https://helpbridge.test/login");
             com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("[data-submit-status]")).isHidden();
             page.locator("#email").focus();

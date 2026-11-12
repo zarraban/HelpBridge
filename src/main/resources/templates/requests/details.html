@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Деталі заявки')}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('requests')}"></nav>
+<main id="main-content" tabindex="-1">
+    <header th:replace="~{fragments/layout :: pageHeader(${'Заявка №' + request.id}, 'Повна інформація про заявку на допомогу.', ~{::detailsActions})}">
+        <th:block th:fragment="detailsActions">
+            <a class="btn btn-secondary" th:href="@{/requests}">До списку заявок</a>
+        </th:block>
+    </header>
+    <th:block th:replace="~{fragments/layout :: messages}"></th:block>
+
+    <section class="card details-section" aria-labelledby="summary-heading">
+        <h2 id="summary-heading">Основна інформація</h2>
+        <div th:replace="~{fragments/layout :: requestStatus(${request.status}, ${request.hot})}"></div>
+        <dl class="details-grid">
+            <div><dt>Тип допомоги</dt><dd th:text="${assistanceTypes[request.assistanceType] ?: request.assistanceType}"></dd></div>
+            <div><dt>Потрібна сума</dt><dd><span th:text="${#numbers.formatDecimal(request.amount, 1, 'WHITESPACE', 2, 'COMMA')}"></span> грн</dd></div>
+            <div><dt>Крайній термін</dt><dd><time th:datetime="${request.deadline}" th:text="${#temporals.format(request.deadline, 'dd.MM.yyyy')}"></time></dd></div>
+            <div><dt>Дата створення</dt><dd><time th:datetime="${request.createdAt}" th:text="${#temporals.format(request.createdAt, 'dd.MM.yyyy HH:mm')}"></time></dd></div>
+            <div sec:authorize="hasRole('SYSTEM_ADMIN')"><dt>ID заявника</dt><dd th:text="${request.requesterId}"></dd></div>
+            <div sec:authorize="hasRole('SYSTEM_ADMIN')" th:if="${request.fundId != null}"><dt>ID фонду</dt><dd th:text="${request.fundId}"></dd></div>
+        </dl>
+    </section>
+
+    <section class="card details-section" aria-labelledby="description-heading">
+        <h2 id="description-heading">Потреба в допомозі</h2>
+        <h3>Опис ситуації</h3>
+        <p class="details-text" th:text="${request.situationDescription}"></p>
+        <h3>Яка саме допомога потрібна</h3>
+        <p class="details-text" th:text="${request.needDescription}"></p>
+    </section>
+
+    <section class="card details-section" aria-labelledby="confirmation-heading">
+        <h2 id="confirmation-heading">Підтвердження обставин</h2>
+        <dl class="details-grid">
+            <div><dt>Установа</dt><dd th:text="${request.institutionName}"></dd></div>
+            <div><dt>Номер заяви / звернення / документа</dt><dd th:text="${request.applicationNumber}"></dd></div>
+        </dl>
+    </section>
+
+    <section class="card details-section" aria-labelledby="documents-heading">
+        <h2 id="documents-heading">Документи заявки</h2>
+        <p class="muted" th:if="${#lists.isEmpty(documents)}">До цієї заявки ще не додано документів.</p>
+        <th:block th:unless="${#lists.isEmpty(documents)}">
+            <p class="field-hint">Посилання на документи відкриваються в новій вкладці.</p>
+            <ul class="document-list">
+                <li th:each="document : ${documents}">
+                    <a th:if="${document.url != null}" th:href="${document.url}" target="_blank" rel="noopener noreferrer">
+                        <span th:text="${document.name}"></span><span class="visually-hidden"> — відкрити в новій вкладці</span>
+                    </a>
+                    <th:block th:if="${document.url == null}">
+                        <span th:text="${document.name}"></span>
+                        <span class="field-hint">Посилання недоступне.</span>
+                    </th:block>
+                </li>
+            </ul>
+        </th:block>
+    </section>
+</main>
+</body>
+</html>

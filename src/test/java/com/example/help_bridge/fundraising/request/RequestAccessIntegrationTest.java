@@ -91,6 +91,44 @@ class RequestAccessIntegrationTest {
     private CreateDocumentRequest document() { return new CreateDocumentRequest("Proof", "https://files.test/proof.pdf"); }
 
     @Test
+    void detailsRenderFullRequestAndOnlySafeDocumentLinks() throws Exception {
+        own.addDocument(new RequestDocument("Медичний висновок", "https://files.test/proof.pdf"));
+        own.addDocument(new RequestDocument("Некоректне посилання", "javascript:alert(1)"));
+        own.addDocument(new RequestDocument("Неповна адреса", "https://"));
+        requests.saveAndFlush(own);
+        mvc.perform(get("/requests/{id}", own.getId()).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
+                .andExpect(status().isOk()).andExpect(view().name("requests/details"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Situation")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Access Clinic")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("href=\"https://files.test/proof.pdf\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("rel=\"noopener noreferrer\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Посилання недоступне")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("javascript:"))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("ID заявника"))));
+        mvc.perform(get("/requests/{id}", own.getId()).with(user("admin").roles("SYSTEM_ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("ID заявника")));
+        mvc.perform(get("/requests").with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("href=\"/requests/" + own.getId() + "\"")));
+    }
+
+    @Test
+    void detailLinksCannotBypassOwnershipAndMissingRecordsShow404() throws Exception {
+        mvc.perform(get("/requests/{id}", foreign.getId()).accept(org.springframework.http.MediaType.TEXT_HTML)
+                        .with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
+                .andExpect(status().isForbidden()).andExpect(view().name("error/403"));
+        mvc.perform(get("/requests/{id}", own.getId()).accept(org.springframework.http.MediaType.TEXT_HTML)
+                        .with(user("volunteer").roles("VOLUNTEER")))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/requests/999999").accept(org.springframework.http.MediaType.TEXT_HTML)
+                        .with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
+                .andExpect(status().isNotFound()).andExpect(view().name("error/404"));
+        mvc.perform(get("/requests/{id}", own.getId()).with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("ще не додано документів")));
+    }
+
+    @Test
     void applicantCannotReadOrChangeForeignRequestsOrSpoofAuthor() {
         assertThat(service.getRequestById(own.getId()).requesterId()).isEqualTo(owner.getId());
         assertThatThrownBy(() -> service.getRequestById(foreign.getId())).isInstanceOf(AccessDeniedException.class);

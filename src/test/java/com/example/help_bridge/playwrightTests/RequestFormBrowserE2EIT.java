@@ -50,7 +50,8 @@ class RequestFormBrowserE2EIT extends BrowserTestSupport {
                 "2500.00",
                 "Our Academy",
                 deadline.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
-                "Очікує перевірки"
+                "Очікує перевірки",
+                "Переглянути"
         });
     }
 
