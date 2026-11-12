@@ -43,6 +43,47 @@ class WebLoginTest {
     @MockitoBean AccessDeniedHandler deniedHandler;
 
     @Test
+    void webErrorsHaveCorrectStatusesAndSafeRecoveryActions() throws Exception {
+        when(requestService.getSharedPool()).thenThrow(new IllegalStateException("private database details"));
+        mvc.perform(get("/requests").with(user("representative").roles("FUND_REPRESENTATIVE"))
+                        .accept(org.springframework.http.MediaType.TEXT_HTML))
+                .andExpect(status().isInternalServerError()).andExpect(view().name("error/500"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("спочатку перевірте результат")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("private database details"))));
+        org.mockito.Mockito.doThrow(new com.example.help_bridge.fundraising.request.exception.InvalidRequestStateException("changed"))
+                .when(requestService).getSharedPool();
+        mvc.perform(get("/requests").with(user("representative").roles("FUND_REPRESENTATIVE")))
+                .andExpect(status().isConflict()).andExpect(view().name("error/409"));
+        org.mockito.Mockito.doThrow(new com.example.help_bridge.fundraising.request.exception.RequestNotFoundException(1L))
+                .when(requestService).getSharedPool();
+        mvc.perform(get("/requests").with(user("representative").roles("FUND_REPRESENTATIVE")))
+                .andExpect(status().isNotFound()).andExpect(view().name("error/404"));
+        org.mockito.Mockito.doThrow(new org.springframework.security.access.AccessDeniedException("denied"))
+                .when(requestService).getSharedPool();
+        mvc.perform(get("/requests").with(user("representative").roles("FUND_REPRESENTATIVE"))
+                        .accept(org.springframework.http.MediaType.TEXT_HTML))
+                .andExpect(status().isForbidden()).andExpect(view().name("error/403"));
+    }
+
+    @Test
+    void emptyPoolAndReviewConflictOfferNextActions() throws Exception {
+        mvc.perform(get("/requests").with(user("admin").roles("SYSTEM_ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Спільний пул поки порожній")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Оновити чергу")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Оновити список")));
+        org.mockito.Mockito.doThrow(new com.example.help_bridge.fundraising.request.exception.InvalidRequestStateException("changed"))
+                .when(verificationService).reviewRequest(org.mockito.ArgumentMatchers.eq(1L), any());
+        mvc.perform(post("/requests/1/review").with(user("admin").roles("SYSTEM_ADMIN"))
+                        .with(csrf()).param("approved", "true"))
+                .andExpect(redirectedUrl("/requests"))
+                .andExpect(flash().attribute("error", org.hamcrest.Matchers.containsString("Список оновлено")));
+        mvc.perform(post("/requests/1/review").with(user("admin").roles("SYSTEM_ADMIN"))
+                        .with(csrf()).param("approved", "invalid"))
+                .andExpect(status().isBadRequest()).andExpect(view().name("error/4xx"));
+    }
+
+    @Test
     void failedLoginRetainsEmailAndRoleWithoutPassword() throws Exception {
         when(authenticationManager.authenticate(any())).thenThrow(
                 new org.springframework.security.authentication.BadCredentialsException("bad credentials"));

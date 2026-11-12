@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${status})}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('')}"></nav>
+<main id="main-content" class="error-page" tabindex="-1">
+    <p class="code" th:text="${status}">Помилка</p>
+    <header th:replace="~{fragments/layout :: pageHeader('Не вдалося опрацювати запит', 'Перевірте адресу та введені дані. Поверніться до потрібного розділу й повторіть дію з актуальної сторінки.', ~{})}"></header>
+    <div th:replace="~{fragments/layout :: errorActions}"></div>
+</main>
+</body>
+</html>

@@ -22,7 +22,11 @@
 
     <section id="verification" sec:authorize="hasRole('SYSTEM_ADMIN')" th:if="${pendingRequests != null}">
         <h2>Очікують підтвердження</h2>
-        <p th:if="${#lists.isEmpty(pendingRequests)}">Заявок на підтвердження немає.</p>
+        <th:block th:if="${#lists.isEmpty(pendingRequests)}">
+            <section th:replace="~{fragments/layout :: emptyState('Заявок на підтвердження немає', 'Нові заявки з’являться тут після подання заявниками.', ~{::refreshVerification})}">
+                <a th:fragment="refreshVerification" class="btn btn-secondary" th:href="@{/requests#verification}">Оновити чергу</a>
+            </section>
+        </th:block>
         <div class="table-container" th:unless="${#lists.isEmpty(pendingRequests)}" role="region" aria-label="Заявки на підтвердження" tabindex="0">
         <table>
             <thead>
@@ -63,7 +67,14 @@
     </section>
     <h2 sec:authorize="hasRole('SYSTEM_ADMIN')">Спільний пул</h2>
 
-    <p th:if="${#lists.isEmpty(requests)}" th:text="${ownRequests} ? 'Ви ще не подавали заявок.' : 'Нових заявок поки немає.'"></p>
+    <th:block th:if="${#lists.isEmpty(requests)}">
+        <section th:replace="~{fragments/layout :: emptyState(${ownRequests ? 'Ви ще не подавали заявок' : 'Спільний пул поки порожній'}, ${ownRequests ? 'Подайте першу заявку на допомогу. Після перевірки її зможуть взяти в роботу фонди.' : 'Тут з’являться перевірені заявки, доступні для бронювання фондом.'}, ~{::emptyRequestActions})}">
+            <th:block th:fragment="emptyRequestActions">
+                <a sec:authorize="hasRole('APPLICANT')" class="btn" th:href="@{/requests/new}">Створити першу заявку</a>
+                <a sec:authorize="hasAnyRole('FUND_REPRESENTATIVE', 'SYSTEM_ADMIN')" class="btn btn-secondary" th:href="@{/requests}">Оновити список</a>
+            </th:block>
+        </section>
+    </th:block>
 
     <div class="table-container" th:unless="${#lists.isEmpty(requests)}" role="region" aria-label="Список заявок" tabindex="0">
     <table>

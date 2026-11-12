@@ -6,8 +6,8 @@
 <nav th:replace="~{fragments/layout :: nav('')}"></nav>
 <main id="main-content" class="error-page" tabindex="-1">
     <p class="code">404</p>
-    <header th:replace="~{fragments/layout :: pageHeader('Сторінку не знайдено', 'Такої сторінки не існує або її було переміщено.', ~{})}"></header>
-    <a class="btn" th:href="@{/home}">На головну</a>
+    <header th:replace="~{fragments/layout :: pageHeader('Сторінку або запис не знайдено', 'Можливо, адресу вказано неправильно або запис уже видалено. Перейдіть до головної сторінки чи актуального списку заявок.', ~{})}"></header>
+    <div th:replace="~{fragments/layout :: errorActions}"></div>
 </main>
 </body>
 </html>

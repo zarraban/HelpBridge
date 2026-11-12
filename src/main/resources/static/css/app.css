@@ -205,3 +205,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .error-page .page-heading { flex: 0 1 auto; }
 main > section + h2 { margin-top: 2rem; }
 .alert-info { background: var(--info-bg); color: var(--primary-dark); }
+
+.empty-state { margin: 1rem 0 1.5rem; }
+.empty-state h3 { margin: 0 0 0.5rem; font-size: 1.15rem; }
+.empty-state p { margin: 0 0 1rem; }
+.error-actions { justify-content: center; }
+.error-page .page-heading { max-width: 42rem; }

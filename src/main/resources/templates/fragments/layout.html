@@ -61,5 +61,17 @@
     <th:block th:if="${message}"><p th:replace="~{fragments/layout :: alert('success', ${message})}"></p></th:block>
     <th:block th:if="${error}"><p th:replace="~{fragments/layout :: alert('error', ${error})}"></p></th:block>
 </th:block>
+<section class="card empty-state" th:fragment="emptyState(title, description, actions)">
+    <h3 th:text="${title}"></h3>
+    <p class="muted" th:text="${description}"></p>
+    <div class="form-actions" th:if="${actions != null}"><th:block th:replace="${actions}"></th:block></div>
+</section>
+
+<div class="form-actions error-actions" th:fragment="errorActions">
+    <a class="btn" sec:authorize="isAuthenticated()" th:href="@{/home}">На головну</a>
+    <a class="btn" sec:authorize="!isAuthenticated()" th:href="@{/login}">Увійти</a>
+    <a class="btn btn-secondary" sec:authorize="hasAnyRole('APPLICANT', 'FUND_REPRESENTATIVE', 'SYSTEM_ADMIN')"
+       th:href="@{/requests}">До списку заявок</a>
+</div>
 </body>
 </html>

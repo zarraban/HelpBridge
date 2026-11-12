@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('500')}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('')}"></nav>
+<main id="main-content" class="error-page" tabindex="-1">
+    <p class="code">500</p>
+    <header th:replace="~{fragments/layout :: pageHeader('Не вдалося виконати дію', 'Сталася внутрішня помилка. Спробуйте відкрити потрібний розділ пізніше. Якщо ви надсилали форму, спочатку перевірте результат у списку, щоб не створити повторний запис.', ~{})}"></header>
+    <div th:replace="~{fragments/layout :: errorActions}"></div>
+</main>
+</body>
+</html>

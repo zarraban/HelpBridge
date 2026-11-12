@@ -115,9 +115,9 @@ public class RequestWebController {
             redirectAttributes.addFlashAttribute("message",
                     approved ? "Заявку підтверджено, вона у спільному пулі." : "Заявку відхилено та видалено.");
         } catch (RequestNotFoundException e) {
-            redirectAttributes.addFlashAttribute("error", "Заявку не знайдено.");
+            redirectAttributes.addFlashAttribute("error", "Заявку вже видалено або її не знайдено. Список оновлено — перевірте актуальні заявки.");
         } catch (InvalidRequestStateException e) {
-            redirectAttributes.addFlashAttribute("error", "Цю заявку вже не можна опрацювати.");
+            redirectAttributes.addFlashAttribute("error", "Стан заявки змінився або її вже опрацювали. Список оновлено — перевірте доступні дії.");
         }
         return "redirect:/requests";
     }
