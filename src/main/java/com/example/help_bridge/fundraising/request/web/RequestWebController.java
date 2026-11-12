@@ -188,8 +188,9 @@ public class RequestWebController {
             model.addAttribute("assistanceTypes", requestService.getAssistanceTypes());
             return "requests/create-form";
         }
+        Long createdId;
         try {
-            requestService.createRequest(form.toDto(currentUserId(authentication)));
+            createdId = requestService.createRequest(form.toDto(currentUserId(authentication))).id();
         } catch (InvalidAssistanceTypeException e) {
             bindingResult.rejectValue("assistanceType", "request.assistanceType.invalid",
                     "Оберіть допустимий тип допомоги");
@@ -203,7 +204,7 @@ public class RequestWebController {
         }
         redirectAttributes.addFlashAttribute("message",
                 "Заявку подано. Вона з'явиться у спільному пулі після підтвердження адміністратором.");
-        return "redirect:/requests";
+        return "redirect:/requests/" + createdId;
     }
 
     @PreAuthorize(ADMIN_ROLE)
@@ -220,7 +221,8 @@ public class RequestWebController {
         } catch (InvalidRequestStateException e) {
             redirectAttributes.addFlashAttribute("error", "Стан заявки змінився або її вже опрацювали. Список оновлено — перевірте доступні дії.");
         }
-        return "redirect:/requests";
+        redirectAttributes.addFlashAttribute("messageSection", "verification");
+        return "redirect:/requests#verification";
     }
 
     private static boolean hasRole(Authentication authentication, String authority) {

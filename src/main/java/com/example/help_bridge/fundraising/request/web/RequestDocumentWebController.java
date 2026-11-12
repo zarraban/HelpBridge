@@ -75,6 +75,7 @@ public class RequestDocumentWebController {
             return conflict(model, response);
         }
         redirect.addFlashAttribute("message", documentId == null ? "Документ додано до заявки." : "Дані документа збережено.");
+        redirect.addFlashAttribute("messageSection", "documents");
         return details(requestId);
     }
 
@@ -99,6 +100,7 @@ public class RequestDocumentWebController {
         } catch (InvalidRequestStateException | ObjectOptimisticLockingFailureException exception) {
             redirect.addFlashAttribute("error", "Стан заявки змінився. Видалення документа не виконано.");
         }
+        redirect.addFlashAttribute("messageSection", "documents");
         return details(requestId);
     }
 

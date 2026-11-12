@@ -11,7 +11,7 @@
     </th:block>
     </header>
 
-    <th:block th:replace="~{fragments/layout :: messages}"></th:block>
+    <th:block th:if="${messageSection != 'verification'}"><th:block th:replace="~{fragments/layout :: messages}"></th:block></th:block>
 
     <p class="muted" sec:authorize="hasRole('FUND_REPRESENTATIVE')">
         Тут показано верифіковані заявки. Спочатку йдуть заявки з простроченим терміном.
@@ -65,6 +65,7 @@
 
     <section id="verification" sec:authorize="hasRole('SYSTEM_ADMIN')" th:if="${pendingRequests != null}">
         <h2>Очікують підтвердження</h2>
+        <th:block th:if="${messageSection == 'verification'}"><th:block th:replace="~{fragments/layout :: messages}"></th:block></th:block>
         <th:block th:if="${#lists.isEmpty(pendingRequests)}">
             <section th:replace="~{fragments/layout :: emptyState('Заявок на підтвердження немає', 'Нові заявки з’являться тут після подання заявниками.', ~{::refreshVerification})}">
                 <a th:fragment="refreshVerification" class="btn btn-secondary" th:href="@{/requests#verification}">Оновити чергу</a>

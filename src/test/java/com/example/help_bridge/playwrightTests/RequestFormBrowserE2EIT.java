@@ -40,9 +40,11 @@ class RequestFormBrowserE2EIT extends BrowserTestSupport {
                 .giveConsent()
                 .submit();
 
-        requestsPage.assertOpened();
-        assertThat(requestsPage.successMessage())
+        assertThat(page.locator("h1")).containsText("Заявка №");
+        assertThat(page.locator(".alert-success"))
                 .hasText("Заявку подано. Вона з'явиться у спільному пулі після підтвердження адміністратором.");
+        page.getByText("До списку заявок", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
+        requestsPage.assertOpened();
         assertThat(requestsPage.rows()).hasCount(1);
         assertThat(requestsPage.rows().first().locator("td")).hasText(new String[]{
                 "Лікування",

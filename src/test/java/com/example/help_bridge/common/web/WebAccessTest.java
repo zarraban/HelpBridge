@@ -89,7 +89,7 @@ class WebAccessTest {
                 .andExpect(status().isForbidden());
         org.mockito.Mockito.verifyNoInteractions(requestService, verificationService, userRepository);
         mvc.perform(post("/requests/1/review").with(user("admin").roles("SYSTEM_ADMIN")).with(csrf()).param("approved", "true"))
-                .andExpect(redirectedUrl("/requests"));
+                .andExpect(redirectedUrl("/requests#verification"));
         org.mockito.Mockito.verify(verificationService).reviewRequest(org.mockito.ArgumentMatchers.eq(1L), any());
     }
 
@@ -120,6 +120,9 @@ class WebAccessTest {
                 .andExpect(status().isOk());
         org.mockito.Mockito.verify(requestService).getRequestsByUser(7L);
         org.mockito.Mockito.verify(requestService, org.mockito.Mockito.never()).getSharedPool();
+        var created = org.mockito.Mockito.mock(com.example.help_bridge.fundraising.request.dto.request.RequestDto.RequestResponse.class);
+        when(created.id()).thenReturn(42L);
+        when(requestService.createRequest(any())).thenReturn(created);
         mvc.perform(post("/requests").with(user("APPLICANT:applicant@test.com").roles("APPLICANT")).with(csrf())
                         .param("userId", "99").param("requesterId", "99")
                         .param("assistanceType", "MEDICAL").param("amount", "100")
@@ -127,7 +130,7 @@ class WebAccessTest {
                         .param("situationDescription", "Потрібна допомога").param("needDescription", "Лікування")
                         .param("institutionName", "Лікарня").param("applicationNumber", "DOC-1")
                         .param("dataProcessingConsent", "true"))
-                .andExpect(redirectedUrl("/requests"));
+                .andExpect(redirectedUrl("/requests/42"));
         org.mockito.Mockito.verify(requestService).createRequest(org.mockito.ArgumentMatchers.argThat(dto -> dto.userId().equals(7L)));
     }
 

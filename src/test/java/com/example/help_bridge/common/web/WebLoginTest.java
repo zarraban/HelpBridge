@@ -98,7 +98,7 @@ class WebLoginTest {
                 .when(verificationService).reviewRequest(org.mockito.ArgumentMatchers.eq(1L), any());
         mvc.perform(post("/requests/1/review").with(user("admin").roles("SYSTEM_ADMIN"))
                         .with(csrf()).param("approved", "true"))
-                .andExpect(redirectedUrl("/requests"))
+                .andExpect(redirectedUrl("/requests#verification"))
                 .andExpect(flash().attribute("error", org.hamcrest.Matchers.containsString("Список оновлено")));
         mvc.perform(post("/requests/1/review").with(user("admin").roles("SYSTEM_ADMIN"))
                         .with(csrf()).param("approved", "invalid"))

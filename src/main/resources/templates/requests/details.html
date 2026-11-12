@@ -12,7 +12,7 @@
             <a class="btn btn-secondary" th:href="@{/requests}">До списку заявок</a>
         </th:block>
     </header>
-    <th:block th:replace="~{fragments/layout :: messages}"></th:block>
+    <th:block th:if="${messageSection != 'documents'}"><th:block th:replace="~{fragments/layout :: messages}"></th:block></th:block>
 
     <section class="card details-section" aria-labelledby="summary-heading">
         <h2 id="summary-heading">Основна інформація</h2>
@@ -45,6 +45,7 @@
 
     <section id="documents" class="card details-section" aria-labelledby="documents-heading">
         <h2 id="documents-heading">Документи заявки</h2>
+        <th:block th:if="${messageSection == 'documents'}"><th:block th:replace="~{fragments/layout :: messages}"></th:block></th:block>
         <p th:if="${permissions.manageDocuments}"><a class="btn" th:href="@{/requests/{id}/documents/new(id=${request.id})}">Додати документ</a></p>
         <p class="muted" th:if="${#lists.isEmpty(documents)}">До цієї заявки ще не додано документів.</p>
         <th:block th:unless="${#lists.isEmpty(documents)}">

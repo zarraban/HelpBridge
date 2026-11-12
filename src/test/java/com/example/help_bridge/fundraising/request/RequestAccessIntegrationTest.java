@@ -109,6 +109,20 @@ class RequestAccessIntegrationTest {
     }
 
     @Test
+    void reviewReturnsToQueueAndShowsMessageInsideThatSection() throws Exception {
+        var result = mvc.perform(post("/requests/{id}/review", own.getId()).with(user("admin").roles("SYSTEM_ADMIN"))
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                        .param("approved", "true"))
+                .andExpect(redirectedUrl("/requests#verification"))
+                .andExpect(flash().attribute("messageSection", "verification")).andReturn();
+        var session = (org.springframework.mock.web.MockHttpSession) result.getRequest().getSession(false);
+        var page = mvc.perform(get("/requests").session(session).with(user("admin").roles("SYSTEM_ADMIN")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(page.indexOf("Заявку підтверджено, вона у спільному пулі.")).isGreaterThan(page.indexOf("id=\"verification\""));
+        assertThat(page.split("Заявку підтверджено, вона у спільному пулі.", -1)).hasSize(2);
+    }
+
+    @Test
     void documentFormsCreateUpdateAndConfirmDeletion() throws Exception {
         String base = "/requests/" + own.getId() + "/documents";
         mvc.perform(get(base + "/new").with(user("APPLICANT:" + owner.getEmail()).roles("APPLICANT")))
