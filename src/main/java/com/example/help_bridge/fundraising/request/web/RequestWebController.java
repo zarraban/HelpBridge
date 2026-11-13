@@ -1,5 +1,7 @@
 package com.example.help_bridge.fundraising.request.web;
 
+import com.example.help_bridge.fundraising.fundraiser.service.FundraiserService;
+
 import com.example.help_bridge.fundraising.request.dto.request.RequestVerificationDto;
 import com.example.help_bridge.fundraising.fund.entity.FundStatus;
 import com.example.help_bridge.fundraising.request.entity.RequestStatus;
@@ -37,6 +39,7 @@ public class RequestWebController {
     private static final String APPLICANT_ROLE = "hasRole('APPLICANT')";
     private static final String ADMIN_ROLE = "hasRole('SYSTEM_ADMIN')";
 
+    private final FundraiserService fundraisers;
     private final RequestAccessPolicy access;
     private final RequestService requestService;
     private final RequestVerificationService verificationService;
@@ -44,7 +47,9 @@ public class RequestWebController {
 
     public RequestWebController(RequestService requestService,
                                 RequestVerificationService verificationService,
-                                UserRepository userRepository, RequestAccessPolicy access) {
+                                UserRepository userRepository, RequestAccessPolicy access,
+                                FundraiserService fundraisers) {
+        this.fundraisers = fundraisers;
         this.access = access;
         this.requestService = requestService;
         this.verificationService = verificationService;
@@ -74,6 +79,10 @@ public class RequestWebController {
         model.addAttribute("request", request);
         var viewer = access.currentViewer();
         model.addAttribute("permissions", viewer.permissions(request));
+        if (viewer.isAdmin() || viewer.isRepresentative()) {
+            fundraisers.findFundraiserIdByRequestId(id).ifPresent(fundraiserId ->
+                    model.addAttribute("fundraiserId", fundraiserId));
+        }
         model.addAttribute("bookingUnavailable", viewer.isRepresentative() && request.status() == RequestStatus.NEW
                 && viewer.fundStatus() != FundStatus.APPROVED);
         model.addAttribute("assistanceTypes", requestService.getAssistanceTypes());

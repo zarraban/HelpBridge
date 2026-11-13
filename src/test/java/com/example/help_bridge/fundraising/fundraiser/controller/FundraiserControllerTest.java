@@ -46,13 +46,15 @@ class FundraiserControllerTest {
         Long page = 1L;
         Long size = 5L;
         List<FundraiserResponse> responses = List.of(response);
-        when(fundraiserService.getAllFundraisers(sort, page, size)).thenReturn(responses);
+        when(fundraiserService.getFundraisers("createdAt", sort, page, size))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(responses));
 
-        ResponseEntity<List<FundraiserResponse>> result = fundraiserController.getAllFundraisers(sort, page, size);
+        ResponseEntity<List<FundraiserResponse>> result = fundraiserController.getAllFundraisers("createdAt", sort, page, size);
 
-        verify(fundraiserService, times(1)).getAllFundraisers(sort, page, size);
+        verify(fundraiserService, times(1)).getFundraisers("createdAt", sort, page, size);
         assertEquals(HttpStatus.OK, result.getStatusCode());
         assertEquals(responses, result.getBody());
+        assertEquals("1", result.getHeaders().getFirst("X-Total-Count"));
     }
 
     @Test

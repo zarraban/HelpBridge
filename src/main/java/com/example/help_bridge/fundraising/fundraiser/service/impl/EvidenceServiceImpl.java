@@ -13,6 +13,7 @@ import com.example.help_bridge.fundraising.fundraiser.repository.EvidenceReposit
 import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserRepository;
 import com.example.help_bridge.fundraising.fundraiser.service.EvidenceService;
 import com.example.help_bridge.fundraising.fundraiser.strategy.EvidenceValidatorStrategy;
+import com.example.help_bridge.fundraising.fundraiser.security.FundraiserAccessPolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,7 @@ public class EvidenceServiceImpl implements EvidenceService {
     private final EvidenceRepository evidenceRepository;
     private final FundraiserRepository fundraiserRepository;
     private final List<EvidenceValidatorStrategy> strategies;
+    private final FundraiserAccessPolicy access;
 
     @Override
     public EvidenceResponse addEvidenceToFundraiser(Long fundraiserId, AddEvidenceRequest request) {
@@ -65,6 +67,9 @@ public class EvidenceServiceImpl implements EvidenceService {
     @Override
     @Transactional(readOnly = true)
     public List<EvidenceResponse> getEvidencesByFundraiserId(Long fundraiserId) {
+        Fundraiser fundraiser = fundraiserRepository.findById(fundraiserId)
+                .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with ID " + fundraiserId + " not found"));
+        access.requireAccess(fundraiser);
         return evidenceRepository.findAllByFundraiserIdOrderByCreatedAtAsc(fundraiserId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -72,10 +77,10 @@ public class EvidenceServiceImpl implements EvidenceService {
 
     @Override
     public String deleteEvidenceById(Long evidenceId) {
-        if (!evidenceRepository.existsById(evidenceId)) {
-            throw new EvidenceNotFoundException(evidenceId);
-        }
-        evidenceRepository.deleteById(evidenceId);
+        Evidence evidence = evidenceRepository.findById(evidenceId)
+                .orElseThrow(() -> new EvidenceNotFoundException(evidenceId));
+        access.requireAccess(evidence.getFundraiser());
+        evidenceRepository.delete(evidence);
         return "Deleted successfully";
     }
 

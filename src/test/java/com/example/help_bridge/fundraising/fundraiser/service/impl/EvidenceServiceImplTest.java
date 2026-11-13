@@ -35,11 +35,14 @@ class EvidenceServiceImplTest {
     @Mock
     private EvidenceValidatorStrategy strategy;
 
+    @Mock
+    private com.example.help_bridge.fundraising.fundraiser.security.FundraiserAccessPolicy access;
+
     private EvidenceServiceImpl evidenceService;
 
     @BeforeEach
     void setUp() {
-        evidenceService = new EvidenceServiceImpl(evidenceRepository, fundraiserRepository, List.of(strategy));
+        evidenceService = new EvidenceServiceImpl(evidenceRepository, fundraiserRepository, List.of(strategy), access);
     }
 
     @Test
@@ -105,6 +108,7 @@ class EvidenceServiceImplTest {
         Evidence evidence = new Evidence();
         evidence.setId(10L);
         evidence.setFundraiser(fundraiser);
+        when(fundraiserRepository.findById(1L)).thenReturn(Optional.of(fundraiser));
         when(evidenceRepository.findAllByFundraiserIdOrderByCreatedAtAsc(1L)).thenReturn(List.of(evidence));
 
         var responses = evidenceService.getEvidencesByFundraiserId(1L);
@@ -116,7 +120,7 @@ class EvidenceServiceImplTest {
 
     @Test
     void deleteEvidenceById_shouldThrowNotFound_whenMissing() {
-        when(evidenceRepository.existsById(5L)).thenReturn(false);
+        when(evidenceRepository.findById(5L)).thenReturn(Optional.empty());
 
         assertThrows(EvidenceNotFoundException.class,
                 () -> evidenceService.deleteEvidenceById(5L));

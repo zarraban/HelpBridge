@@ -38,6 +38,7 @@ class WebLoginTest {
     @MockitoBean com.example.help_bridge.fundraising.request.service.RequestBookingService booking;
     @MockitoBean com.example.help_bridge.fundraising.fund.repository.FundRepository funds;
     @MockitoBean RequestVerificationService verificationService;
+    @MockitoBean com.example.help_bridge.fundraising.fundraiser.service.FundraiserService fundraisers;
     @MockitoBean UserRepository userRepository;
     @MockitoBean AuthenticationManager authenticationManager;
     @MockitoBean UserDetailsService userDetailsService;
@@ -227,9 +228,9 @@ class WebLoginTest {
         mvc.perform(get("/home").with(user("applicant").roles("APPLICANT")))
                 .andExpect(redirectedUrl("/requests"));
         mvc.perform(get("/home").with(user("representative").roles("FUND_REPRESENTATIVE")))
-                .andExpect(redirectedUrl("/requests"));
+                .andExpect(status().isOk()).andExpect(view().name("home"));
         mvc.perform(get("/home").with(user("admin").roles("SYSTEM_ADMIN")))
-                .andExpect(redirectedUrl("/requests#verification"));
+                .andExpect(status().isOk()).andExpect(view().name("home"));
         mvc.perform(get("/home").with(user("volunteer").roles("VOLUNTEER")))
                 .andExpect(status().isOk()).andExpect(view().name("home"))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("Ви увійшли як волонтер")));

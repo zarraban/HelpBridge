@@ -36,6 +36,7 @@ class WebAccessTest {
     @Autowired MockMvc mvc;
     @MockitoBean RequestService requestService;
     @MockitoBean RequestVerificationService verificationService;
+    @MockitoBean com.example.help_bridge.fundraising.fundraiser.service.FundraiserService fundraisers;
     @MockitoBean UserRepository userRepository;
     @MockitoBean AuthenticationManager authenticationManager;
     @MockitoBean UserDetailsService userDetailsService;

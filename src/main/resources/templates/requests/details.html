@@ -43,6 +43,12 @@
         </dl>
     </section>
 
+    <section class="card details-section" th:if="${fundraiserId != null}" aria-labelledby="fundraiser-heading">
+        <h2 id="fundraiser-heading">Збір за заявкою</h2>
+        <p>Для цієї заявки створено збір. Перейдіть до нього, щоб переглянути стан і докази надання допомоги.</p>
+        <a class="btn" th:href="@{/fundraisers/{id}(id=${fundraiserId})}" th:text="${'Перейти до збору №' + fundraiserId}"></a>
+    </section>
+
     <section id="documents" class="card details-section" aria-labelledby="documents-heading">
         <h2 id="documents-heading">Документи заявки</h2>
         <th:block th:if="${messageSection == 'documents'}"><th:block th:replace="~{fragments/layout :: messages}"></th:block></th:block>

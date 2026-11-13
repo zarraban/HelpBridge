@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Деталі збору')}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('fundraisers')}"></nav>
+<main id="main-content" tabindex="-1">
+    <header th:replace="~{fragments/layout :: pageHeader(${'Збір №' + fundraiser.fundraiserId}, 'Інформація про збір і підтвердження наданої допомоги.', ~{::detailsActions})}">
+        <th:block th:fragment="detailsActions">
+            <a class="btn btn-secondary" th:href="@{/fundraisers}">До списку зборів</a>
+        </th:block>
+    </header>
+    <th:block th:replace="~{fragments/layout :: messages}"></th:block>
+
+    <section class="card details-section" aria-labelledby="summary-heading">
+        <h2 id="summary-heading">Основна інформація</h2>
+        <div th:switch="${fundraiser.status?.name()}">
+            <span class="badge badge-warning" th:case="'PENDING_ASSIGNMENT'">Очікує призначення</span>
+            <span class="badge" th:case="'IN_PROGRESS'">В роботі</span>
+            <span class="badge badge-success" th:case="'CLOSED'">Закритий</span>
+            <span class="badge badge-neutral" th:case="*">Невідомий статус</span>
+        </div>
+        <dl class="details-grid">
+            <div><dt>Дата створення</dt><dd th:text="${fundraiser.createdAt != null ? #temporals.format(fundraiser.createdAt, 'dd.MM.yyyy HH:mm') : 'Не вказано'}"></dd></div>
+            <div><dt>Дата закриття</dt><dd th:text="${fundraiser.closedAt != null ? #temporals.format(fundraiser.closedAt, 'dd.MM.yyyy HH:mm') : 'Збір ще не закрито'}"></dd></div>
+        </dl>
+    </section>
+
+    <section class="card details-section" aria-labelledby="request-heading">
+        <h2 id="request-heading">Пов’язана заявка</h2>
+        <th:block th:if="${request != null}">
+            <p><a class="btn btn-secondary" th:href="@{/requests/{id}(id=${request.id})}" th:text="${'Переглянути заявку №' + request.id}"></a></p>
+            <dl class="details-grid">
+                <div><dt>Тип допомоги</dt><dd th:text="${assistanceTypes[request.assistanceType] ?: request.assistanceType}"></dd></div>
+                <div><dt>Потрібна сума</dt><dd><span th:text="${#numbers.formatDecimal(request.amount, 1, 'WHITESPACE', 2, 'COMMA')}"></span> грн</dd></div>
+                <div><dt>Крайній термін</dt><dd th:text="${#temporals.format(request.deadline, 'dd.MM.yyyy')}"></dd></div>
+                <div><dt>Установа</dt><dd th:text="${request.institutionName}"></dd></div>
+            </dl>
+            <h3>Яка допомога потрібна</h3>
+            <p class="details-text" th:text="${request.needDescription}"></p>
+        </th:block>
+        <p class="muted" th:if="${request == null}">Пов’язану заявку не знайдено або її не вказано.</p>
+    </section>
+
+    <section class="card details-section" aria-labelledby="closing-heading">
+        <h2 id="closing-heading">Закриття збору</h2>
+        <p>Закрити можна лише ще не закритий збір, до якого додано хоча б один доказ надання допомоги.</p>
+        <p class="alert alert-success" th:if="${closed}">Збір уже закрито. Повторне закриття не потрібне.</p>
+        <p class="alert alert-warning" th:if="${!closed && !hasEvidence}">Закриття недоступне: до збору ще не додано доказів надання допомоги.</p>
+        <a class="btn" th:if="${canClose}" th:href="@{/fundraisers/{id}/close(id=${fundraiser.fundraiserId})}">Закрити збір</a>
+    </section>
+
+    <section id="evidences" class="card details-section" aria-labelledby="evidences-heading">
+        <h2 id="evidences-heading">Докази надання допомоги</h2>
+        <p class="muted" th:if="${#lists.isEmpty(evidences)}">До цього збору ще не додано доказів.</p>
+        <th:block th:unless="${#lists.isEmpty(evidences)}">
+            <p class="field-hint">Вкладення відкриваються в новій вкладці.</p>
+            <article class="evidence-item" th:each="e : ${evidences}">
+                <h3 th:text="${'Доказ №' + e.id}"></h3>
+                <dl class="details-grid">
+                    <div><dt>Номер чека</dt><dd th:text="${!#strings.isEmpty(e.receiptNumber) ? e.receiptNumber : 'Не вказано'}"></dd></div>
+                    <div><dt>Дата додавання</dt><dd th:text="${e.createdAt != null ? #temporals.format(e.createdAt, 'dd.MM.yyyy HH:mm') : 'Не вказано'}"></dd></div>
+                </dl>
+                <h4>Відгук отримувача</h4>
+                <p class="details-text" th:text="${!#strings.isEmpty(e.feedback) ? e.feedback : 'Відгук не додано.'}"></p>
+                <a th:if="${e.url != null}" th:href="${e.url}" target="_blank" rel="noopener noreferrer" th:aria-label="${'Відкрити вкладення доказу №' + e.id + ' у новій вкладці'}">Відкрити вкладення<span class="visually-hidden"> у новій вкладці</span></a>
+                <p class="field-hint" th:if="${e.url == null}">Вкладення відсутнє або посилання недоступне.</p>
+            </article>
+        </th:block>
+    </section>
+</main>
+</body>
+</html>
