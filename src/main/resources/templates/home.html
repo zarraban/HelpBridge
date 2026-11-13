@@ -8,7 +8,7 @@
     <header th:replace="~{fragments/layout :: pageHeader('Мій кабінет', 'Ваш робочий простір у HelpBridge.', ~{})}"></header>
     <section class="card" sec:authorize="hasAnyRole('FUND_REPRESENTATIVE', 'SYSTEM_ADMIN')">
         <h2>Робочі розділи</h2>
-        <p sec:authorize="hasRole('FUND_REPRESENTATIVE')">Бронюйте заявки та супроводжуйте збори вашого фонду.</p>
+        <p sec:authorize="hasRole('FUND_REPRESENTATIVE')">Керуйте командою, бронюйте заявки та супроводжуйте збори вашого фонду.</p>
         <p sec:authorize="hasRole('SYSTEM_ADMIN')">Перевіряйте заявки та переглядайте збори всіх фондів.</p>
         <div class="form-actions">
             <a class="btn" th:href="@{/fundraisers}">Збори</a>
@@ -19,7 +19,7 @@
     </section>
     <section class="card" sec:authorize="hasRole('VOLUNTEER')">
         <h2>Робота волонтера</h2>
-        <p>Переглядайте свої активні призначення, історію роботи та деталі зборів.</p>
+        <p>Переглядайте призначення, додавайте докази та зберігайте результати роботи.</p>
         <a class="btn" th:href="@{/my/assignments}">Мої призначення</a>
     </section>
     <section class="card" sec:authorize="!hasAnyRole('FUND_REPRESENTATIVE', 'SYSTEM_ADMIN', 'VOLUNTEER')">
