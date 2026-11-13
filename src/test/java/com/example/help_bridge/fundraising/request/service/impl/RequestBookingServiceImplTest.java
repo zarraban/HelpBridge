@@ -45,11 +45,14 @@ class RequestBookingServiceImplTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock private com.example.help_bridge.fundraising.request.security.RequestAccessPolicy access;
     private RequestBookingServiceImpl bookingService;
 
     @BeforeEach
     void setUp() {
-        bookingService = new RequestBookingServiceImpl(requestRepository, fundRepository, eventPublisher);
+        bookingService = new RequestBookingServiceImpl(requestRepository, fundRepository, eventPublisher, access);
+        lenient().when(access.currentViewer()).thenReturn(
+                new com.example.help_bridge.fundraising.request.security.RequestAccessPolicy.Viewer("SYSTEM_ADMIN", null, null));
     }
 
     private Request newRequest() {
@@ -67,6 +70,16 @@ class RequestBookingServiceImplTest {
         Fund fund = new Fund();
         fund.setStatus(status);
         return fund;
+    }
+
+    @Test
+    void representativeCannotBookForAnotherFund() {
+        when(access.currentViewer()).thenReturn(
+                new com.example.help_bridge.fundraising.request.security.RequestAccessPolicy.Viewer(
+                        "FUND_REPRESENTATIVE", null, 1L, FundStatus.APPROVED));
+        assertThatThrownBy(() -> bookingService.bookRequest(1L, 2L))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        verifyNoInteractions(requestRepository, fundRepository, eventPublisher);
     }
 
     @Test

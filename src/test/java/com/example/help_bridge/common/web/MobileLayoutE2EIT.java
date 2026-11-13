@@ -28,13 +28,15 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest({LoginController.class, RequestWebController.class, com.example.help_bridge.fundraising.request.web.RequestDocumentWebController.class})
+@WebMvcTest({com.example.help_bridge.fundraising.request.web.RequestBookingWebController.class, LoginController.class, RequestWebController.class, com.example.help_bridge.fundraising.request.web.RequestDocumentWebController.class})
 @Import(SecurityConfiguration.class)
 class MobileLayoutE2EIT {
     @MockitoBean com.example.help_bridge.fundraising.request.security.RequestAccessPolicy access;
     @MockitoBean com.example.help_bridge.fundraising.request.service.RequestDocumentService documentService;
     @Autowired MockMvc mvc;
     @MockitoBean RequestService requestService;
+    @MockitoBean com.example.help_bridge.fundraising.request.service.RequestBookingService bookingService;
+    @MockitoBean com.example.help_bridge.fundraising.fund.repository.FundRepository funds;
     @MockitoBean RequestVerificationService verificationService;
     @MockitoBean UserRepository userRepository;
     @MockitoBean AuthenticationManager authenticationManager;
@@ -59,10 +61,15 @@ class MobileLayoutE2EIT {
                 .andReturn().getResponse().getContentAsString();
         String form = mvc.perform(get("/requests/new").with(user("applicant").roles("APPLICANT")))
                 .andReturn().getResponse().getContentAsString();
-        when(access.currentViewer()).thenReturn(new com.example.help_bridge.fundraising.request.security.RequestAccessPolicy.Viewer("FUND_REPRESENTATIVE", null, 1L));
+        when(access.currentViewer()).thenReturn(new com.example.help_bridge.fundraising.request.security.RequestAccessPolicy.Viewer("FUND_REPRESENTATIVE", null, 1L, com.example.help_bridge.fundraising.fund.entity.FundStatus.APPROVED));
         when(requestService.getRequestById(1L)).thenReturn(request);
         String details = mvc.perform(get("/requests/1").with(user("representative").roles("FUND_REPRESENTATIVE")))
                 .andReturn().getResponse().getContentAsString();
+        var fund = new com.example.help_bridge.fundraising.fund.entity.Fund();
+        fund.setFundName("Фонд допомоги");
+        when(funds.findById(1L)).thenReturn(java.util.Optional.of(fund));
+        String bookingConfirmation = mvc.perform(get("/requests/1/book").with(user("representative").roles("FUND_REPRESENTATIVE")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         var pending = new com.example.help_bridge.fundraising.request.dto.request.RequestDto.RequestResponse(
                 1L, 1L, null, "MEDICAL", java.math.BigDecimal.TEN, java.time.LocalDate.now().plusDays(10),
                 "Ситуація", "Потрібна допомога", "Установа", "DOC-1",
@@ -101,6 +108,7 @@ class MobileLayoutE2EIT {
                     case "/requests" -> list;
                     case "/requests/new" -> form;
                     case "/requests/1" -> details;
+                    case "/requests/1/book" -> bookingConfirmation;
                     case "/requests/1/review-details" -> reviewDetails;
                     case "/requests/1/reject" -> rejectConfirmation;
                     case "/requests/1/edit" -> edit;
@@ -115,7 +123,7 @@ class MobileLayoutE2EIT {
             });
             for (int width : new int[]{320, 390, 768, 1280}) {
                 page.setViewportSize(width, 900);
-                for (String path : new String[]{"/login", "/requests", "/requests/new", "/requests/1", "/requests/1/edit", "/requests/1/delete", "/requests/1/documents/new", "/requests/1/documents/1/edit", "/requests/1/documents/1/delete", "/requests/1/review-details", "/requests/1/reject"}) {
+                for (String path : new String[]{"/login", "/requests", "/requests/new", "/requests/1", "/requests/1/edit", "/requests/1/delete", "/requests/1/documents/new", "/requests/1/documents/1/edit", "/requests/1/documents/1/delete", "/requests/1/review-details", "/requests/1/reject", "/requests/1/book"}) {
                     page.navigate("https://helpbridge.test" + path);
                     assertThat((Boolean) page.evaluate("document.documentElement.scrollWidth <= innerWidth")).as(path + " at " + width).isTrue();
                 }
@@ -157,6 +165,13 @@ class MobileLayoutE2EIT {
             page.navigate("https://helpbridge.test/requests/1/documents/1/delete");
             page.screenshot(new com.microsoft.playwright.Page.ScreenshotOptions()
                     .setPath(java.nio.file.Path.of("target/playwright/mobile-document-delete.png")).setFullPage(true));
+            page.navigate("https://helpbridge.test/requests/1");
+            page.getByText("Взяти в роботу", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
+            com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.getByText("Так, взяти в роботу")).isVisible();
+            page.screenshot(new com.microsoft.playwright.Page.ScreenshotOptions()
+                    .setPath(java.nio.file.Path.of("target/playwright/mobile-request-booking.png")).setFullPage(true));
+            page.getByText("Скасувати", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
+            assertThat(page.url()).endsWith("/requests/1");
             page.navigate("https://helpbridge.test/requests/1/review-details");
             com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("#review")).isVisible();
             page.screenshot(new com.microsoft.playwright.Page.ScreenshotOptions()

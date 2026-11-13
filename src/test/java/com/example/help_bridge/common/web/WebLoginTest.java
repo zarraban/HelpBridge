@@ -28,13 +28,15 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest({LoginController.class, RequestWebController.class, com.example.help_bridge.fundraising.request.web.RequestDocumentWebController.class})
+@WebMvcTest({com.example.help_bridge.fundraising.request.web.RequestBookingWebController.class, LoginController.class, RequestWebController.class, com.example.help_bridge.fundraising.request.web.RequestDocumentWebController.class})
 @Import(SecurityConfiguration.class)
 class WebLoginTest {
     @MockitoBean com.example.help_bridge.fundraising.request.security.RequestAccessPolicy access;
     @MockitoBean com.example.help_bridge.fundraising.request.service.RequestDocumentService documentService;
     @Autowired MockMvc mvc;
     @MockitoBean RequestService requestService;
+    @MockitoBean com.example.help_bridge.fundraising.request.service.RequestBookingService booking;
+    @MockitoBean com.example.help_bridge.fundraising.fund.repository.FundRepository funds;
     @MockitoBean RequestVerificationService verificationService;
     @MockitoBean UserRepository userRepository;
     @MockitoBean AuthenticationManager authenticationManager;
@@ -85,6 +87,28 @@ class WebLoginTest {
         mvc.perform(get("/requests").with(user("representative").roles("FUND_REPRESENTATIVE"))
                         .accept(org.springframework.http.MediaType.TEXT_HTML))
                 .andExpect(status().isForbidden()).andExpect(view().name("error/403"));
+    }
+
+    @Test
+    void bookingConflictReturnsToPoolInsteadOfInaccessibleDetails() throws Exception {
+        when(access.currentViewer()).thenReturn(new com.example.help_bridge.fundraising.request.security.RequestAccessPolicy.Viewer(
+                "FUND_REPRESENTATIVE", null, 10L, com.example.help_bridge.fundraising.fund.entity.FundStatus.APPROVED));
+        org.mockito.Mockito.doThrow(new org.springframework.orm.ObjectOptimisticLockingFailureException("Request", 1L))
+                .when(booking).bookRequest(1L, 10L);
+        mvc.perform(post("/requests/1/book").with(user("rep").roles("FUND_REPRESENTATIVE")).with(csrf()))
+                .andExpect(redirectedUrl("/requests"))
+                .andExpect(flash().attribute("error", org.hamcrest.Matchers.containsString("інший фонд")));
+    }
+
+    @Test
+    void bookingRequiresRepresentativeAndCsrf() throws Exception {
+        mvc.perform(post("/requests/1/book").with(user("rep").roles("FUND_REPRESENTATIVE")))
+                .andExpect(redirectedUrl("/login?expired"));
+        mvc.perform(post("/requests/1/book").with(user("applicant").roles("APPLICANT")).with(csrf()))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/requests/1/book").with(user("admin").roles("SYSTEM_ADMIN")))
+                .andExpect(status().isForbidden());
+        org.mockito.Mockito.verifyNoInteractions(booking);
     }
 
     @Test

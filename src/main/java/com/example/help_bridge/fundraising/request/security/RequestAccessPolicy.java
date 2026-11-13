@@ -70,6 +70,12 @@ public class RequestAccessPolicy {
             }
         }
 
+        public void requireBookingFund(Long requestedFundId) {
+            if (!isAdmin() && !(isRepresentative() && fundId != null && Objects.equals(fundId, requestedFundId))) {
+                throw denied();
+            }
+        }
+
         public void requireBook(Request request) {
             if (!isRepresentative() || fundId == null || fundStatus != FundStatus.APPROVED) throw denied();
             if (!permissions(request).book()) {

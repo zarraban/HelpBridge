@@ -49,6 +49,8 @@ class RequestAccessIntegrationTest {
     @Autowired FundRepository funds;
     @Autowired FundRepresentativeRepository representatives;
     @Autowired RequestService service;
+    @Autowired com.example.help_bridge.fundraising.request.service.RequestBookingService booking;
+    @Autowired com.example.help_bridge.fundraising.fundraiser.repository.FundraiserRepository fundraisers;
     @Autowired RequestDocumentService documents;
     @Autowired RequestAccessPolicy access;
     @Autowired MockMvc mvc;
@@ -164,6 +166,69 @@ class RequestAccessIntegrationTest {
                         .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
         assertThat(own.getAmount()).isEqualByComparingTo(BigDecimal.TEN);
+    }
+
+    private Fund bookingFund(com.example.help_bridge.fundraising.fund.entity.FundStatus status) {
+        var fund = new Fund("Фонд допомоги", "76543210", "UA00", "Kyiv", "Kyiv",
+                "+380501112233", "booking@access.test", "https://fund.test", Map.of());
+        fund.setStatus(status);
+        fund = funds.saveAndFlush(fund);
+        representatives.saveAndFlush(new FundRepresentative("Rep", "Test", "booking-rep@access.test",
+                "+380501112233", "hash", fund));
+        return fund;
+    }
+
+    private org.springframework.test.web.servlet.request.RequestPostProcessor bookingRep() {
+        return user("FUND_REPRESENTATIVE:booking-rep@access.test").roles("FUND_REPRESENTATIVE");
+    }
+
+    @Test
+    void fundConfirmsBookingAndSeesRequestInProgress() throws Exception {
+        var fund = bookingFund(com.example.help_bridge.fundraising.fund.entity.FundStatus.APPROVED);
+        own.approve();
+        requests.saveAndFlush(own);
+        String base = "/requests/" + own.getId();
+        mvc.perform(get(base).with(bookingRep())).andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Взяти в роботу")));
+        mvc.perform(get(base + "/book").with(bookingRep())).andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Фонд допомоги")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Так, взяти в роботу")));
+        assertThat(own.getStatus()).isEqualTo(RequestStatus.NEW);
+        mvc.perform(post(base + "/book").with(bookingRep())
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                        .param("fundId", "999999"))
+                .andExpect(redirectedUrl(base)).andExpect(flash().attributeExists("message"));
+        assertThat(own.getStatus()).isEqualTo(RequestStatus.IN_PROGRESS);
+        assertThat(own.getFund().getId()).isEqualTo(fund.getId());
+        assertThat(fundraisers.existsByRequestId(own.getId())).isTrue();
+        mvc.perform(get(base).with(bookingRep())).andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Ваш фонд узяв заявку в роботу.")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString(">Взяти в роботу</a>"))));
+        mvc.perform(post(base + "/book").with(bookingRep())
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(redirectedUrl("/requests")).andExpect(flash().attributeExists("error"));
+        assertThat(fundraisers.findAll().stream().filter(f -> own.getId().equals(f.getRequestId())).count()).isEqualTo(1);
+    }
+
+    @Test
+    void apiCannotBookForAnotherFundAndUnapprovedFundCannotBook() throws Exception {
+        var fund = bookingFund(com.example.help_bridge.fundraising.fund.entity.FundStatus.PENDING_APPROVAL);
+        own.approve();
+        requests.saveAndFlush(own);
+        mvc.perform(post("/api/v1/requests/" + own.getId() + "/fundraiser").with(bookingRep())
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content("{\"fundId\":999999}"))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/requests/" + own.getId() + "/book").with(bookingRep())
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(redirectedUrl("/requests")).andExpect(flash().attributeExists("error"));
+        assertThat(own.getStatus()).isEqualTo(RequestStatus.NEW);
+        assertThat(own.getFund()).isNull();
+        fund.setStatus(com.example.help_bridge.fundraising.fund.entity.FundStatus.APPROVED);
+        funds.saveAndFlush(fund);
+        mvc.perform(post("/api/v1/requests/" + own.getId() + "/fundraiser").with(bookingRep())
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"fundId\":" + fund.getId() + "}"))
+                .andExpect(status().isAccepted());
     }
 
     @Test
