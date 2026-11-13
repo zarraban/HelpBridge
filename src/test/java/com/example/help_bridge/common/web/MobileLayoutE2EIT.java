@@ -34,6 +34,8 @@ class MobileLayoutE2EIT {
     @MockitoBean com.example.help_bridge.fundraising.request.security.RequestAccessPolicy access;
     @MockitoBean com.example.help_bridge.fundraising.request.service.RequestDocumentService documentService;
     @Autowired MockMvc mvc;
+    @MockitoBean com.example.help_bridge.fundraising.fundraiser.service.FundraiserAssignmentService assignments;
+    @MockitoBean com.example.help_bridge.users.volunteer.service.VolunteerService volunteers;
     @MockitoBean RequestService requestService;
     @MockitoBean com.example.help_bridge.fundraising.request.service.RequestBookingService bookingService;
     @MockitoBean com.example.help_bridge.fundraising.fund.repository.FundRepository funds;
@@ -207,7 +209,8 @@ class MobileLayoutE2EIT {
             page.getByText("Скасувати", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
             assertThat(page.url()).endsWith("/requests/1");
             page.navigate("https://helpbridge.test/requests/1/book");
-            var submitting = page.evaluate("""
+            page.waitForNavigation(() -> {
+                var submitting = page.evaluate("""
                     () => {
                         const form = document.querySelector('form[data-submit-once]');
                         form.requestSubmit();
@@ -217,9 +220,8 @@ class MobileLayoutE2EIT {
                             && !form.querySelector('[data-submit-status]').hidden;
                     }
                     """);
-            assertThat(submitting).isEqualTo(true);
-            page.waitForCondition(() -> bookingSubmissions.get() == 1);
-            page.waitForLoadState();
+                assertThat(submitting).isEqualTo(true);
+            });
             assertThat(bookingSubmissions.get()).isEqualTo(1);
             page.navigate("https://helpbridge.test/requests/1/review-details");
             com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("#review")).isVisible();
@@ -247,7 +249,8 @@ class MobileLayoutE2EIT {
             page.getByText("Скасувати", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
             assertThat(page.url()).endsWith("/fundraisers/1");
             page.navigate("https://helpbridge.test/fundraisers/1/close");
-            assertThat(page.evaluate("""
+            page.waitForNavigation(() -> {
+                assertThat(page.evaluate("""
                     () => {
                         const form = document.querySelector('form[data-submit-once]');
                         form.requestSubmit();
@@ -256,8 +259,7 @@ class MobileLayoutE2EIT {
                             && form.querySelector('button[type=submit]').disabled;
                     }
                     """)).isEqualTo(true);
-            page.waitForCondition(() -> closingSubmissions.get() == 1);
-            page.waitForLoadState();
+            });
             assertThat(closingSubmissions.get()).isEqualTo(1);
             page.navigate("https://helpbridge.test/login");
             com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("[data-submit-status]")).isHidden();

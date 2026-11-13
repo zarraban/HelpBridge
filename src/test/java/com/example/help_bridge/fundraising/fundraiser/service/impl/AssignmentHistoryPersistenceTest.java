@@ -92,4 +92,22 @@ class AssignmentHistoryPersistenceTest {
         em.flush(); em.clear();
         assertEquals("Допомогу доставлено", service.getVolunteerAssignments(5L).getFirst().closingComment());
     }
+    @Test void assigningVolunteerPersistsAssignmentAndMovesFundraiserToInProgress() {
+        var fundraiser = new Fundraiser();
+        fundraiser.setStatus(FundraiserStatus.PENDING_ASSIGNMENT);
+        Long id = em.persistAndFlush(fundraiser).getId();
+        var request = new com.example.help_bridge.fundraising.fundraiser.dto.request.AssignVolunteerRequest(5L);
+        var assigned = service.assignVolunteerToFund(id, request);
+        em.flush(); em.clear();
+        assertEquals(FundraiserStatus.IN_PROGRESS, em.find(Fundraiser.class, id).getStatus());
+        var history = service.getFundraiserAssignments(id);
+        assertEquals(1, history.size());
+        assertEquals(assigned.assignmentId(), history.getFirst().assignmentId());
+        assertEquals(5L, history.getFirst().volunteerId());
+        assertEquals(AssignmentStatus.ACTIVE, history.getFirst().status());
+        assertNotNull(history.getFirst().assignedAt());
+        assertThrows(InvalidAssignmentStateException.class, () -> service.assignVolunteerToFund(id, request));
+        assertEquals(1, service.getFundraiserAssignments(id).size());
+    }
+
 }

@@ -42,6 +42,28 @@
         <p class="muted" th:if="${request == null}">Пов’язану заявку не знайдено або її не вказано.</p>
     </section>
 
+    <section id="assignments" class="card details-section" aria-labelledby="assignments-heading">
+        <h2 id="assignments-heading">Призначення волонтерів</h2>
+        <p><a class="btn" th:if="${canAssign}" th:href="@{/fundraisers/{id}/assignments/new(id=${fundraiser.fundraiserId})}">Призначити волонтера</a></p>
+        <p class="muted" th:if="${closed}">Збір закрито. Нові призначення недоступні; історію збережено.</p>
+        <p class="muted" th:if="${#lists.isEmpty(assignments)}">На цей збір ще не призначали волонтерів.</p>
+        <article class="assignment-item" th:each="a : ${assignments}">
+            <h3 th:text="${volunteerNames[a.volunteerId] ?: 'Волонтер №' + a.volunteerId}"></h3>
+            <div th:switch="${a.status?.name()}">
+                <span class="badge" th:case="'ACTIVE'">Активне</span>
+                <span class="badge badge-warning" th:case="'RETURNED'">Повернуто</span>
+                <span class="badge badge-success" th:case="'COMPLETED'">Завершено</span>
+                <span class="badge badge-neutral" th:case="*">Невідомий статус</span>
+            </div>
+            <dl class="details-grid">
+                <div><dt>Призначено</dt><dd th:text="${a.assignedAt != null ? #temporals.format(a.assignedAt, 'dd.MM.yyyy HH:mm') : 'Не вказано'}"></dd></div>
+                <div><dt>Завершено / повернуто</dt><dd th:text="${a.finishedAt != null ? #temporals.format(a.finishedAt, 'dd.MM.yyyy HH:mm') : 'Ще в роботі'}"></dd></div>
+            </dl>
+            <th:block th:if="${!#strings.isEmpty(a.returnReason)}"><h4>Причина повернення</h4><p class="details-text" th:text="${a.returnReason}"></p></th:block>
+            <th:block th:if="${!#strings.isEmpty(a.closingComment)}"><h4>Коментар завершення</h4><p class="details-text" th:text="${a.closingComment}"></p></th:block>
+        </article>
+    </section>
+
     <section class="card details-section" aria-labelledby="closing-heading">
         <h2 id="closing-heading">Закриття збору</h2>
         <p>Закрити можна лише ще не закритий збір, до якого додано хоча б один доказ надання допомоги.</p>

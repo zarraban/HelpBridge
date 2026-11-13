@@ -20,6 +20,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import com.example.help_bridge.fundraising.fundraiser.service.FundraiserAssignmentService;
+import com.example.help_bridge.users.volunteer.service.VolunteerService;
 
 @Controller
 @RequestMapping("/fundraisers")
@@ -28,15 +32,27 @@ import java.util.List;
 public class FundraiserWebController {
     private final FundraiserService fundraisers;
     private final RequestService requests;
+    private final FundraiserAssignmentService assignments;
+    private final VolunteerService volunteers;
 
     @GetMapping("/{id}")
     public String details(@PathVariable Long id, Model model) {
         var fundraiser = fundraisers.getFundraiserById(id);
         addClosingState(fundraiser, model);
+        model.addAttribute("assignments", assignments.getFundraiserAssignments(id));
+        model.addAttribute("volunteerNames", Map.of());
+        model.addAttribute("canAssign", false);
         model.addAttribute("evidences", fundraiser.evidences().stream().map(EvidenceLink::from).toList());
         if (fundraiser.requestId() != null) {
             try {
-                model.addAttribute("request", requests.getRequestById(fundraiser.requestId()));
+                var request = requests.getRequestById(fundraiser.requestId());
+                model.addAttribute("request", request);
+                if (request.fundId() != null) {
+                    var team = volunteers.getFundVolunteers(request.fundId());
+                    model.addAttribute("volunteerNames", team.stream().collect(Collectors.toMap(
+                            v -> v.id(), v -> v.firstName() + " " + v.lastName())));
+                    model.addAttribute("canAssign", fundraiser.status() != FundraiserStatus.CLOSED);
+                }
                 model.addAttribute("assistanceTypes", requests.getAssistanceTypes());
             } catch (RequestNotFoundException exception) {
                 model.addAttribute("requestUnavailable", true);
