@@ -116,6 +116,12 @@ public class Request {
                     "Request " + id + " can be rejected only in PENDING_VERIFICATION, but is " + status);
         }
     }
+    public void ensureDocumentsEditable() {
+        if (status != RequestStatus.PENDING_VERIFICATION) {
+            throw new InvalidRequestStateException("Documents can be changed only while the request is pending verification");
+        }
+    }
+
     public void ensureDeletable() {
         if (status != RequestStatus.PENDING_VERIFICATION && status != RequestStatus.NEW) {
             throw new InvalidRequestStateException(

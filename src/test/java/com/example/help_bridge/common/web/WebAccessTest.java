@@ -28,9 +28,11 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest({LoginController.class, RequestWebController.class})
+@WebMvcTest({LoginController.class, RequestWebController.class, com.example.help_bridge.fundraising.request.web.RequestDocumentWebController.class})
 @Import(SecurityConfiguration.class)
 class WebAccessTest {
+    @MockitoBean com.example.help_bridge.fundraising.request.security.RequestAccessPolicy access;
+    @MockitoBean com.example.help_bridge.fundraising.request.service.RequestDocumentService documentService;
     @Autowired MockMvc mvc;
     @MockitoBean RequestService requestService;
     @MockitoBean RequestVerificationService verificationService;
@@ -44,7 +46,7 @@ class WebAccessTest {
 
     @Test
     void guestsMustLogInBeforeOpeningPagesOrPerformingActions() throws Exception {
-        for (String path : new String[]{"/", "/home", "/requests", "/requests/new"}) {
+        for (String path : new String[]{"/", "/home", "/requests", "/requests/new", "/requests/1", "/requests/1/delete", "/requests/1/documents/new"}) {
             mvc.perform(get(path)).andExpect(redirectedUrl("/login"));
         }
         mvc.perform(post("/requests").with(csrf())).andExpect(redirectedUrl("/login"));
@@ -62,6 +64,22 @@ class WebAccessTest {
                 mvc.perform(post("/requests").with(user("test").roles(role)).with(csrf()))
                         .andExpect(status().isForbidden());
             }
+            if (!role.equals("APPLICANT") && !role.equals("SYSTEM_ADMIN")) {
+                mvc.perform(get("/requests/1/documents/new").with(user("test").roles(role)))
+                        .andExpect(status().isForbidden());
+                mvc.perform(post("/requests/1/documents").with(user("test").roles(role)).with(csrf()))
+                        .andExpect(status().isForbidden());
+                mvc.perform(post("/requests/1/documents/1/delete").with(user("test").roles(role)).with(csrf()))
+                        .andExpect(status().isForbidden());
+                mvc.perform(get("/requests/1/delete").with(user("test").roles(role)))
+                        .andExpect(status().isForbidden());
+                mvc.perform(post("/requests/1/delete").with(user("test").roles(role)).with(csrf()))
+                        .andExpect(status().isForbidden());
+                mvc.perform(get("/requests/1/edit").with(user("test").roles(role)))
+                        .andExpect(status().isForbidden());
+                mvc.perform(post("/requests/1").with(user("test").roles(role)).with(csrf()))
+                        .andExpect(status().isForbidden());
+            }
             if (!role.equals("SYSTEM_ADMIN")) {
                 mvc.perform(post("/requests/1/review").with(user("test").roles(role)).with(csrf()).param("approved", "true"))
                         .andExpect(status().isForbidden());
@@ -71,7 +89,7 @@ class WebAccessTest {
                 .andExpect(status().isForbidden());
         org.mockito.Mockito.verifyNoInteractions(requestService, verificationService, userRepository);
         mvc.perform(post("/requests/1/review").with(user("admin").roles("SYSTEM_ADMIN")).with(csrf()).param("approved", "true"))
-                .andExpect(redirectedUrl("/requests"));
+                .andExpect(redirectedUrl("/requests#verification"));
         org.mockito.Mockito.verify(verificationService).reviewRequest(org.mockito.ArgumentMatchers.eq(1L), any());
     }
 
@@ -102,6 +120,9 @@ class WebAccessTest {
                 .andExpect(status().isOk());
         org.mockito.Mockito.verify(requestService).getRequestsByUser(7L);
         org.mockito.Mockito.verify(requestService, org.mockito.Mockito.never()).getSharedPool();
+        var created = org.mockito.Mockito.mock(com.example.help_bridge.fundraising.request.dto.request.RequestDto.RequestResponse.class);
+        when(created.id()).thenReturn(42L);
+        when(requestService.createRequest(any())).thenReturn(created);
         mvc.perform(post("/requests").with(user("APPLICANT:applicant@test.com").roles("APPLICANT")).with(csrf())
                         .param("userId", "99").param("requesterId", "99")
                         .param("assistanceType", "MEDICAL").param("amount", "100")
@@ -109,7 +130,7 @@ class WebAccessTest {
                         .param("situationDescription", "Потрібна допомога").param("needDescription", "Лікування")
                         .param("institutionName", "Лікарня").param("applicationNumber", "DOC-1")
                         .param("dataProcessingConsent", "true"))
-                .andExpect(redirectedUrl("/requests"));
+                .andExpect(redirectedUrl("/requests/42"));
         org.mockito.Mockito.verify(requestService).createRequest(org.mockito.ArgumentMatchers.argThat(dto -> dto.userId().equals(7L)));
     }
 

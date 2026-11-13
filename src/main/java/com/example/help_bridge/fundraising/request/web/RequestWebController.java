@@ -1,6 +1,7 @@
 package com.example.help_bridge.fundraising.request.web;
 
 import com.example.help_bridge.fundraising.request.dto.request.RequestVerificationDto;
+import com.example.help_bridge.fundraising.fund.entity.FundStatus;
 import com.example.help_bridge.fundraising.request.entity.RequestStatus;
 import com.example.help_bridge.fundraising.request.exception.InvalidAssistanceTypeException;
 import com.example.help_bridge.fundraising.request.exception.InvalidRequestStateException;
@@ -11,6 +12,9 @@ import com.example.help_bridge.fundraising.request.service.RequestVerificationSe
 import com.example.help_bridge.fundraising.user.entity.User;
 import com.example.help_bridge.fundraising.user.repository.UserRepository;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletResponse;
+import com.example.help_bridge.fundraising.request.security.RequestAccessPolicy;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -33,13 +37,15 @@ public class RequestWebController {
     private static final String APPLICANT_ROLE = "hasRole('APPLICANT')";
     private static final String ADMIN_ROLE = "hasRole('SYSTEM_ADMIN')";
 
+    private final RequestAccessPolicy access;
     private final RequestService requestService;
     private final RequestVerificationService verificationService;
     private final UserRepository userRepository;
 
     public RequestWebController(RequestService requestService,
                                 RequestVerificationService verificationService,
-                                UserRepository userRepository) {
+                                UserRepository userRepository, RequestAccessPolicy access) {
+        this.access = access;
         this.requestService = requestService;
         this.verificationService = verificationService;
         this.userRepository = userRepository;
@@ -61,6 +67,109 @@ public class RequestWebController {
         return "requests/list";
     }
 
+    @PreAuthorize(LIST_ROLES)
+    @GetMapping("/{id}")
+    public String details(@PathVariable Long id, Model model) {
+        var request = requestService.getRequestById(id);
+        model.addAttribute("request", request);
+        var viewer = access.currentViewer();
+        model.addAttribute("permissions", viewer.permissions(request));
+        model.addAttribute("bookingUnavailable", viewer.isRepresentative() && request.status() == RequestStatus.NEW
+                && viewer.fundStatus() != FundStatus.APPROVED);
+        model.addAttribute("assistanceTypes", requestService.getAssistanceTypes());
+        model.addAttribute("documents", request.documents().stream().map(RequestDocumentLink::from).toList());
+        return "requests/details";
+    }
+
+    @PreAuthorize("hasAnyRole('APPLICANT', 'SYSTEM_ADMIN')")
+    @GetMapping("/{id}/edit")
+    public String editForm(@PathVariable Long id, Model model) {
+        var request = requestService.getRequestById(id);
+        var viewer = access.currentViewer();
+        viewer.requireManage(request);
+        if (!viewer.permissions(request).edit()) {
+            throw new InvalidRequestStateException("Request is no longer pending verification");
+        }
+        model.addAttribute("form", EditRequestForm.from(request));
+        prepareEditForm(id, model);
+        return "requests/edit-form";
+    }
+
+    @PreAuthorize("hasAnyRole('APPLICANT', 'SYSTEM_ADMIN')")
+    @PostMapping("/{id}")
+    public String update(@PathVariable Long id,
+                         @Valid @ModelAttribute("form") EditRequestForm form,
+                         BindingResult bindingResult,
+                         Model model,
+                         HttpServletResponse response,
+                         RedirectAttributes redirectAttributes) {
+        var request = requestService.getRequestById(id);
+        var viewer = access.currentViewer();
+        viewer.requireManage(request);
+        prepareEditForm(id, model);
+        if (!viewer.permissions(request).edit()) return editConflict(model, response);
+        validateOtherType(form.requiresOtherText(), form.otherAssistanceType(), form.needDescription(), bindingResult);
+        if (bindingResult.hasErrors()) return "requests/edit-form";
+        try {
+            requestService.updateRequest(id, form.toDto());
+        } catch (InvalidAssistanceTypeException exception) {
+            bindingResult.rejectValue("assistanceType", "request.assistanceType.invalid", "Оберіть допустимий тип допомоги");
+            return "requests/edit-form";
+        } catch (InvalidRequestStateException | ObjectOptimisticLockingFailureException exception) {
+            return editConflict(model, response);
+        }
+        redirectAttributes.addFlashAttribute("message", "Зміни до заявки збережено.");
+        return "redirect:/requests/" + id;
+    }
+
+    @PreAuthorize("hasAnyRole('APPLICANT', 'SYSTEM_ADMIN')")
+    @GetMapping("/{id}/delete")
+    public String deleteConfirmation(@PathVariable Long id, Model model) {
+        var request = requestService.getRequestById(id);
+        var viewer = access.currentViewer();
+        viewer.requireManage(request);
+        if (!viewer.permissions(request).delete()) {
+            throw new InvalidRequestStateException("Request cannot be deleted in its current status");
+        }
+        model.addAttribute("request", request);
+        model.addAttribute("assistanceTypes", requestService.getAssistanceTypes());
+        return "requests/delete-confirmation";
+    }
+
+    @PreAuthorize("hasAnyRole('APPLICANT', 'SYSTEM_ADMIN')")
+    @PostMapping("/{id}/delete")
+    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            requestService.deleteRequest(id);
+            redirectAttributes.addFlashAttribute("message", "Заявку №" + id + " та її документи видалено.");
+        } catch (RequestNotFoundException exception) {
+            redirectAttributes.addFlashAttribute("error", "Заявку вже видалено або її не знайдено. Список оновлено.");
+        } catch (InvalidRequestStateException | ObjectOptimisticLockingFailureException exception) {
+            redirectAttributes.addFlashAttribute("error", "Стан заявки змінився або її одночасно опрацювали. Видалення не виконано. Перевірте актуальний список заявок.");
+        }
+        return "redirect:/requests";
+    }
+
+    private void prepareEditForm(Long id, Model model) {
+        model.addAttribute("requestId", id);
+        model.addAttribute("conflict", false);
+        model.addAttribute("assistanceTypes", requestService.getAssistanceTypes());
+    }
+
+    private String editConflict(Model model, HttpServletResponse response) {
+        response.setStatus(HttpServletResponse.SC_CONFLICT);
+        model.addAttribute("conflict", true);
+        return "requests/edit-form";
+    }
+
+    private void validateOtherType(boolean other, String otherText, String need, BindingResult errors) {
+        if (other && (otherText == null || otherText.isBlank())) {
+            errors.rejectValue("otherAssistanceType", "request.otherType.required", "Опишіть, який саме тип допомоги");
+        } else if (other && need != null && ("[Інше: " + otherText.trim() + "] " + need).length() > 1000) {
+            errors.rejectValue("needDescription", "request.need.tooLong", "Опис потреби разом з уточненням типу має містити не більше 1000 символів");
+        }
+    }
+
     @PreAuthorize(APPLICANT_ROLE)
     @GetMapping("/new")
     public String newForm(Model model) {
@@ -78,17 +187,14 @@ public class RequestWebController {
                          Authentication authentication,
                          Model model,
                          RedirectAttributes redirectAttributes) {
-        if (form.requiresOtherText()
-                && (form.otherAssistanceType() == null || form.otherAssistanceType().isBlank())) {
-            bindingResult.rejectValue("otherAssistanceType", "request.otherType.required",
-                    "Опишіть, який саме тип допомоги");
-        }
+        validateOtherType(form.requiresOtherText(), form.otherAssistanceType(), form.needDescription(), bindingResult);
         if (bindingResult.hasErrors()) {
             model.addAttribute("assistanceTypes", requestService.getAssistanceTypes());
             return "requests/create-form";
         }
+        Long createdId;
         try {
-            requestService.createRequest(form.toDto(currentUserId(authentication)));
+            createdId = requestService.createRequest(form.toDto(currentUserId(authentication))).id();
         } catch (InvalidAssistanceTypeException e) {
             bindingResult.rejectValue("assistanceType", "request.assistanceType.invalid",
                     "Оберіть допустимий тип допомоги");
@@ -102,24 +208,42 @@ public class RequestWebController {
         }
         redirectAttributes.addFlashAttribute("message",
                 "Заявку подано. Вона з'явиться у спільному пулі після підтвердження адміністратором.");
-        return "redirect:/requests";
+        return "redirect:/requests/" + createdId;
+    }
+
+    @PreAuthorize(ADMIN_ROLE)
+    @GetMapping("/{id}/reject")
+    public String rejectConfirmation(@PathVariable Long id, Model model) {
+        var request = requestService.getRequestById(id);
+        if (!access.currentViewer().permissions(request).review()) {
+            throw new InvalidRequestStateException("Request is no longer pending verification");
+        }
+        model.addAttribute("request", request);
+        return "requests/reject-confirmation";
     }
 
     @PreAuthorize(ADMIN_ROLE)
     @PostMapping("/{id}/review")
     public String review(@PathVariable Long id,
                          @RequestParam boolean approved,
+                         @RequestParam(defaultValue = "false") boolean fromDetails,
                          RedirectAttributes redirectAttributes) {
         try {
             verificationService.reviewRequest(id, new RequestVerificationDto(approved, null));
             redirectAttributes.addFlashAttribute("message",
-                    approved ? "Заявку підтверджено, вона у спільному пулі." : "Заявку відхилено та видалено.");
+                    approved ? "Заявку підтверджено, вона у спільному пулі." : "Заявку відхилено. Вона зберігається зі статусом «Відхилена».");
         } catch (RequestNotFoundException e) {
             redirectAttributes.addFlashAttribute("error", "Заявку вже видалено або її не знайдено. Список оновлено — перевірте актуальні заявки.");
-        } catch (InvalidRequestStateException e) {
-            redirectAttributes.addFlashAttribute("error", "Стан заявки змінився або її вже опрацювали. Список оновлено — перевірте доступні дії.");
+            redirectAttributes.addFlashAttribute("messageSection", "verification");
+            return "redirect:/requests#verification";
+        } catch (InvalidRequestStateException | ObjectOptimisticLockingFailureException e) {
+            redirectAttributes.addFlashAttribute("error", fromDetails
+                    ? "Стан заявки змінився або її вже опрацювали. Перевірте актуальний статус заявки."
+                    : "Стан заявки змінився або її вже опрацювали. Список оновлено — перевірте доступні дії.");
         }
-        return "redirect:/requests";
+        if (fromDetails) return "redirect:/requests/" + id;
+        redirectAttributes.addFlashAttribute("messageSection", "verification");
+        return "redirect:/requests#verification";
     }
 
     private static boolean hasRole(Authentication authentication, String authority) {

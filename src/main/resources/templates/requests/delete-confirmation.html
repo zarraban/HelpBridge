@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Видалення заявки')}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('requests')}"></nav>
+<main id="main-content" tabindex="-1">
+    <header th:replace="~{fragments/layout :: pageHeader(${'Видалити заявку №' + request.id + '?'}, 'Перевірте заявку перед підтвердженням видалення.', ~{})}"></header>
+    <section class="card details-section" aria-labelledby="delete-summary-heading">
+        <h2 id="delete-summary-heading">Заявка, яку буде видалено</h2>
+        <div th:replace="~{fragments/layout :: requestStatus(${request.status}, ${request.hot})}"></div>
+        <dl class="details-grid">
+            <div><dt>Тип допомоги</dt><dd th:text="${assistanceTypes[request.assistanceType] ?: request.assistanceType}"></dd></div>
+            <div><dt>Потрібна сума</dt><dd><span th:text="${#numbers.formatDecimal(request.amount, 1, 'WHITESPACE', 2, 'COMMA')}"></span> грн</dd></div>
+            <div><dt>Крайній термін</dt><dd th:text="${#temporals.format(request.deadline, 'dd.MM.yyyy')}"></dd></div>
+            <div><dt>Установа</dt><dd th:text="${request.institutionName}"></dd></div>
+            <div><dt>Номер заяви / звернення / документа</dt><dd th:text="${request.applicationNumber}"></dd></div>
+            <div><dt>Додано документів</dt><dd th:text="${#lists.size(request.documents)}"></dd></div>
+        </dl>
+        <h3>Яка саме допомога потрібна</h3>
+        <p class="details-text" th:text="${request.needDescription}"></p>
+    </section>
+    <p id="delete-warning" class="alert alert-warning">Заявку та всі додані до неї записи документів буде видалено без можливості відновлення. Файли за зовнішніми посиланнями не видаляються.</p>
+    <form data-submit-once th:action="@{/requests/{id}/delete(id=${request.id})}" method="post" aria-describedby="delete-warning">
+        <div class="form-actions">
+            <a class="btn btn-secondary" th:href="@{/requests/{id}(id=${request.id})}">Скасувати</a>
+            <button type="submit" class="btn btn-danger">Так, видалити заявку</button>
+        </div>
+        <p class="field-hint" data-submit-status role="status" hidden>Видаляємо заявку…</p>
+    </form>
+</main>
+</body>
+</html>

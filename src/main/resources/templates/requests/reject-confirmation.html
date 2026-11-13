@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Відхилення заявки')}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('requests')}"></nav>
+<main id="main-content" tabindex="-1">
+    <header th:replace="~{fragments/layout :: pageHeader(${'Відхилити заявку №' + request.id + '?'}, 'Підтвердьте рішення після перевірки інформації та документів.', ~{})}"></header>
+    <section class="card details-section" aria-labelledby="reject-summary-heading">
+        <h2 id="reject-summary-heading">Заявка, яку буде відхилено</h2>
+        <dl class="details-grid">
+            <div><dt>Установа</dt><dd th:text="${request.institutionName}"></dd></div>
+            <div><dt>Номер заяви / звернення / документа</dt><dd th:text="${request.applicationNumber}"></dd></div>
+        </dl>
+        <h3>Яка саме допомога потрібна</h3>
+        <p class="details-text" th:text="${request.needDescription}"></p>
+        <p id="reject-warning" class="alert alert-warning">Заявка отримає статус «Відхилена» та не потрапить до спільного пулу. Заявник бачитиме цей статус. Заявка та її документи збережуться.</p>
+        <form data-submit-once th:action="@{/requests/{id}/review(id=${request.id})}" method="post" aria-describedby="reject-warning">
+            <input type="hidden" name="approved" value="false">
+            <input type="hidden" name="fromDetails" value="true">
+            <div class="form-actions">
+                <a class="btn btn-secondary" th:href="@{/requests/{id}(id=${request.id})}">Скасувати</a>
+                <button type="submit" class="btn btn-danger">Так, відхилити заявку</button>
+            </div>
+            <p class="field-hint" data-submit-status role="status" hidden>Зберігаємо рішення…</p>
+        </form>
+    </section>
+</main>
+</body>
+</html>

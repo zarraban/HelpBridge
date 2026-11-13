@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${editing ? 'Редагування документа' : 'Додавання документа'})}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('requests')}"></nav>
+<main id="main-content" tabindex="-1">
+    <header th:replace="~{fragments/layout :: pageHeader(${(editing ? 'Редагувати документ заявки №' : 'Додати документ до заявки №') + requestId}, 'Вкажіть назву та посилання на документ.', ~{})}"></header>
+    <form data-submit-once class="card" th:object="${form}" method="post"
+          th:action="${editing} ? @{/requests/{id}/documents/{docId}(id=${requestId},docId=${documentId})} : @{/requests/{id}/documents(id=${requestId})}">
+        <p class="alert alert-info">Додайте посилання на файл у вашому сховищі. Документ має бути доступний для перевірки.</p>
+        <p class="alert alert-error" role="alert" th:if="${#fields.hasErrors('*')}">Дані не збережено. Перевірте позначені поля; введені значення залишилися у формі.</p>
+        <p class="alert alert-warning" role="alert" th:if="${conflict}">Стан заявки змінився або дані одночасно оновили. Введені значення залишилися у формі. Перевірте актуальну заявку перед повторною зміною документа.</p>
+        <p class="field-hint">Обидва поля обов’язкові.</p>
+        <div class="field">
+            <label for="fileName">Назва документа</label>
+            <input type="text" id="fileName" th:field="*{fileName}" maxlength="255" required th:errorclass="field-invalid" aria-describedby="fileName-error" th:attr="aria-invalid=${#fields.hasErrors('fileName')}">
+            <span id="fileName-error" class="field-error" th:if="${#fields.hasErrors('fileName')}" th:errors="*{fileName}"></span>
+        </div>
+        <div class="field">
+            <label for="fileUrl">Посилання на документ</label>
+            <input type="url" id="fileUrl" th:field="*{fileUrl}" maxlength="255" required th:errorclass="field-invalid" aria-describedby="fileUrl-hint fileUrl-error" th:attr="aria-invalid=${#fields.hasErrors('fileUrl')}">
+            <span id="fileUrl-hint" class="field-hint">Повна HTTP/HTTPS-адреса, наприклад https://example.com/document.pdf. До 255 символів.</span>
+            <span id="fileUrl-error" class="field-error" th:if="${#fields.hasErrors('fileUrl')}" th:errors="*{fileUrl}"></span>
+        </div>
+        <div class="form-actions">
+            <button th:unless="${conflict}" type="submit" class="btn" th:text="${editing} ? 'Зберегти зміни' : 'Додати документ'"></button>
+            <a class="btn btn-secondary" th:href="@{/requests/{id}#documents(id=${requestId})}" th:text="${conflict} ? 'До документів заявки' : 'Скасувати'"></a>
+        </div>
+        <p class="field-hint" data-submit-status role="status" hidden>Зберігаємо документ…</p>
+    </form>
+</main>
+</body>
+</html>

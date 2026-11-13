@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="fields">
+        <p class="field-hint">Поля, позначені *, обов’язкові для заповнення.</p>
+
+        <div class="field">
+            <label for="assistanceType">Тип допомоги <span class="required-mark" aria-hidden="true">*</span></label>
+            <select id="assistanceType" aria-describedby="assistanceType-error" th:field="*{assistanceType}" aria-required="true" th:errorclass="field-invalid" th:attr="aria-invalid=${#fields.hasErrors('assistanceType')}">
+                <option value="">-- оберіть --</option>
+                <option th:each="t : ${assistanceTypes}" th:value="${t.key}" th:text="${t.value}"></option>
+            </select>
+            <span id="assistanceType-error" class="field-error" th:if="${#fields.hasErrors('assistanceType')}" th:errors="*{assistanceType}"></span>
+        </div>
+
+        <div class="field" id="otherTypeField" th:style="${form.requiresOtherText()} ? '' : 'display:none'">
+            <label for="otherAssistanceType">Опишіть, який саме тип допомоги</label>
+            <input id="otherAssistanceType" aria-describedby="otherAssistanceType-hint otherAssistanceType-error" maxlength="200" type="text" th:field="*{otherAssistanceType}" th:errorclass="field-invalid" th:attr="aria-invalid=${#fields.hasErrors('otherAssistanceType')}">
+            <span id="otherAssistanceType-hint" class="field-hint">До 200 символів. Обов’язково, якщо обрано «Інше».</span>
+            <span id="otherAssistanceType-error" class="field-error" th:if="${#fields.hasErrors('otherAssistanceType')}" th:errors="*{otherAssistanceType}"></span>
+        </div>
+
+        <div class="field">
+            <label for="amount">Потрібна сума, грн <span class="required-mark" aria-hidden="true">*</span></label>
+            <input id="amount" aria-describedby="amount-hint amount-error" min="0.01" type="number" step="0.01" th:field="*{amount}" aria-required="true" th:errorclass="field-invalid" th:attr="aria-invalid=${#fields.hasErrors('amount')}">
+            <span id="amount-hint" class="field-hint">Сума у гривнях, більша за нуль. Копійки можна вказати після крапки.</span>
+            <span id="amount-error" class="field-error" th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}"></span>
+        </div>
+
+        <div class="field">
+            <label for="deadline">Крайній термін <span class="required-mark" aria-hidden="true">*</span></label>
+            <input id="deadline" aria-describedby="deadline-hint deadline-error" type="date" th:field="*{deadline}" aria-required="true" th:errorclass="field-invalid" th:attr="aria-invalid=${#fields.hasErrors('deadline')}">
+            <span id="deadline-hint" class="field-hint">Оберіть дату пізніше за сьогодні.</span>
+            <span id="deadline-error" class="field-error" th:if="${#fields.hasErrors('deadline')}" th:errors="*{deadline}"></span>
+        </div>
+
+        <div class="field">
+            <label for="situationDescription">Опис ситуації <span class="required-mark" aria-hidden="true">*</span></label>
+            <textarea id="situationDescription" aria-describedby="situationDescription-hint situationDescription-error" maxlength="1000" rows="4" th:field="*{situationDescription}" aria-required="true" th:errorclass="field-invalid" th:attr="aria-invalid=${#fields.hasErrors('situationDescription')}"></textarea>
+            <span id="situationDescription-hint" class="field-hint">Опишіть обставини, до 1000 символів.</span>
+            <span id="situationDescription-error" class="field-error" th:if="${#fields.hasErrors('situationDescription')}" th:errors="*{situationDescription}"></span>
+        </div>
+
+        <div class="field">
+            <label for="needDescription">Яка саме допомога потрібна <span class="required-mark" aria-hidden="true">*</span></label>
+            <textarea id="needDescription" aria-describedby="needDescription-hint needDescription-error" maxlength="1000" rows="3" th:field="*{needDescription}" aria-required="true" th:errorclass="field-invalid" th:attr="aria-invalid=${#fields.hasErrors('needDescription')}"></textarea>
+            <span id="needDescription-hint" class="field-hint">Уточніть потрібну допомогу, до 1000 символів.</span>
+            <span id="needDescription-error" class="field-error" th:if="${#fields.hasErrors('needDescription')}" th:errors="*{needDescription}"></span>
+        </div>
+
+        <div class="field">
+            <label for="institutionName">Установа, яка може підтвердити обставини <span class="required-mark" aria-hidden="true">*</span></label>
+            <input id="institutionName" aria-describedby="institutionName-hint institutionName-error" maxlength="255" type="text" th:field="*{institutionName}" aria-required="true" th:errorclass="field-invalid" th:attr="aria-invalid=${#fields.hasErrors('institutionName')}">
+            <span id="institutionName-hint" class="field-hint">Назва установи, до 255 символів.</span>
+            <span id="institutionName-error" class="field-error" th:if="${#fields.hasErrors('institutionName')}" th:errors="*{institutionName}"></span>
+        </div>
+
+        <div class="field">
+            <label for="applicationNumber">Номер заяви/звернення/документа <span class="required-mark" aria-hidden="true">*</span></label>
+            <input id="applicationNumber" aria-describedby="applicationNumber-hint applicationNumber-error" maxlength="100" type="text" th:field="*{applicationNumber}" aria-required="true" th:errorclass="field-invalid" th:attr="aria-invalid=${#fields.hasErrors('applicationNumber')}">
+            <span id="applicationNumber-hint" class="field-hint">Номер підтвердного документа, до 100 символів.</span>
+            <span id="applicationNumber-error" class="field-error" th:if="${#fields.hasErrors('applicationNumber')}" th:errors="*{applicationNumber}"></span>
+        </div>
+
+</th:block>
+</body>
+</html>

@@ -2,6 +2,7 @@ package com.example.help_bridge.common.web;
 
 import com.example.help_bridge.fundraising.request.exception.InvalidRequestStateException;
 import com.example.help_bridge.fundraising.request.exception.RequestNotFoundException;
+import com.example.help_bridge.fundraising.request.exception.RequestDocumentNotFoundException;
 import com.example.help_bridge.fundraising.request.web.RequestWebController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +22,7 @@ import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE;
 public class WebExceptionAdvice {
     private static final Logger log = LoggerFactory.getLogger(WebExceptionAdvice.class);
 
-    @ExceptionHandler(RequestNotFoundException.class)
+    @ExceptionHandler({RequestNotFoundException.class, RequestDocumentNotFoundException.class})
     public ModelAndView missingRequest() {
         return new ModelAndView("error/404", HttpStatus.NOT_FOUND);
     }

@@ -28,11 +28,15 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest({LoginController.class, RequestWebController.class})
+@WebMvcTest({com.example.help_bridge.fundraising.request.web.RequestBookingWebController.class, LoginController.class, RequestWebController.class, com.example.help_bridge.fundraising.request.web.RequestDocumentWebController.class})
 @Import(SecurityConfiguration.class)
 class WebLoginTest {
+    @MockitoBean com.example.help_bridge.fundraising.request.security.RequestAccessPolicy access;
+    @MockitoBean com.example.help_bridge.fundraising.request.service.RequestDocumentService documentService;
     @Autowired MockMvc mvc;
     @MockitoBean RequestService requestService;
+    @MockitoBean com.example.help_bridge.fundraising.request.service.RequestBookingService booking;
+    @MockitoBean com.example.help_bridge.fundraising.fund.repository.FundRepository funds;
     @MockitoBean RequestVerificationService verificationService;
     @MockitoBean UserRepository userRepository;
     @MockitoBean AuthenticationManager authenticationManager;
@@ -41,6 +45,26 @@ class WebLoginTest {
     @MockitoBean JwtValidatorService jwtValidatorService;
     @MockitoBean AuthenticationEntryPoint entryPoint;
     @MockitoBean AccessDeniedHandler deniedHandler;
+
+    @Test
+    void concurrentEditKeepsSubmittedDataAndBlocksRepeatSave() throws Exception {
+        var request = new com.example.help_bridge.fundraising.request.dto.request.RequestDto.RequestResponse(
+                1L, 1L, null, "MEDICAL", java.math.BigDecimal.TEN, java.time.LocalDate.now().plusDays(10),
+                "Situation", "Need", "Clinic", "DOC", com.example.help_bridge.fundraising.request.entity.RequestStatus.PENDING_VERIFICATION,
+                false, java.time.LocalDateTime.now(), java.util.List.of());
+        when(requestService.getRequestById(1L)).thenReturn(request);
+        when(access.currentViewer()).thenReturn(new com.example.help_bridge.fundraising.request.security.RequestAccessPolicy.Viewer("APPLICANT", 1L, null));
+        when(requestService.updateRequest(org.mockito.ArgumentMatchers.eq(1L), any()))
+                .thenThrow(new org.springframework.orm.ObjectOptimisticLockingFailureException("Request", 1L));
+        mvc.perform(post("/requests/1").with(user("applicant").roles("APPLICANT")).with(csrf())
+                        .param("assistanceType", "MEDICAL").param("amount", "100")
+                        .param("deadline", java.time.LocalDate.now().plusDays(10).toString())
+                        .param("situationDescription", "Submitted situation").param("needDescription", "Submitted need")
+                        .param("institutionName", "Submitted clinic").param("applicationNumber", "DOC"))
+                .andExpect(status().isConflict()).andExpect(view().name("requests/edit-form"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"Submitted clinic\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString(">Зберегти зміни</button>"))));
+    }
 
     @Test
     void webErrorsHaveCorrectStatusesAndSafeRecoveryActions() throws Exception {
@@ -66,6 +90,49 @@ class WebLoginTest {
     }
 
     @Test
+    void bookingConflictReturnsToPoolInsteadOfInaccessibleDetails() throws Exception {
+        when(access.currentViewer()).thenReturn(new com.example.help_bridge.fundraising.request.security.RequestAccessPolicy.Viewer(
+                "FUND_REPRESENTATIVE", null, 10L, com.example.help_bridge.fundraising.fund.entity.FundStatus.APPROVED));
+        org.mockito.Mockito.doThrow(new org.springframework.orm.ObjectOptimisticLockingFailureException("Request", 1L))
+                .when(booking).bookRequest(1L, 10L);
+        mvc.perform(post("/requests/1/book").with(user("rep").roles("FUND_REPRESENTATIVE")).with(csrf()))
+                .andExpect(redirectedUrl("/requests"))
+                .andExpect(flash().attribute("error", org.hamcrest.Matchers.containsString("інший фонд")));
+    }
+
+    @Test
+    void bookingRequiresRepresentativeAndCsrf() throws Exception {
+        mvc.perform(post("/requests/1/book").with(user("rep").roles("FUND_REPRESENTATIVE")))
+                .andExpect(redirectedUrl("/login?expired"));
+        mvc.perform(post("/requests/1/book").with(user("applicant").roles("APPLICANT")).with(csrf()))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/requests/1/book").with(user("admin").roles("SYSTEM_ADMIN")))
+                .andExpect(status().isForbidden());
+        org.mockito.Mockito.verifyNoInteractions(booking);
+    }
+
+    @Test
+    void concurrentReviewReturnsToDetailsWithError() throws Exception {
+        org.mockito.Mockito.doThrow(new org.springframework.orm.ObjectOptimisticLockingFailureException("Request", 1L))
+                .when(verificationService).reviewRequest(org.mockito.ArgumentMatchers.eq(1L), any());
+        mvc.perform(post("/requests/1/review").with(user("admin").roles("SYSTEM_ADMIN"))
+                        .with(csrf()).param("approved", "false").param("fromDetails", "true"))
+                .andExpect(redirectedUrl("/requests/1"))
+                .andExpect(flash().attribute("error", org.hamcrest.Matchers.containsString("актуальний статус")))
+                .andExpect(flash().attributeCount(1));
+    }
+
+    @Test
+    void deletedRequestReviewReturnsToQueue() throws Exception {
+        org.mockito.Mockito.doThrow(new com.example.help_bridge.fundraising.request.exception.RequestNotFoundException(1L))
+                .when(verificationService).reviewRequest(org.mockito.ArgumentMatchers.eq(1L), any());
+        mvc.perform(post("/requests/1/review").with(user("admin").roles("SYSTEM_ADMIN"))
+                        .with(csrf()).param("approved", "true").param("fromDetails", "true"))
+                .andExpect(redirectedUrl("/requests#verification"))
+                .andExpect(flash().attributeExists("error"));
+    }
+
+    @Test
     void emptyPoolAndReviewConflictOfferNextActions() throws Exception {
         mvc.perform(get("/requests").with(user("admin").roles("SYSTEM_ADMIN")))
                 .andExpect(status().isOk())
@@ -76,7 +143,7 @@ class WebLoginTest {
                 .when(verificationService).reviewRequest(org.mockito.ArgumentMatchers.eq(1L), any());
         mvc.perform(post("/requests/1/review").with(user("admin").roles("SYSTEM_ADMIN"))
                         .with(csrf()).param("approved", "true"))
-                .andExpect(redirectedUrl("/requests"))
+                .andExpect(redirectedUrl("/requests#verification"))
                 .andExpect(flash().attribute("error", org.hamcrest.Matchers.containsString("Список оновлено")));
         mvc.perform(post("/requests/1/review").with(user("admin").roles("SYSTEM_ADMIN"))
                         .with(csrf()).param("approved", "invalid"))

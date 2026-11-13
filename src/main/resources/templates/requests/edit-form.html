@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Редагування заявки')}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('requests')}"></nav>
+<main id="main-content" tabindex="-1">
+    <header th:replace="~{fragments/layout :: pageHeader(${'Редагування заявки №' + requestId}, 'Уточніть дані заявки перед перевіркою.', ~{})}"></header>
+    <form data-submit-once class="card" th:action="@{/requests/{id}(id=${requestId})}" th:object="${form}" method="post">
+        <p class="alert alert-error" role="alert" th:each="err : ${#fields.globalErrors()}" th:text="${err}"></p>
+        <p class="alert alert-error" role="alert" th:if="${#fields.hasErrors('*')}">Зміни не збережено. Перевірте позначені поля; введені дані залишилися у формі.</p>
+        <p class="alert alert-warning" role="alert" th:if="${conflict}">Стан заявки змінився або її одночасно оновили. Введені дані залишилися у формі. Перейдіть до деталей і перевірте актуальну заявку перед повторним редагуванням.</p>
+        <th:block th:replace="~{fragments/request-fields :: fields}"></th:block>
+        <div class="form-actions">
+            <button th:unless="${conflict}" type="submit" class="btn">Зберегти зміни</button>
+            <a class="btn btn-secondary" th:href="@{/requests/{id}(id=${requestId})}" th:text="${conflict} ? 'До деталей заявки' : 'Скасувати'">Скасувати</a>
+        </div>
+        <p class="field-hint" data-submit-status role="status" hidden>Зберігаємо зміни…</p>
+    </form>
+</main>
+</body>
+</html>

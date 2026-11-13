@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @IntegrationTest
-@WithMockUser(roles = "APPLICANT")
+@WithMockUser(username = "APPLICANT:applicant@request.test", roles = "APPLICANT")
 class RequestCrudIntegrationTest {
 
     private static final String URL = "/api/v1/requests";
@@ -136,12 +136,12 @@ class RequestCrudIntegrationTest {
     }
 
     @Test
-    void createRequest_WithUnknownUser_ShouldReturn404AndKeepTableEmpty() throws Exception {
+    void createRequest_WithAnotherUserId_ShouldReturn403AndKeepTableEmpty() throws Exception {
         mockMvc.perform(post(URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createBody(9999L, "MEDICAL", "15000.00",
                                 LocalDate.now().plusMonths(2).toString())))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isForbidden());
 
         assertThat(data.count("requests")).isZero();
     }

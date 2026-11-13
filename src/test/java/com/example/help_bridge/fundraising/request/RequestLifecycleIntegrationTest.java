@@ -21,9 +21,9 @@ class RequestLifecycleIntegrationTest {
 
     private static final String URL = "/api/v1/requests";
 
-    private static final RequestPostProcessor APPLICANT = user("applicant").roles("APPLICANT");
+    private static final RequestPostProcessor APPLICANT = user("APPLICANT:applicant@lifecycle.test").roles("APPLICANT");
     private static final RequestPostProcessor ADMIN = user("admin").roles("SYSTEM_ADMIN");
-    private static final RequestPostProcessor FUND_REP = user("rep").roles("FUND_REPRESENTATIVE");
+    private static final RequestPostProcessor FUND_REP = user("FUND_REPRESENTATIVE:rep@lifecycle.test").roles("FUND_REPRESENTATIVE");
     private static final RequestPostProcessor VOLUNTEER = user("volunteer").roles("VOLUNTEER");
     private static final RequestPostProcessor DONOR = user("donor").roles("DONOR");
 
@@ -35,6 +35,14 @@ class RequestLifecycleIntegrationTest {
 
     private RequestTestData data;
     private long userId;
+
+    private RequestPostProcessor fundRepresentative(long fundId) {
+        jdbc.sql("""
+                insert into fund_representatives (first_name, last_name, email, phone, password_hash, fund_id)
+                values ('Test', 'Representative', 'rep@lifecycle.test', '+380501112233', 'hash', ?)
+                """).param(fundId).update();
+        return FUND_REP;
+    }
 
     @BeforeEach
     void setUp() {
@@ -61,7 +69,7 @@ class RequestLifecycleIntegrationTest {
                 .andExpect(status().isNoContent());
         assertThat(data.requestStatus(requestId)).isEqualTo("NEW");
 
-        mockMvc.perform(post(URL + "/{id}/fundraiser", requestId).with(FUND_REP)
+        mockMvc.perform(post(URL + "/{id}/fundraiser", requestId).with(fundRepresentative(fundId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bookingBody(fundId)))
                 .andExpect(status().isAccepted())
@@ -160,7 +168,7 @@ class RequestLifecycleIntegrationTest {
         long fundId = data.insertFund("80000009", "APPROVED");
         long id = data.insertRequest(userId, "REJECTED");
 
-        mockMvc.perform(post(URL + "/{id}/fundraiser", id).with(FUND_REP)
+        mockMvc.perform(post(URL + "/{id}/fundraiser", id).with(fundRepresentative(fundId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bookingBody(fundId)))
                 .andExpect(status().isConflict());
@@ -208,7 +216,7 @@ class RequestLifecycleIntegrationTest {
         long fundId = data.insertFund("80000001", "APPROVED");
         long id = data.insertRequest(userId, "NEW");
 
-        mockMvc.perform(post(URL + "/{id}/fundraiser", id).with(FUND_REP)
+        mockMvc.perform(post(URL + "/{id}/fundraiser", id).with(fundRepresentative(fundId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bookingBody(fundId)))
                 .andExpect(status().isAccepted());
@@ -251,7 +259,7 @@ class RequestLifecycleIntegrationTest {
         long fundId = data.insertFund("80000004", "PENDING_APPROVAL");
         long id = data.insertRequest(userId, "NEW");
 
-        mockMvc.perform(post(URL + "/{id}/fundraiser", id).with(FUND_REP)
+        mockMvc.perform(post(URL + "/{id}/fundraiser", id).with(fundRepresentative(fundId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bookingBody(fundId)))
                 .andExpect(status().isConflict());
@@ -265,7 +273,7 @@ class RequestLifecycleIntegrationTest {
         long fundId = data.insertFund("80000005", "APPROVED");
         long id = data.insertRequest(userId, "PENDING_VERIFICATION");
 
-        mockMvc.perform(post(URL + "/{id}/fundraiser", id).with(FUND_REP)
+        mockMvc.perform(post(URL + "/{id}/fundraiser", id).with(fundRepresentative(fundId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bookingBody(fundId)))
                 .andExpect(status().isConflict());
@@ -280,7 +288,7 @@ class RequestLifecycleIntegrationTest {
         long secondFund = data.insertFund("80000007", "APPROVED");
         long id = data.insertRequest(userId, "IN_PROGRESS", firstFund);
 
-        mockMvc.perform(post(URL + "/{id}/fundraiser", id).with(FUND_REP)
+        mockMvc.perform(post(URL + "/{id}/fundraiser", id).with(fundRepresentative(secondFund))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bookingBody(secondFund)))
                 .andExpect(status().isConflict());
@@ -293,11 +301,11 @@ class RequestLifecycleIntegrationTest {
         long fundId = data.insertFund("80000008", "APPROVED");
         long id = data.insertRequest(userId, "NEW");
 
-        mockMvc.perform(post(URL + "/{id}/fundraiser", id).with(FUND_REP)
+        mockMvc.perform(post(URL + "/{id}/fundraiser", id).with(ADMIN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bookingBody(9999L)))
                 .andExpect(status().isNotFound());
-        mockMvc.perform(post(URL + "/{id}/fundraiser", 9999).with(FUND_REP)
+        mockMvc.perform(post(URL + "/{id}/fundraiser", 9999).with(fundRepresentative(fundId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bookingBody(fundId)))
                 .andExpect(status().isNotFound());
@@ -307,6 +315,12 @@ class RequestLifecycleIntegrationTest {
 
     @Test
     void sharedPool_ShouldBeAvailableOnlyToFundRepresentativeAndAdmin() throws Exception {
+        long fundId = data.insertFund("79999999", "APPROVED");
+        jdbc.sql("""
+                insert into fund_representatives (first_name, last_name, email, phone, password_hash, fund_id)
+                values ('Test', 'Representative', 'rep@lifecycle.test', '+380501112233', 'hash', ?)
+                """).param(fundId).update();
+
         data.insertRequest(userId, "NEW");
 
         mockMvc.perform(get(URL + "/shared-pool").with(FUND_REP)).andExpect(status().isOk());

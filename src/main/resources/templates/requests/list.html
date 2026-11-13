@@ -11,7 +11,7 @@
     </th:block>
     </header>
 
-    <th:block th:replace="~{fragments/layout :: messages}"></th:block>
+    <th:block th:if="${messageSection != 'verification'}"><th:block th:replace="~{fragments/layout :: messages}"></th:block></th:block>
 
     <p class="muted" sec:authorize="hasRole('FUND_REPRESENTATIVE')">
         Тут показано верифіковані заявки. Спочатку йдуть заявки з простроченим терміном.
@@ -20,52 +20,6 @@
         Режим адміністратора: додатково показано ID заявника.
     </p>
 
-    <section id="verification" sec:authorize="hasRole('SYSTEM_ADMIN')" th:if="${pendingRequests != null}">
-        <h2>Очікують підтвердження</h2>
-        <th:block th:if="${#lists.isEmpty(pendingRequests)}">
-            <section th:replace="~{fragments/layout :: emptyState('Заявок на підтвердження немає', 'Нові заявки з’являться тут після подання заявниками.', ~{::refreshVerification})}">
-                <a th:fragment="refreshVerification" class="btn btn-secondary" th:href="@{/requests#verification}">Оновити чергу</a>
-            </section>
-        </th:block>
-        <p id="verification-scroll-hint" class="field-hint table-scroll-hint" th:unless="${#lists.isEmpty(pendingRequests)}">Гортайте таблицю вбік. З клавіатури: перейдіть до таблиці клавішею Tab і використовуйте стрілки ← →.</p>
-        <div class="table-container" aria-describedby="verification-scroll-hint" th:unless="${#lists.isEmpty(pendingRequests)}" role="region" aria-label="Заявки на підтвердження" tabindex="0">
-        <table>
-            <thead>
-            <tr>
-                <th scope="col">Тип допомоги</th>
-                <th scope="col">Яка допомога</th>
-                <th scope="col">Сума, грн</th>
-                <th scope="col">Установа</th>
-                <th scope="col">Крайній термін</th>
-                <th scope="col">ID заявника</th>
-                <th scope="col">Дія</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="p : ${pendingRequests}">
-                <td th:text="${assistanceTypes[#strings.toString(p.assistanceType)] ?: p.assistanceType}"></td>
-                <td th:text="${p.needDescription}"></td>
-                <td th:text="${p.amount}"></td>
-                <td th:text="${p.institutionName}"></td>
-                <td th:text="${#temporals.format(p.deadline, 'dd.MM.yyyy')}"></td>
-                <td th:text="${p.requesterId}"></td>
-                <td>
-                    <div class="table-actions">
-                    <form th:action="@{/requests/{id}/review(id=${p.id})}" method="post">
-                        <input type="hidden" name="approved" value="true">
-                        <button type="submit" class="btn">Підтвердити</button>
-                    </form>
-                    <form th:action="@{/requests/{id}/review(id=${p.id})}" method="post">
-                        <input type="hidden" name="approved" value="false">
-                        <button type="submit" class="btn btn-danger">Відхилити</button>
-                    </form>
-                    </div>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-        </div>
-    </section>
     <h2 sec:authorize="hasRole('SYSTEM_ADMIN')">Спільний пул</h2>
 
     <th:block th:if="${#lists.isEmpty(requests)}">
@@ -89,6 +43,7 @@
             <th scope="col">Крайній термін</th>
             <th scope="col">Статус</th>
             <th scope="col" sec:authorize="hasRole('SYSTEM_ADMIN')">ID заявника</th>
+            <th scope="col">Дії</th>
         </tr>
         </thead>
         <tbody>
@@ -99,23 +54,55 @@
             <td th:text="${r.institutionName}"></td>
             <td th:text="${#temporals.format(r.deadline, 'dd.MM.yyyy')}"></td>
             <td>
-                <div class="badge-group">
-                    <span th:switch="${r.status.name()}">
-                        <span class="badge badge-warning" th:case="'PENDING_VERIFICATION'">Очікує перевірки</span>
-                        <span class="badge" th:case="'NEW'">Нова</span>
-                        <span class="badge" th:case="'IN_PROGRESS'">В роботі</span>
-                        <span class="badge badge-success" th:case="'CLOSED'">Закрита</span>
-                        <span class="badge badge-danger" th:case="'REJECTED'">Відхилена</span>
-                        <span class="badge badge-neutral" th:case="*" th:text="${r.status}"></span>
-                    </span>
-                    <span class="badge badge-danger" th:if="${r.hot}">Гаряча</span>
-                </div>
+                <div th:replace="~{fragments/layout :: requestStatus(${r.status}, ${r.hot})}"></div>
             </td>
             <td sec:authorize="hasRole('SYSTEM_ADMIN')" th:text="${r.requesterId}"></td>
+            <td><a class="btn btn-secondary" th:href="@{/requests/{id}(id=${r.id})}" th:aria-label="${'Переглянути заявку №' + r.id}">Переглянути</a></td>
         </tr>
         </tbody>
     </table>
     </div>
+
+    <section id="verification" sec:authorize="hasRole('SYSTEM_ADMIN')" th:if="${pendingRequests != null}">
+        <h2>Очікують підтвердження</h2>
+        <th:block th:if="${messageSection == 'verification'}"><th:block th:replace="~{fragments/layout :: messages}"></th:block></th:block>
+        <th:block th:if="${#lists.isEmpty(pendingRequests)}">
+            <section th:replace="~{fragments/layout :: emptyState('Заявок на підтвердження немає', 'Нові заявки з’являться тут після подання заявниками.', ~{::refreshVerification})}">
+                <a th:fragment="refreshVerification" class="btn btn-secondary" th:href="@{/requests#verification}">Оновити чергу</a>
+            </section>
+        </th:block>
+        <p id="verification-scroll-hint" class="field-hint table-scroll-hint" th:unless="${#lists.isEmpty(pendingRequests)}">Гортайте таблицю вбік. З клавіатури: перейдіть до таблиці клавішею Tab і використовуйте стрілки ← →.</p>
+        <div class="table-container" aria-describedby="verification-scroll-hint" th:unless="${#lists.isEmpty(pendingRequests)}" role="region" aria-label="Заявки на підтвердження" tabindex="0">
+        <table>
+            <thead>
+            <tr>
+                <th scope="col">Тип допомоги</th>
+                <th scope="col">Яка допомога</th>
+                <th scope="col">Сума, грн</th>
+                <th scope="col">Установа</th>
+                <th scope="col">Крайній термін</th>
+                <th scope="col">ID заявника</th>
+                <th scope="col">Дії</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="p : ${pendingRequests}">
+                <td th:text="${assistanceTypes[#strings.toString(p.assistanceType)] ?: p.assistanceType}"></td>
+                <td th:text="${p.needDescription}"></td>
+                <td th:text="${p.amount}"></td>
+                <td th:text="${p.institutionName}"></td>
+                <td th:text="${#temporals.format(p.deadline, 'dd.MM.yyyy')}"></td>
+                <td th:text="${p.requesterId}"></td>
+                <td>
+                    <div class="table-actions">
+                    <a class="btn" th:href="@{/requests/{id}(id=${p.id})}" th:aria-label="${'Перевірити заявку №' + p.id + ' та документи'}">Перевірити заявку та документи</a>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        </div>
+    </section>
 </main>
 </body>
 </html>

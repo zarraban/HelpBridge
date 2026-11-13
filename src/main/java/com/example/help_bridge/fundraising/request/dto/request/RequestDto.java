@@ -27,6 +27,7 @@ public final class RequestDto {
             @Schema(description = "Потрібна сума, грн", example = "15000.00")
             @NotNull(message = "Amount is mandatory")
             @Positive(message = "Amount must be greater than zero")
+            @Digits(integer = 17, fraction = 2, message = "Amount must have at most 17 integer digits and 2 decimal places")
             BigDecimal amount,
 
             @Schema(description = "Крайній термін (у майбутньому)", example = "2027-01-15")
@@ -67,6 +68,7 @@ public final class RequestDto {
             @Schema(example = "20000.00")
             @NotNull(message = "Amount is mandatory")
             @Positive(message = "Amount must be greater than zero")
+            @Digits(integer = 17, fraction = 2, message = "Amount must have at most 17 integer digits and 2 decimal places")
             BigDecimal amount,
 
             @Schema(example = "2027-02-01")
