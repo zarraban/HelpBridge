@@ -29,6 +29,9 @@ class FundraiserServiceImplTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private com.example.help_bridge.fundraising.fundraiser.security.FundraiserAccessPolicy access;
+
     @InjectMocks
     private FundraiserServiceImpl fundraiserService;
 
@@ -62,6 +65,7 @@ class FundraiserServiceImplTest {
     void sendMailToDonors_shouldPublishEvent_whenCalled() {
         SendMailingRequest request = new SendMailingRequest(1L, "Subject", "Body");
         
+        when(fundraiserRepository.findById(1L)).thenReturn(Optional.of(new Fundraiser()));
         fundraiserService.sendMailToDonors(request);
 
         verify(eventPublisher).publishEvent(any(MassMailingRequestedEvent.class));

@@ -14,6 +14,7 @@ import com.example.help_bridge.fundraising.fundraiser.service.FundraiserService;
 
 
 
+import com.example.help_bridge.fundraising.fundraiser.security.FundraiserAccessPolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,7 @@ public class FundraiserServiceImpl implements FundraiserService {
 
     private final FundraiserRepository FundraiserRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final FundraiserAccessPolicy access;
     
 
     @Override
@@ -38,18 +40,25 @@ public class FundraiserServiceImpl implements FundraiserService {
         Fundraiser fundraiser = FundraiserRepository.findById(id)
                 .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with ID " + id + " not found"));
 
+        access.requireAccess(fundraiser);
         return mapToResponse(fundraiser);
     }
 
     @Override
     public List<FundraiserResponse> getAllFundraisers(String sort, Long page, Long size) {
-        return FundraiserRepository.findAll().stream()
+        var viewer = access.currentViewer();
+        var fundraisers = viewer.isAdmin() ? FundraiserRepository.findAll()
+                : FundraiserRepository.findAllByFundId(viewer.fundId());
+        return fundraisers.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
     public SendMailingResponse sendMailToDonors(SendMailingRequest request) {
+        var fundraiser = FundraiserRepository.findById(request.fundraiserId())
+                .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser not found"));
+        access.requireAccess(fundraiser);
         eventPublisher.publishEvent(new MassMailingRequestedEvent(
                 request.fundraiserId(),
                 request.subjectOfMail(),
@@ -62,6 +71,8 @@ public class FundraiserServiceImpl implements FundraiserService {
     public void closeFundraiser(Long id) {
         Fundraiser fundraiser = FundraiserRepository.findById(id)
                 .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with ID " + id + " not found"));
+
+        access.requireAccess(fundraiser);
 
         if (fundraiser.getStatus() == FundraiserStatus.CLOSED) {
             throw new InvalidFundraiserStateException("This fundraiser is already closed!");
