@@ -199,6 +199,8 @@ class RequestAccessIntegrationTest {
                         .param("fundId", "999999"))
                 .andExpect(redirectedUrl(base)).andExpect(flash().attributeExists("message"));
         assertThat(own.getStatus()).isEqualTo(RequestStatus.IN_PROGRESS);
+        mvc.perform(get(base + "/book").with(bookingRep()))
+                .andExpect(redirectedUrl(base)).andExpect(flash().attributeExists("message"));
         assertThat(own.getFund().getId()).isEqualTo(fund.getId());
         assertThat(fundraisers.existsByRequestId(own.getId())).isTrue();
         mvc.perform(get(base).with(bookingRep())).andExpect(status().isOk())
@@ -211,10 +213,44 @@ class RequestAccessIntegrationTest {
     }
 
     @Test
+    void staleBookingConfirmationReturnsToPoolWithoutOpeningForeignRequest() throws Exception {
+        bookingFund(com.example.help_bridge.fundraising.fund.entity.FundStatus.APPROVED);
+        var otherFund = funds.saveAndFlush(new Fund("Other fund", "76543211", "UA00", "Kyiv", "Kyiv",
+                "+380501112233", "other-booking@access.test", "https://other.test", Map.of()));
+        own.approve();
+        own.book(otherFund);
+        requests.saveAndFlush(own);
+        mvc.perform(get("/requests/" + own.getId() + "/book").with(bookingRep()))
+                .andExpect(redirectedUrl("/requests")).andExpect(flash().attributeExists("error"));
+        mvc.perform(post("/requests/" + own.getId() + "/book").with(bookingRep())
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(redirectedUrl("/requests")).andExpect(flash().attributeExists("error"));
+        assertThat(own.getFund().getId()).isEqualTo(otherFund.getId());
+    }
+
+    @Test
+    void deletedRequestBookingReturnsToPoolForGetAndPost() throws Exception {
+        bookingFund(com.example.help_bridge.fundraising.fund.entity.FundStatus.APPROVED);
+        Long id = own.getId();
+        requests.delete(own);
+        requests.flush();
+        mvc.perform(get("/requests/" + id + "/book").with(bookingRep()))
+                .andExpect(redirectedUrl("/requests")).andExpect(flash().attributeExists("error"));
+        mvc.perform(post("/requests/" + id + "/book").with(bookingRep())
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(redirectedUrl("/requests")).andExpect(flash().attributeExists("error"));
+    }
+
+    @Test
     void apiCannotBookForAnotherFundAndUnapprovedFundCannotBook() throws Exception {
         var fund = bookingFund(com.example.help_bridge.fundraising.fund.entity.FundStatus.PENDING_APPROVAL);
         own.approve();
         requests.saveAndFlush(own);
+        mvc.perform(get("/requests/" + own.getId()).with(bookingRep())).andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("ваш фонд має отримати схвалення адміністратора")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString(">Взяти в роботу</a>"))));
+        mvc.perform(get("/requests/" + own.getId() + "/book").with(bookingRep()))
+                .andExpect(redirectedUrl("/requests")).andExpect(flash().attributeExists("error"));
         mvc.perform(post("/api/v1/requests/" + own.getId() + "/fundraiser").with(bookingRep())
                         .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content("{\"fundId\":999999}"))
                 .andExpect(status().isForbidden());

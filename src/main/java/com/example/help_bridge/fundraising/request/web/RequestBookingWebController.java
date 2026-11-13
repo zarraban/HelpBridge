@@ -10,6 +10,7 @@ import com.example.help_bridge.fundraising.request.service.RequestBookingService
 import com.example.help_bridge.fundraising.request.service.RequestService;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -33,16 +34,30 @@ public class RequestBookingWebController {
     }
 
     @GetMapping
-    public String confirmation(@PathVariable Long id, Model model) {
+    public String confirmation(@PathVariable Long id, Model model, RedirectAttributes redirect) {
         var viewer = access.currentViewer();
-        var request = requests.getRequestById(id);
-        if (!viewer.permissions(request).book()) {
-            throw new InvalidRequestStateException("Request or fund is not available for booking");
+        try {
+            var request = requests.getRequestById(id);
+            if (!viewer.permissions(request).book()) {
+                if (viewer.permissions(request).ownFundInProgress()) {
+                    redirect.addFlashAttribute("message", "Ваш фонд уже взяв цю заявку в роботу.");
+                    return "redirect:/requests/" + id;
+                }
+                redirect.addFlashAttribute("error", "Бронювання недоступне: перевірте актуальний стан заявки та схвалення вашого фонду.");
+                return "redirect:/requests";
+            }
+            var fund = funds.findById(viewer.fundId()).orElseThrow(() -> new FundNotFoundException(viewer.fundId()));
+            model.addAttribute("request", request);
+            model.addAttribute("fundName", fund.getFundName());
+            return "requests/booking-confirmation";
+        } catch (RequestNotFoundException e) {
+            redirect.addFlashAttribute("error", "Заявку видалено або її не знайдено. Список оновлено.");
+        } catch (AccessDeniedException e) {
+            redirect.addFlashAttribute("error", "Заявка вже недоступна для вашого фонду. Перевірте оновлений список.");
+        } catch (FundNotFoundException e) {
+            redirect.addFlashAttribute("error", "Бронювання недоступне: ваш фонд не знайдено.");
         }
-        var fund = funds.findById(viewer.fundId()).orElseThrow(() -> new FundNotFoundException(viewer.fundId()));
-        model.addAttribute("request", request);
-        model.addAttribute("fundName", fund.getFundName());
-        return "requests/booking-confirmation";
+        return "redirect:/requests";
     }
 
     @PostMapping

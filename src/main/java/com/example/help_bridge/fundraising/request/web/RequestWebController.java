@@ -1,6 +1,7 @@
 package com.example.help_bridge.fundraising.request.web;
 
 import com.example.help_bridge.fundraising.request.dto.request.RequestVerificationDto;
+import com.example.help_bridge.fundraising.fund.entity.FundStatus;
 import com.example.help_bridge.fundraising.request.entity.RequestStatus;
 import com.example.help_bridge.fundraising.request.exception.InvalidAssistanceTypeException;
 import com.example.help_bridge.fundraising.request.exception.InvalidRequestStateException;
@@ -71,7 +72,10 @@ public class RequestWebController {
     public String details(@PathVariable Long id, Model model) {
         var request = requestService.getRequestById(id);
         model.addAttribute("request", request);
-        model.addAttribute("permissions", access.currentViewer().permissions(request));
+        var viewer = access.currentViewer();
+        model.addAttribute("permissions", viewer.permissions(request));
+        model.addAttribute("bookingUnavailable", viewer.isRepresentative() && request.status() == RequestStatus.NEW
+                && viewer.fundStatus() != FundStatus.APPROVED);
         model.addAttribute("assistanceTypes", requestService.getAssistanceTypes());
         model.addAttribute("documents", request.documents().stream().map(RequestDocumentLink::from).toList());
         return "requests/details";

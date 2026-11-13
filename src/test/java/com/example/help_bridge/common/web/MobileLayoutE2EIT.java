@@ -100,8 +100,12 @@ class MobileLayoutE2EIT {
         try (var playwright = com.microsoft.playwright.Playwright.create();
              var browser = playwright.chromium().launch()) {
             var page = browser.newPage();
+            var bookingSubmissions = new java.util.concurrent.atomic.AtomicInteger();
             page.route("https://helpbridge.test/**", route -> {
                 String path = java.net.URI.create(route.request().url()).getPath();
+                if (path.equals("/requests/1/book") && route.request().method().equals("POST")) {
+                    bookingSubmissions.incrementAndGet();
+                }
                 String content = switch (path) {
                     case "/css/app.css" -> css;
                     case "/js/forms.js" -> js;
@@ -172,6 +176,21 @@ class MobileLayoutE2EIT {
                     .setPath(java.nio.file.Path.of("target/playwright/mobile-request-booking.png")).setFullPage(true));
             page.getByText("Скасувати", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
             assertThat(page.url()).endsWith("/requests/1");
+            page.navigate("https://helpbridge.test/requests/1/book");
+            var submitting = page.evaluate("""
+                    () => {
+                        const form = document.querySelector('form[data-submit-once]');
+                        form.requestSubmit();
+                        form.requestSubmit();
+                        return form.getAttribute('aria-busy') === 'true'
+                            && form.querySelector('button[type=submit]').disabled
+                            && !form.querySelector('[data-submit-status]').hidden;
+                    }
+                    """);
+            assertThat(submitting).isEqualTo(true);
+            page.waitForCondition(() -> bookingSubmissions.get() == 1);
+            page.waitForLoadState();
+            assertThat(bookingSubmissions.get()).isEqualTo(1);
             page.navigate("https://helpbridge.test/requests/1/review-details");
             com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("#review")).isVisible();
             page.screenshot(new com.microsoft.playwright.Page.ScreenshotOptions()

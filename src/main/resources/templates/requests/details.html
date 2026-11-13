@@ -72,6 +72,7 @@
         <p>Ваш фонд може забронювати цю заявку та розпочати її опрацювання.</p>
         <a class="btn" th:href="@{/requests/{id}/book(id=${request.id})}">Взяти в роботу</a>
     </section>
+    <p class="alert alert-warning" th:if="${bookingUnavailable}">Бронювання недоступне: ваш фонд має отримати схвалення адміністратора.</p>
     <p class="alert alert-success" th:if="${permissions.ownFundInProgress}" role="status">Ваш фонд узяв заявку в роботу.</p>
     <section id="review" class="card details-section" th:if="${permissions.review}" aria-labelledby="review-heading">
         <h2 id="review-heading">Рішення щодо заявки</h2>
