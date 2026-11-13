@@ -1,6 +1,10 @@
 package com.example.help_bridge.fundraising.fundraiser.web;
 
 import com.example.help_bridge.fundraising.fundraiser.service.FundraiserService;
+import com.example.help_bridge.fundraising.fundraiser.dto.response.FundraiserResponse;
+import com.example.help_bridge.fundraising.fundraiser.entity.FundraiserStatus;
+import com.example.help_bridge.fundraising.fundraiser.exception.FundraiserNotFoundException;
+import com.example.help_bridge.fundraising.fundraiser.exception.InvalidFundraiserStateException;
 import com.example.help_bridge.fundraising.request.service.RequestService;
 import com.example.help_bridge.fundraising.request.exception.RequestNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -27,7 +32,7 @@ public class FundraiserWebController {
     @GetMapping("/{id}")
     public String details(@PathVariable Long id, Model model) {
         var fundraiser = fundraisers.getFundraiserById(id);
-        model.addAttribute("fundraiser", fundraiser);
+        addClosingState(fundraiser, model);
         model.addAttribute("evidences", fundraiser.evidences().stream().map(EvidenceLink::from).toList());
         if (fundraiser.requestId() != null) {
             try {
@@ -40,6 +45,35 @@ public class FundraiserWebController {
         return "fundraisers/details";
     }
 
+
+    @GetMapping("/{id}/close")
+    public String closeConfirmation(@PathVariable Long id, Model model) {
+        addClosingState(fundraisers.getFundraiserById(id), model);
+        return "fundraisers/close-confirmation";
+    }
+
+    @PostMapping("/{id}/close")
+    public String close(@PathVariable Long id, RedirectAttributes redirect) {
+        try {
+            fundraisers.closeFundraiser(id);
+            redirect.addFlashAttribute("message", "Збір успішно закрито. Дату закриття збережено.");
+        } catch (FundraiserNotFoundException exception) {
+            redirect.addFlashAttribute("error", "Збір видалено або його не знайдено. Перевірте актуальний список.");
+            return "redirect:/fundraisers";
+        } catch (InvalidFundraiserStateException exception) {
+            redirect.addFlashAttribute("error", "Закриття недоступне: збір уже закрито або він не має доказів. Перевірте актуальний стан нижче.");
+        }
+        return "redirect:/fundraisers/" + id;
+    }
+
+    private static void addClosingState(FundraiserResponse fundraiser, Model model) {
+        boolean closed = fundraiser.status() == FundraiserStatus.CLOSED;
+        boolean hasEvidence = !fundraiser.evidences().isEmpty();
+        model.addAttribute("fundraiser", fundraiser);
+        model.addAttribute("closed", closed);
+        model.addAttribute("hasEvidence", hasEvidence);
+        model.addAttribute("canClose", !closed && hasEvidence);
+    }
 
     @GetMapping
     public String list(@RequestParam(defaultValue = "createdAt") String sortBy,

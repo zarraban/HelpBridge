@@ -288,4 +288,92 @@ class FundraiserAccessIntegrationTest {
                 .andExpect(content().string(containsString("Пов’язану заявку не знайдено або її не вказано.")));
     }
 
+    @Test
+    void confirmationExplainsMissingEvidenceAndDoesNotOfferSubmit() throws Exception {
+        var rep = user("FUND_REPRESENTATIVE:rep@access.test").roles("FUND_REPRESENTATIVE");
+        mvc.perform(get("/fundraisers/{id}/close", own.getId()).accept("text/html").with(rep))
+                .andExpect(status().isOk()).andExpect(view().name("fundraisers/close-confirmation"))
+                .andExpect(content().string(containsString("Доказів надання допомоги немає")))
+                .andExpect(content().string(not(containsString("Так, закрити збір"))));
+        mvc.perform(post("/fundraisers/{id}/close", own.getId()).accept("text/html").with(rep)
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(redirectedUrl("/fundraisers/" + own.getId()))
+                .andExpect(flash().attribute("error", containsString("він не має доказів")));
+        org.junit.jupiter.api.Assertions.assertEquals(FundraiserStatus.IN_PROGRESS,
+                fundraisers.findById(own.getId()).orElseThrow().getStatus());
+    }
+
+    @Test
+    void closingWithEvidenceRequiresCsrfAndPreservesDateOnRepeat() throws Exception {
+        var admin = user("SYSTEM_ADMIN:admin@test").roles("SYSTEM_ADMIN");
+        em.flush();
+        em.clear();
+        mvc.perform(get("/fundraisers/{id}/close", foreign.getId()).accept("text/html").with(admin))
+                .andExpect(status().isOk()).andExpect(content().string(containsString("Так, закрити збір")))
+                .andExpect(content().string(containsString("name=\"_csrf\"")))
+                .andExpect(content().string(containsString("/fundraisers/" + foreign.getId() + "#evidences")));
+        org.junit.jupiter.api.Assertions.assertEquals(FundraiserStatus.IN_PROGRESS,
+                fundraisers.findById(foreign.getId()).orElseThrow().getStatus());
+        mvc.perform(post("/fundraisers/{id}/close", foreign.getId()).accept("text/html").with(admin))
+                .andExpect(redirectedUrl("/login?expired"));
+        org.junit.jupiter.api.Assertions.assertEquals(FundraiserStatus.IN_PROGRESS,
+                fundraisers.findById(foreign.getId()).orElseThrow().getStatus());
+        mvc.perform(post("/fundraisers/{id}/close", foreign.getId()).accept("text/html").with(admin)
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(redirectedUrl("/fundraisers/" + foreign.getId()))
+                .andExpect(flash().attribute("message", containsString("успішно закрито")));
+        em.flush();
+        em.clear();
+        var closed = fundraisers.findById(foreign.getId()).orElseThrow();
+        org.junit.jupiter.api.Assertions.assertEquals(FundraiserStatus.CLOSED, closed.getStatus());
+        var closedAt = closed.getClosedAt();
+        org.junit.jupiter.api.Assertions.assertNotNull(closedAt);
+        mvc.perform(post("/fundraisers/{id}/close", foreign.getId()).accept("text/html").with(admin)
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(redirectedUrl("/fundraisers/" + foreign.getId()))
+                .andExpect(flash().attribute("error", containsString("уже закрито")));
+        org.junit.jupiter.api.Assertions.assertEquals(closedAt, fundraisers.findById(foreign.getId()).orElseThrow().getClosedAt());
+        mvc.perform(get("/fundraisers/{id}/close", foreign.getId()).accept("text/html").with(admin))
+                .andExpect(status().isOk()).andExpect(content().string(not(containsString("Так, закрити збір"))));
+    }
+
+    @Test
+    void removedEvidenceAfterConfirmationPreventsClosing() throws Exception {
+        var admin = user("SYSTEM_ADMIN:admin@test").roles("SYSTEM_ADMIN");
+        em.flush();
+        em.clear();
+        mvc.perform(get("/fundraisers/{id}/close", foreign.getId()).accept("text/html").with(admin))
+                .andExpect(status().isOk()).andExpect(content().string(containsString("Так, закрити збір")));
+        jdbc.sql("delete from evidences where id = ?").param(foreignEvidence.getId()).update();
+        em.clear();
+        mvc.perform(post("/fundraisers/{id}/close", foreign.getId()).accept("text/html").with(admin)
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(redirectedUrl("/fundraisers/" + foreign.getId()))
+                .andExpect(flash().attribute("error", containsString("він не має доказів")));
+        org.junit.jupiter.api.Assertions.assertEquals(FundraiserStatus.IN_PROGRESS,
+                fundraisers.findById(foreign.getId()).orElseThrow().getStatus());
+    }
+
+    @Test
+    void webClosingRejectsForeignFundsAndOtherRolesAndHandlesMissingFundraiser() throws Exception {
+        var rep = user("FUND_REPRESENTATIVE:rep@access.test").roles("FUND_REPRESENTATIVE");
+        mvc.perform(get("/fundraisers/{id}/close", foreign.getId()).accept("text/html").with(rep))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/fundraisers/{id}/close", foreign.getId()).accept("text/html").with(rep)
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(status().isForbidden());
+        for (String role : new String[]{"APPLICANT", "VOLUNTEER", "DONOR"}) {
+            var viewer = user(role + ":owner@fundraiser.test").roles(role);
+            mvc.perform(get("/fundraisers/{id}/close", own.getId()).accept("text/html").with(viewer))
+                    .andExpect(status().isForbidden());
+            mvc.perform(post("/fundraisers/{id}/close", own.getId()).accept("text/html").with(viewer)
+                            .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                    .andExpect(status().isForbidden());
+        }
+        mvc.perform(post("/fundraisers/9223372036854775807/close").accept("text/html").with(rep)
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(redirectedUrl("/fundraisers"))
+                .andExpect(flash().attribute("error", containsString("не знайдено")));
+    }
+
 }

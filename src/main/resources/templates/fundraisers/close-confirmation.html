@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Закриття збору')}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('fundraisers')}"></nav>
+<main id="main-content" tabindex="-1">
+    <header th:replace="~{fragments/layout :: pageHeader(${'Закрити збір №' + fundraiser.fundraiserId + '?'}, 'Перевірте докази перед підтвердженням закриття.', ${null})}"></header>
+    <section class="card details-section" aria-labelledby="conditions-heading">
+        <h2 id="conditions-heading">Умови закриття</h2>
+        <ul>
+            <li th:text="${closed ? 'Збір уже закрито — повторне закриття недоступне.' : 'Збір ще не закрито — умову виконано.'}"></li>
+            <li th:text="${hasEvidence ? 'Докази надання допомоги додано — умову виконано.' : 'Доказів надання допомоги немає — спочатку потрібно додати хоча б один доказ.'}"></li>
+        </ul>
+        <p><a th:href="@{/fundraisers/{id}(id=${fundraiser.fundraiserId})} + '#evidences'">Переглянути докази збору</a></p>
+        <th:block th:if="${canClose}">
+            <p id="closing-warning" class="alert alert-warning">Після підтвердження збір отримає статус «Закритий» і дату закриття. Додавання нових доказів стане недоступним.</p>
+            <form data-submit-once th:action="@{/fundraisers/{id}/close(id=${fundraiser.fundraiserId})}" method="post" aria-describedby="closing-warning">
+                <div class="form-actions">
+                    <a class="btn btn-secondary" th:href="@{/fundraisers/{id}(id=${fundraiser.fundraiserId})}">Скасувати</a>
+                    <button type="submit" class="btn">Так, закрити збір</button>
+                </div>
+                <p class="field-hint" data-submit-status role="status" hidden>Закриваємо збір…</p>
+            </form>
+        </th:block>
+        <th:block th:unless="${canClose}">
+            <p class="alert alert-warning">Закриття зараз недоступне. Перевірте умови вище.</p>
+            <a class="btn btn-secondary" th:href="@{/fundraisers/{id}(id=${fundraiser.fundraiserId})}">До деталей збору</a>
+        </th:block>
+    </section>
+</main>
+</body>
+</html>
