@@ -1,5 +1,7 @@
 package com.example.help_bridge.fundraising.fundraiser.service;
 
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 
 import com.example.help_bridge.fundraising.fundraiser.dto.request.SendMailingRequest;
@@ -9,6 +11,7 @@ import java.util.List;
 
 public interface FundraiserService {
     FundraiserResponse getFundraiserById(Long id);
+    Optional<Long> findFundraiserIdByRequestId(Long requestId);
     default List<FundraiserResponse> getAllFundraisers(String sort, Long page, Long size) {
         return getFundraisers("createdAt", sort, page, size).getContent();
     }

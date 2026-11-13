@@ -376,4 +376,75 @@ class FundraiserAccessIntegrationTest {
                 .andExpect(flash().attribute("error", containsString("не знайдено")));
     }
 
+    @Test
+    void cabinetsAndMenusLinkToFundraisersForAuthorizedRoles() throws Exception {
+        for (String role : new String[]{"FUND_REPRESENTATIVE", "SYSTEM_ADMIN"}) {
+            mvc.perform(get("/home").accept("text/html").with(user(role + ":rep@access.test").roles(role)))
+                    .andExpect(status().isOk()).andExpect(view().name("home"))
+                    .andExpect(content().string(containsString("Робочі розділи")))
+                    .andExpect(content().string(containsString("href=\"/fundraisers\"")))
+                    .andExpect(content().string(not(containsString("Для вашої ролі поки немає"))));
+        }
+        mvc.perform(get("/fundraisers").accept("text/html")
+                        .with(user("FUND_REPRESENTATIVE:rep@access.test").roles("FUND_REPRESENTATIVE")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("href=\"/fundraisers\" aria-current=\"page\"")));
+        for (String role : new String[]{"VOLUNTEER", "DONOR"}) {
+            mvc.perform(get("/home").accept("text/html").with(user(role + ":test@test").roles(role)))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(not(containsString("href=\"/fundraisers\""))));
+        }
+    }
+
+    @Test
+    void requestOnlyOffersFundraiserLinkToAuthorizedManagers() throws Exception {
+        for (String role : new String[]{"FUND_REPRESENTATIVE", "SYSTEM_ADMIN"}) {
+            mvc.perform(get("/requests/{id}", own.getRequestId()).accept("text/html")
+                            .with(user(role + ":rep@access.test").roles(role)))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("href=\"/fundraisers/" + own.getId() + "\"")));
+        }
+        mvc.perform(get("/requests/{id}", own.getRequestId()).accept("text/html")
+                        .with(user("APPLICANT:owner@fundraiser.test").roles("APPLICANT")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("href=\"/fundraisers/" + own.getId() + "\""))));
+    }
+
+    @Test
+    void representativeCanFollowBookingToRequestToFundraiserAndClosing() throws Exception {
+        var fund = requests.findById(own.getRequestId()).orElseThrow().getFund();
+        fund.setStatus(com.example.help_bridge.fundraising.fund.entity.FundStatus.APPROVED);
+        funds.save(fund);
+        var owner = users.findByEmail("owner@fundraiser.test").orElseThrow();
+        var request = new Request(owner, types.findById("MEDICAL").orElseThrow(), BigDecimal.TEN,
+                LocalDate.now().plusDays(10), "Situation", "Need", "Clinic", "NAV-1", true);
+        request.approve();
+        request = requests.saveAndFlush(request);
+        var rep = user("FUND_REPRESENTATIVE:rep@access.test").roles("FUND_REPRESENTATIVE");
+        mvc.perform(get("/requests/{id}", request.getId()).accept("text/html").with(rep))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("Перейти до збору №"))));
+        mvc.perform(post("/requests/{id}/book", request.getId()).accept("text/html").with(rep)
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(redirectedUrl("/requests/" + request.getId()));
+        var fundraiser = fundraisers.findFirstByRequestIdOrderByIdAsc(request.getId()).orElseThrow();
+        mvc.perform(get("/requests/{id}", request.getId()).accept("text/html").with(rep))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("href=\"/fundraisers/" + fundraiser.getId() + "\"")));
+        var proof = new Evidence();
+        proof.setFundraiser(fundraiser);
+        proof.setReceiptNumber("NAV-RECEIPT");
+        proof.setCreatedAt(java.time.LocalDateTime.now());
+        evidences.save(proof);
+        em.flush();
+        em.clear();
+        mvc.perform(get("/fundraisers/{id}", fundraiser.getId()).accept("text/html").with(rep))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("href=\"/fundraisers/" + fundraiser.getId() + "/close\"")));
+        mvc.perform(post("/fundraisers/{id}/close", fundraiser.getId()).accept("text/html").with(rep)
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(redirectedUrl("/fundraisers/" + fundraiser.getId()))
+                .andExpect(flash().attribute("message", containsString("успішно закрито")));
+    }
+
 }

@@ -1,5 +1,7 @@
 package com.example.help_bridge.fundraising.fundraiser.repository;
 
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import com.example.help_bridge.fundraising.fundraiser.entity.Fundraiser;
@@ -21,6 +23,8 @@ public interface FundraiserRepository extends JpaRepository<Fundraiser, Long> {
                     "(SELECT r.id FROM Request r WHERE r.fund.id = :fundId)")
     Page<Fundraiser> findAllByFundId(
             @Param("fundId") Long fundId, Pageable pageable);
+
+    Optional<Fundraiser> findFirstByRequestIdOrderByIdAsc(Long requestId);
 
     boolean existsByRequestId(Long requestId);
 }

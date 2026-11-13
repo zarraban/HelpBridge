@@ -1,5 +1,7 @@
 package com.example.help_bridge.fundraising.fundraiser.service.impl;
 
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -49,6 +51,16 @@ public class FundraiserServiceImpl implements FundraiserService {
 
         access.requireAccess(fundraiser);
         return mapToResponse(fundraiser);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Long> findFundraiserIdByRequestId(Long requestId) {
+        access.currentViewer();
+        return FundraiserRepository.findFirstByRequestIdOrderByIdAsc(requestId).map(fundraiser -> {
+            access.requireAccess(fundraiser);
+            return fundraiser.getId();
+        });
     }
 
     @Override

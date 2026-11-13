@@ -38,6 +38,7 @@ class MobileLayoutE2EIT {
     @MockitoBean com.example.help_bridge.fundraising.request.service.RequestBookingService bookingService;
     @MockitoBean com.example.help_bridge.fundraising.fund.repository.FundRepository funds;
     @MockitoBean RequestVerificationService verificationService;
+    @MockitoBean com.example.help_bridge.fundraising.fundraiser.service.FundraiserService fundraisers;
     @MockitoBean UserRepository userRepository;
     @MockitoBean AuthenticationManager authenticationManager;
     @MockitoBean UserDetailsService userDetailsService;

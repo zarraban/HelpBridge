@@ -38,10 +38,7 @@ public class LoginController {
 
     @GetMapping({"/", "/home"})
     public String home(Authentication authentication) {
-        if (hasRole(authentication, "SYSTEM_ADMIN")) {
-            return "redirect:/requests#verification";
-        }
-        if (hasRole(authentication, "APPLICANT") || hasRole(authentication, "FUND_REPRESENTATIVE")) {
+        if (hasRole(authentication, "APPLICANT")) {
             return "redirect:/requests";
         }
         return "home";

@@ -22,6 +22,9 @@
         <li sec:authorize="hasAnyRole('FUND_REPRESENTATIVE', 'SYSTEM_ADMIN')">
             <a th:href="@{/requests}" th:attr="aria-current=${activePage == 'requests' ? 'page' : null}">Спільний пул</a>
         </li>
+        <li sec:authorize="hasAnyRole('FUND_REPRESENTATIVE', 'SYSTEM_ADMIN')">
+            <a th:href="@{/fundraisers}" th:attr="aria-current=${activePage == 'fundraisers' ? 'page' : null}">Збори</a>
+        </li>
         <li sec:authorize="hasRole('SYSTEM_ADMIN')">
             <a th:href="@{/requests#verification}">Перевірка заявок</a>
         </li>
