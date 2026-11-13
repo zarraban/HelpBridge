@@ -28,7 +28,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest({com.example.help_bridge.fundraising.request.web.RequestBookingWebController.class, LoginController.class, RequestWebController.class, com.example.help_bridge.fundraising.request.web.RequestDocumentWebController.class})
+@WebMvcTest({com.example.help_bridge.fundraising.fundraiser.web.FundraiserWebController.class,com.example.help_bridge.fundraising.request.web.RequestBookingWebController.class, LoginController.class, RequestWebController.class, com.example.help_bridge.fundraising.request.web.RequestDocumentWebController.class})
 @Import(SecurityConfiguration.class)
 class MobileLayoutE2EIT {
     @MockitoBean com.example.help_bridge.fundraising.request.security.RequestAccessPolicy access;
@@ -96,18 +96,47 @@ class MobileLayoutE2EIT {
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         String rejectConfirmation = mvc.perform(get("/requests/1/reject").with(user("admin").roles("SYSTEM_ADMIN")))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        var evidence = new com.example.help_bridge.fundraising.fundraiser.dto.response.EvidenceResponse(
+                1L, 1L, "Чек".repeat(80), "Відгук".repeat(150), "https://files.test/proof.pdf", java.time.LocalDateTime.now());
+        var fundraiser = new com.example.help_bridge.fundraising.fundraiser.dto.response.FundraiserResponse(
+                1L, 1L, com.example.help_bridge.fundraising.fundraiser.entity.FundraiserStatus.IN_PROGRESS,
+                java.time.LocalDateTime.now(), null, java.util.List.of(evidence));
+        when(fundraisers.getFundraiserById(1L)).thenReturn(fundraiser);
+        when(fundraisers.getFundraisers("createdAt", "asc", 1L, 5L)).thenReturn(
+                new org.springframework.data.domain.PageImpl<>(java.util.List.of(fundraiser),
+                        org.springframework.data.domain.PageRequest.of(0, 5), 15));
+        String fundraiserList = mvc.perform(get("/fundraisers").with(user("representative").roles("FUND_REPRESENTATIVE")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        String fundraiserDetails = mvc.perform(get("/fundraisers/1").with(user("representative").roles("FUND_REPRESENTATIVE")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        String closeConfirmation = mvc.perform(get("/fundraisers/1/close").with(user("representative").roles("FUND_REPRESENTATIVE")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        when(fundraisers.getFundraisers("createdAt", "asc", 1L, 5L)).thenReturn(org.springframework.data.domain.Page.empty());
+        String emptyFundraisers = mvc.perform(get("/fundraisers").with(user("representative").roles("FUND_REPRESENTATIVE")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        String cabinet = mvc.perform(get("/home").with(user("representative").roles("FUND_REPRESENTATIVE")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         String css = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources/static/css/app.css"));
         String js = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources/static/js/forms.js"));
         try (var playwright = com.microsoft.playwright.Playwright.create();
              var browser = playwright.chromium().launch()) {
             var page = browser.newPage();
+            var closingSubmissions = new java.util.concurrent.atomic.AtomicInteger();
             var bookingSubmissions = new java.util.concurrent.atomic.AtomicInteger();
             page.route("https://helpbridge.test/**", route -> {
                 String path = java.net.URI.create(route.request().url()).getPath();
                 if (path.equals("/requests/1/book") && route.request().method().equals("POST")) {
                     bookingSubmissions.incrementAndGet();
                 }
+                if (path.equals("/fundraisers/1/close") && route.request().method().equals("POST")) {
+                    closingSubmissions.incrementAndGet();
+                }
                 String content = switch (path) {
+                    case "/home" -> cabinet;
+                    case "/fundraisers" -> fundraiserList;
+                    case "/fundraisers/empty" -> emptyFundraisers;
+                    case "/fundraisers/1" -> fundraiserDetails;
+                    case "/fundraisers/1/close" -> closeConfirmation;
                     case "/css/app.css" -> css;
                     case "/js/forms.js" -> js;
                     case "/requests" -> list;
@@ -128,7 +157,7 @@ class MobileLayoutE2EIT {
             });
             for (int width : new int[]{320, 390, 768, 1280}) {
                 page.setViewportSize(width, 900);
-                for (String path : new String[]{"/login", "/requests", "/requests/new", "/requests/1", "/requests/1/edit", "/requests/1/delete", "/requests/1/documents/new", "/requests/1/documents/1/edit", "/requests/1/documents/1/delete", "/requests/1/review-details", "/requests/1/reject", "/requests/1/book"}) {
+                for (String path : new String[]{"/home", "/fundraisers", "/fundraisers/empty", "/fundraisers/1", "/fundraisers/1/close", "/login", "/requests", "/requests/new", "/requests/1", "/requests/1/edit", "/requests/1/delete", "/requests/1/documents/new", "/requests/1/documents/1/edit", "/requests/1/documents/1/delete", "/requests/1/review-details", "/requests/1/reject", "/requests/1/book"}) {
                     page.navigate("https://helpbridge.test" + path);
                     assertThat((Boolean) page.evaluate("document.documentElement.scrollWidth <= innerWidth")).as(path + " at " + width).isTrue();
                 }
@@ -202,6 +231,34 @@ class MobileLayoutE2EIT {
                     .setPath(java.nio.file.Path.of("target/playwright/mobile-request-reject.png")).setFullPage(true));
             page.getByText("Скасувати", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
             assertThat(page.url()).endsWith("/requests/1");
+            page.navigate("https://helpbridge.test/home");
+            page.locator("main a[href='/fundraisers']").click();
+            page.screenshot(new com.microsoft.playwright.Page.ScreenshotOptions()
+                    .setPath(java.nio.file.Path.of("target/playwright/mobile-fundraisers.png")).setFullPage(true));
+            page.locator(".table-container").focus();
+            page.keyboard().press("ArrowRight");
+            page.waitForCondition(() -> ((Number) page.locator(".table-container").evaluate("el => el.scrollLeft")).intValue() > 0);
+            page.getByText("Збір №1", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
+            page.screenshot(new com.microsoft.playwright.Page.ScreenshotOptions()
+                    .setPath(java.nio.file.Path.of("target/playwright/mobile-fundraiser-details.png")).setFullPage(true));
+            page.getByText("Закрити збір", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
+            page.screenshot(new com.microsoft.playwright.Page.ScreenshotOptions()
+                    .setPath(java.nio.file.Path.of("target/playwright/mobile-fundraiser-close.png")).setFullPage(true));
+            page.getByText("Скасувати", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
+            assertThat(page.url()).endsWith("/fundraisers/1");
+            page.navigate("https://helpbridge.test/fundraisers/1/close");
+            assertThat(page.evaluate("""
+                    () => {
+                        const form = document.querySelector('form[data-submit-once]');
+                        form.requestSubmit();
+                        form.requestSubmit();
+                        return form.getAttribute('aria-busy') === 'true'
+                            && form.querySelector('button[type=submit]').disabled;
+                    }
+                    """)).isEqualTo(true);
+            page.waitForCondition(() -> closingSubmissions.get() == 1);
+            page.waitForLoadState();
+            assertThat(closingSubmissions.get()).isEqualTo(1);
             page.navigate("https://helpbridge.test/login");
             com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("[data-submit-status]")).isHidden();
             page.locator("#email").focus();
