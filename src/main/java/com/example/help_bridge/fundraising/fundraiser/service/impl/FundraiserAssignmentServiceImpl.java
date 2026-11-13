@@ -53,6 +53,7 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
         }
 
         assignment.setStatus(AssignmentStatus.COMPLETED);
+        assignment.setClosingComment(request.closingComment());
         assignment.setFinishedAt(LocalDateTime.now());
         assignmentJpaRepository.save(assignment);
 
@@ -67,7 +68,8 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
                 assignment.getStatus(), 
                 assignment.getFinishedAt(),
                 fundraiser.getStatus(),
-                evidenceCount
+                evidenceCount,
+                assignment.getClosingComment()
         );
     }
 
@@ -166,7 +168,11 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
                 a.getStatus(),
                 a.getAssignedAt(),
                 a.getFinishedAt(),
-                a.getReturnReason()
+                a.getReturnReason(),
+                a.getFundraiserId(),
+                a.getFundraiserId() == null ? null : "Збір №" + a.getFundraiserId(),
+                a.getFundraiser() == null ? null : a.getFundraiser().getStatus(),
+                a.getClosingComment()
         );
     }
 }

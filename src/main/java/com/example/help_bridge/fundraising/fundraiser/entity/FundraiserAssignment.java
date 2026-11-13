@@ -30,7 +30,11 @@ public class FundraiserAssignment {
 
     private LocalDateTime assignedAt;
     private LocalDateTime finishedAt;
+    @Column(length = 500)
     private String returnReason;
+
+    @Column(name = "closing_comment", length = 500)
+    private String closingComment;
 
     @OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL)
     private List<Evidence> evidences = new ArrayList<>();
