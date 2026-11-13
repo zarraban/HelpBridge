@@ -72,7 +72,7 @@ class VolunteerWorkflowAccessTest {
         representative();
         var service = new VolunteerServiceImpl(volunteers, mock(org.springframework.context.ApplicationEventPublisher.class),
                 mock(com.example.help_bridge.fundraising.fund.repository.FundRepository.class),
-                mock(org.springframework.security.crypto.password.PasswordEncoder.class), team);
+                mock(org.springframework.security.crypto.password.PasswordEncoder.class), team, assignments);
         assertThrows(AccessDeniedException.class, () -> service.getFundVolunteers(3L));
         assertThrows(AccessDeniedException.class, () -> service.getFundVolunteer(3L, 5L));
         assertThrows(AccessDeniedException.class, () -> service.removeVolunteer(3L, 5L));

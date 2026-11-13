@@ -12,6 +12,7 @@
         <p sec:authorize="hasRole('SYSTEM_ADMIN')">Перевіряйте заявки та переглядайте збори всіх фондів.</p>
         <div class="form-actions">
             <a class="btn" th:href="@{/fundraisers}">Збори</a>
+            <a class="btn btn-secondary" sec:authorize="hasRole('FUND_REPRESENTATIVE')" th:href="@{/team}">Команда</a>
             <a class="btn btn-secondary" th:href="@{/requests}">Спільний пул заявок</a>
             <a class="btn btn-secondary" sec:authorize="hasRole('SYSTEM_ADMIN')" th:href="@{/requests#verification}">Перевірка заявок</a>
         </div>

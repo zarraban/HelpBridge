@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Команда фонду')}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('team')}"></nav>
+<main id="main-content" tabindex="-1">
+    <header class="page-header"><div class="page-heading"><h1>Команда фонду</h1><p class="muted">Активні волонтери вашого фонду.</p></div>
+        <div class="page-actions"><a class="btn" th:href="@{/funds/{id}/volunteers/new(id=${fundId})}">Додати волонтера</a></div>
+    </header>
+    <th:block th:replace="~{fragments/layout :: messages}"></th:block>
+    <section th:if="${#lists.isEmpty(volunteers)}" class="card empty-state">
+        <h2>У команді ще немає волонтерів</h2><p>Додайте першого волонтера, щоб згодом призначати його на збори.</p>
+    </section>
+    <div class="team-grid" th:unless="${#lists.isEmpty(volunteers)}">
+        <article class="card" th:each="v : ${volunteers}">
+            <h2 th:text="${v.firstName + ' ' + v.lastName}"></h2>
+            <dl class="details-grid">
+                <div><dt>Email</dt><dd th:text="${v.email}"></dd></div>
+                <div><dt>Телефон</dt><dd th:text="${v.phone}"></dd></div>
+            </dl>
+            <div class="form-actions">
+                <a class="btn btn-secondary" th:href="@{/funds/{fundId}/volunteers/{id}/edit(fundId=${fundId},id=${v.id})}" th:aria-label="${'Редагувати: ' + v.firstName + ' ' + v.lastName}">Редагувати</a>
+                <a class="btn btn-danger" th:href="@{/funds/{fundId}/volunteers/{id}/delete(fundId=${fundId},id=${v.id})}" th:aria-label="${'Видалити: ' + v.firstName + ' ' + v.lastName}">Видалити</a>
+            </div>
+        </article>
+    </div>
+</main>
+</body>
+</html>

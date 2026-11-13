@@ -25,6 +25,9 @@
         <li sec:authorize="hasAnyRole('FUND_REPRESENTATIVE', 'SYSTEM_ADMIN')">
             <a th:href="@{/fundraisers}" th:attr="aria-current=${activePage == 'fundraisers' ? 'page' : null}">Збори</a>
         </li>
+        <li sec:authorize="hasRole('FUND_REPRESENTATIVE')">
+            <a th:href="@{/team}" th:attr="aria-current=${activePage == 'team' ? 'page' : null}">Команда</a>
+        </li>
         <li sec:authorize="hasRole('SYSTEM_ADMIN')">
             <a th:href="@{/requests#verification}">Перевірка заявок</a>
         </li>

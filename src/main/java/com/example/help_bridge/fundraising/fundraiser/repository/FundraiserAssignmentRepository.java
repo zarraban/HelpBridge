@@ -28,6 +28,8 @@ public interface FundraiserAssignmentRepository extends JpaRepository<Fundraiser
     boolean existsByFundraiserIdAndStatus(@Param("fundraiserId") Long fundraiserId,
                                          @Param("status") AssignmentStatus status);
 
+    boolean existsByVolunteerIdAndStatus(Long volunteerId, AssignmentStatus status);
+
     @Query("""
             SELECT COUNT(DISTINCT a.fundraiser.id) FROM FundraiserAssignment a
             WHERE a.volunteerId = :volunteerId

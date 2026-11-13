@@ -84,6 +84,9 @@ class FundraiserAssignmentRepositoryTest {
         Long otherId = other.getId();
         em.flush(); em.clear();
 
+        assertTrue(repository.existsByVolunteerIdAndStatus(VOLUNTEER_ID, AssignmentStatus.ACTIVE));
+        assertFalse(repository.existsByVolunteerIdAndStatus(99L, AssignmentStatus.ACTIVE));
+        assertFalse(repository.existsByVolunteerIdAndStatus(VOLUNTEER_ID, AssignmentStatus.COMPLETED));
         assertEquals(1, repository.findByFundraiserId(fundraiserId).size());
         assertTrue(repository.existsByFundraiserIdAndStatus(fundraiserId, AssignmentStatus.ACTIVE));
         assertFalse(repository.existsByFundraiserIdAndStatus(otherId, AssignmentStatus.ACTIVE));

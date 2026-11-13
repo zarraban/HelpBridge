@@ -453,4 +453,13 @@ class VolunteerControllerTest {
             verifyNoInteractions(service);
         }
     }
+    @Test
+    void activeAssignmentsPreventRemovalThroughApi() throws Exception {
+        doThrow(new com.example.help_bridge.users.volunteer.exception.VolunteerHasActiveAssignmentsException())
+                .when(service).removeVolunteer(FUND_ID, VOLUNTEER_ID);
+        mockMvc.perform(delete(BASE_URL + "/{volunteerId}", FUND_ID, VOLUNTEER_ID))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("Спочатку завершіть або поверніть активні призначення волонтера."));
+    }
+
 }

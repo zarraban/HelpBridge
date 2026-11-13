@@ -1,6 +1,9 @@
 package com.example.help_bridge.users.volunteer.service;
 
 import com.example.help_bridge.users.volunteer.security.VolunteerAccessPolicy;
+import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserAssignmentRepository;
+import com.example.help_bridge.fundraising.fundraiser.entity.AssignmentStatus;
+import com.example.help_bridge.users.volunteer.exception.VolunteerHasActiveAssignmentsException;
 
 import com.example.help_bridge.fundraising.fund.entity.Fund;
 import com.example.help_bridge.fundraising.fund.exception.FundNotFoundException;
@@ -31,6 +34,7 @@ import java.util.Optional;
 public class VolunteerServiceImpl implements VolunteerService {
 
     private final VolunteerAccessPolicy access;
+    private final FundraiserAssignmentRepository assignments;
     private final VolunteerRepository repository;
     private final ApplicationEventPublisher eventPublisher;
     private final FundRepository fundRepository;
@@ -41,8 +45,10 @@ public class VolunteerServiceImpl implements VolunteerService {
             ApplicationEventPublisher eventPublisher,
             FundRepository fundRepository,
             PasswordEncoder passwordEncoder,
-            VolunteerAccessPolicy access) {
+            VolunteerAccessPolicy access,
+            FundraiserAssignmentRepository assignments) {
         this.access = access;
+        this.assignments = assignments;
         this.repository = repository;
         this.eventPublisher = eventPublisher;
         this.fundRepository = fundRepository;
@@ -151,6 +157,9 @@ public class VolunteerServiceImpl implements VolunteerService {
         Volunteer volunteer = repository.findByFundIdAndIdAndStatus(fundId, volunteerId, VolunteerStatus.ACTIVE)
                 .orElseThrow(() -> new VolunteerNotFoundException("Volunteer with ID '" + volunteerId + "' not found"));
 
+        if (assignments.existsByVolunteerIdAndStatus(volunteerId, AssignmentStatus.ACTIVE)) {
+            throw new VolunteerHasActiveAssignmentsException();
+        }
         volunteer.setStatus(VolunteerStatus.INACTIVE);
         repository.save(volunteer);
 

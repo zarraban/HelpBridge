@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Команда фонду')}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('team')}"></nav>
+<main id="main-content" tabindex="-1">
+    <header th:replace="~{fragments/layout :: pageHeader('Видалити волонтера?', 'Перевірте дані перед підтвердженням.', ~{})}"></header>
+    <section class="card">
+        <h2 th:text="${volunteer.firstName + ' ' + volunteer.lastName}"></h2>
+        <p th:text="${volunteer.email}"></p><p th:text="${volunteer.phone}"></p>
+        <p>Волонтер стане неактивним і втратить доступ до роботи. Історію призначень буде збережено.</p>
+        <p class="alert alert-warning">Якщо є активні призначення, видалення буде заблоковано. Спочатку завершіть або поверніть їх.</p>
+        <form data-submit-once method="post" th:action="@{/funds/{fundId}/volunteers/{id}/delete(fundId=${fundId},id=${volunteer.id})}">
+            <div class="form-actions"><button class="btn btn-danger" type="submit">Видалити волонтера</button>
+                <a class="btn btn-secondary" th:href="@{/funds/{id}/volunteers(id=${fundId})}">Скасувати</a></div>
+            <p data-submit-status class="field-hint" role="status" hidden>Видаляємо волонтера…</p>
+        </form>
+    </section>
+</main>
+</body>
+</html>

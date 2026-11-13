@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Команда фонду')}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('team')}"></nav>
+<main id="main-content" tabindex="-1">
+    <header th:replace="~{fragments/layout :: pageHeader(${editing ? 'Редагувати волонтера' : 'Додати волонтера'}, 'Заповніть контактні дані волонтера.', ~{})}"></header>
+    <form class="card" data-submit-once th:object="${form}" method="post"
+          th:action="${editing} ? @{/funds/{fundId}/volunteers/{id}(fundId=${fundId},id=${volunteerId})} : @{/funds/{fundId}/volunteers(fundId=${fundId})}">
+        <p class="alert alert-error" role="alert" th:if="${#fields.hasErrors('*')}">Дані не збережено. Перевірте помилки нижче.</p>
+        <p class="alert alert-error" role="alert" th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+        <p class="field-hint">Усі поля обов’язкові. Телефон: +380 і ще 9 цифр.</p>
+        <div class="field">
+            <label for="firstName">Ім’я</label>
+            <input id="firstName" type="text" th:field="*{firstName}" maxlength="50" required autocomplete="given-name" th:errorclass="field-invalid" aria-describedby="firstName-error" th:attr="aria-invalid=${#fields.hasErrors('firstName')}">
+            <span id="firstName-error" class="field-error" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></span>
+        </div>
+        <div class="field">
+            <label for="lastName">Прізвище</label>
+            <input id="lastName" type="text" th:field="*{lastName}" maxlength="50" required autocomplete="family-name" th:errorclass="field-invalid" aria-describedby="lastName-error" th:attr="aria-invalid=${#fields.hasErrors('lastName')}">
+            <span id="lastName-error" class="field-error" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}"></span>
+        </div>
+        <div class="field">
+            <label for="email">Email</label>
+            <input id="email" type="email" th:field="*{email}" maxlength="254" required autocomplete="email" th:errorclass="field-invalid" aria-describedby="email-error" th:attr="aria-invalid=${#fields.hasErrors('email')}">
+            <span id="email-error" class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+        </div>
+        <div class="field">
+            <label for="phone">Телефон</label>
+            <input id="phone" type="tel" th:field="*{phone}" maxlength="13" required autocomplete="tel" pattern="\+380[0-9]{9}" placeholder="+380XXXXXXXXX" th:errorclass="field-invalid" aria-describedby="phone-error" th:attr="aria-invalid=${#fields.hasErrors('phone')}">
+            <span id="phone-error" class="field-error" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></span>
+        </div>
+        <div class="field" th:unless="${editing}">
+            <label for="password">Пароль</label>
+            <input id="password" name="password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required aria-describedby="password-hint password-error" th:attr="aria-invalid=${#fields.hasErrors('password')}" th:classappend="${#fields.hasErrors('password') ? 'field-invalid' : ''}">
+            <span id="password-hint" class="field-hint">Від 8 до 72 символів. Після помилки введіть пароль повторно.</span>
+            <span id="password-error" class="field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></span>
+        </div>
+        <p class="field-hint" th:unless="${editing}">Якщо ці контакти належать раніше видаленому волонтеру, його обліковий запис буде відновлено з новими даними та паролем.</p>
+        <div class="form-actions">
+            <button type="submit" class="btn" th:text="${editing ? 'Зберегти зміни' : 'Додати волонтера'}"></button>
+            <a class="btn btn-secondary" th:href="@{/funds/{id}/volunteers(id=${fundId})}">Скасувати</a>
+        </div>
+        <p data-submit-status class="field-hint" role="status" hidden>Зберігаємо дані…</p>
+    </form>
+</main>
+</body>
+</html>

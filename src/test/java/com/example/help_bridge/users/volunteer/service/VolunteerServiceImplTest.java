@@ -61,6 +61,9 @@ class VolunteerServiceImplTest {
     private com.example.help_bridge.users.volunteer.security.VolunteerAccessPolicy access;
 
     @Mock
+    private com.example.help_bridge.fundraising.fundraiser.repository.FundraiserAssignmentRepository assignments;
+
+    @Mock
     private VolunteerRepository repository;
 
     @Mock
@@ -76,7 +79,7 @@ class VolunteerServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new VolunteerServiceImpl(repository, eventPublisher, fundRepository, passwordEncoder, access);
+        service = new VolunteerServiceImpl(repository, eventPublisher, fundRepository, passwordEncoder, access, assignments);
         lenient().when(fundRepository.findById(FUND_ID)).thenReturn(Optional.of(fund()));
     }
 
@@ -554,4 +557,18 @@ class VolunteerServiceImplTest {
             inOrder.verify(eventPublisher).publishEvent(new VolunteerRemovedEvent(FIRST_NAME, EMAIL));
         }
     }
+    @Test
+    void activeAssignmentsPreventDeactivationAndRemovalEvent() {
+        Volunteer stored = volunteer(VOLUNTEER_ID, VolunteerStatus.ACTIVE);
+        when(repository.findByFundIdAndIdAndStatus(FUND_ID, VOLUNTEER_ID, VolunteerStatus.ACTIVE))
+                .thenReturn(Optional.of(stored));
+        when(assignments.existsByVolunteerIdAndStatus(VOLUNTEER_ID,
+                com.example.help_bridge.fundraising.fundraiser.entity.AssignmentStatus.ACTIVE)).thenReturn(true);
+        assertThrows(com.example.help_bridge.users.volunteer.exception.VolunteerHasActiveAssignmentsException.class,
+                () -> service.removeVolunteer(FUND_ID, VOLUNTEER_ID));
+        assertEquals(VolunteerStatus.ACTIVE, stored.getStatus());
+        verify(repository, never()).save(any());
+        verifyNoInteractions(eventPublisher);
+    }
+
 }
