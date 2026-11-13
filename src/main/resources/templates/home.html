@@ -8,17 +8,22 @@
     <header th:replace="~{fragments/layout :: pageHeader('Мій кабінет', 'Ваш робочий простір у HelpBridge.', ~{})}"></header>
     <section class="card" sec:authorize="hasAnyRole('FUND_REPRESENTATIVE', 'SYSTEM_ADMIN')">
         <h2>Робочі розділи</h2>
-        <p sec:authorize="hasRole('FUND_REPRESENTATIVE')">Бронюйте заявки та супроводжуйте збори вашого фонду.</p>
+        <p sec:authorize="hasRole('FUND_REPRESENTATIVE')">Керуйте командою, бронюйте заявки та супроводжуйте збори вашого фонду.</p>
         <p sec:authorize="hasRole('SYSTEM_ADMIN')">Перевіряйте заявки та переглядайте збори всіх фондів.</p>
         <div class="form-actions">
             <a class="btn" th:href="@{/fundraisers}">Збори</a>
+            <a class="btn btn-secondary" sec:authorize="hasRole('FUND_REPRESENTATIVE')" th:href="@{/team}">Команда</a>
             <a class="btn btn-secondary" th:href="@{/requests}">Спільний пул заявок</a>
             <a class="btn btn-secondary" sec:authorize="hasRole('SYSTEM_ADMIN')" th:href="@{/requests#verification}">Перевірка заявок</a>
         </div>
     </section>
-    <section class="card" sec:authorize="!hasAnyRole('FUND_REPRESENTATIVE', 'SYSTEM_ADMIN')">
+    <section class="card" sec:authorize="hasRole('VOLUNTEER')">
+        <h2>Робота волонтера</h2>
+        <p>Переглядайте призначення, додавайте докази та зберігайте результати роботи.</p>
+        <a class="btn" th:href="@{/my/assignments}">Мої призначення</a>
+    </section>
+    <section class="card" sec:authorize="!hasAnyRole('FUND_REPRESENTATIVE', 'SYSTEM_ADMIN', 'VOLUNTEER')">
         <h2>Вітаємо в HelpBridge</h2>
-        <p sec:authorize="hasRole('VOLUNTEER')">Ви увійшли як волонтер. Розділи ваших призначень і особистої статистики ще готуються.</p>
         <p sec:authorize="!hasRole('VOLUNTEER')">Для вашої ролі поки немає доступних робочих розділів.</p>
         <p class="muted">Ви можете завершити сеанс кнопкою «Вийти» у верхньому меню.</p>
     </section>

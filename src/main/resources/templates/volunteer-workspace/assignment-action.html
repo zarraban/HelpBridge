@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${completing ? 'Завершити призначення' : 'Повернути призначення'})}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('my-assignments')}"></nav>
+<main id="main-content" class="volunteer-workspace" tabindex="-1">
+    <header th:replace="~{fragments/layout :: pageHeader(${completing ? 'Завершити призначення' : 'Повернути призначення'}, ${assignment.fundraiserTitle ?: 'Призначення №' + assignment.assignmentId}, ~{})}"></header>
+    <form class="card" data-submit-once method="post" th:object="${form}"
+          th:action="${completing} ? @{/my/assignments/{id}/complete(id=${assignment.assignmentId})} : @{/my/assignments/{id}/return(id=${assignment.assignmentId})}">
+        <p class="alert alert-warning" role="alert" th:if="${conflict}">Стан призначення змінився або дію вже виконано. Повернення й завершення доступні лише для активних призначень. Перегляньте актуальний список.</p>
+        <p class="alert alert-info" th:if="${completing}">Опишіть результат роботи. Завершення призначення не закриває збір — ним надалі керує представник фонду.</p>
+        <p class="alert alert-info" th:unless="${completing}">Поясніть, чому повертаєте призначення. Представник фонду зможе передати завдання іншому волонтеру.</p>
+        <p class="alert alert-error" role="alert" th:if="${#fields.hasErrors('*')}">Дію не виконано. Перевірте коментар нижче; введений текст збережено у формі.</p>
+        <div class="field" th:if="${completing}">
+            <label for="closingComment">Коментар завершення</label>
+            <textarea id="closingComment" th:field="*{closingComment}" rows="6" minlength="10" maxlength="500" required th:errorclass="field-invalid" aria-describedby="comment-hint closingComment-error" th:attr="aria-invalid=${#fields.hasErrors('closingComment')}"></textarea>
+            <span id="closingComment-error" class="field-error" th:if="${#fields.hasErrors('closingComment')}" th:errors="*{closingComment}"></span>
+        </div>
+        <div class="field" th:unless="${completing}">
+            <label for="returnReason">Причина повернення</label>
+            <textarea id="returnReason" th:field="*{returnReason}" rows="6" minlength="5" maxlength="500" required th:errorclass="field-invalid" aria-describedby="comment-hint returnReason-error" th:attr="aria-invalid=${#fields.hasErrors('returnReason')}"></textarea>
+            <span id="returnReason-error" class="field-error" th:if="${#fields.hasErrors('returnReason')}" th:errors="*{returnReason}"></span>
+        </div>
+        <p id="comment-hint" class="field-hint" th:text="${completing ? 'Обов’язково від 10 до 500 символів.' : 'Обов’язково від 5 до 500 символів.'}"></p>
+        <div class="form-actions">
+            <button class="btn" type="submit" th:if="${actionable}" th:text="${completing ? 'Підтвердити завершення' : 'Повернути призначення'}"></button>
+            <a class="btn btn-secondary" th:href="@{/my/assignments}" th:text="${actionable ? 'Скасувати' : 'До моїх призначень'}"></a>
+        </div>
+        <p class="field-hint" data-submit-status role="status" hidden>Зберігаємо результат…</p>
+    </form>
+</main>
+</body>
+</html>

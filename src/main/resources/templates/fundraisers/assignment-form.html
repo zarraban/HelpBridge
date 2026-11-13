@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Призначити волонтера')}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('fundraisers')}"></nav>
+<main id="main-content" tabindex="-1">
+    <header th:replace="~{fragments/layout :: pageHeader(${'Призначити волонтера на збір №' + fundraiser.fundraiserId}, 'Доступні активні волонтери фонду, які ще не мають активного призначення на цей збір.', ~{})}"></header>
+    <form data-submit-once class="card" method="post" th:object="${form}" th:action="@{/fundraisers/{id}/assignments(id=${fundraiser.fundraiserId})}">
+        <p class="alert alert-error" role="alert" th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+        <p class="alert alert-warning" th:if="${closed}">Збір закрито. Нові призначення недоступні.</p>
+        <p class="alert alert-info" th:if="${!closed && #lists.isEmpty(availableVolunteers)}">Немає доступних волонтерів: команда порожня або всі активні волонтери вже призначені на цей збір.</p>
+        <div class="field" th:if="${canAssign}">
+            <label for="volunteerId">Волонтер</label>
+            <select id="volunteerId" th:field="*{volunteerId}" required th:errorclass="field-invalid" aria-describedby="volunteerId-error" th:attr="aria-invalid=${#fields.hasErrors('volunteerId')}">
+                <option value="">Оберіть волонтера</option>
+                <option th:each="v : ${availableVolunteers}" th:value="${v.id}" th:text="${v.firstName + ' ' + v.lastName + ' — ' + v.email}"></option>
+            </select>
+        </div>
+        <p id="volunteerId-error" class="field-error" role="alert" th:if="${#fields.hasErrors('volunteerId')}" th:errors="*{volunteerId}"></p>
+        <div class="form-actions">
+            <button class="btn" type="submit" th:if="${canAssign}">Призначити волонтера</button>
+            <a class="btn btn-secondary" th:href="@{/fundraisers/{id}#assignments(id=${fundraiser.fundraiserId})}">До збору</a>
+            <a class="btn btn-secondary" th:if="${fundId != null && !closed}" th:href="@{/funds/{id}/volunteers(id=${fundId})}">До команди фонду</a>
+        </div>
+        <p data-submit-status class="field-hint" role="status" hidden>Призначаємо волонтера…</p>
+    </form>
+</main>
+</body>
+</html>

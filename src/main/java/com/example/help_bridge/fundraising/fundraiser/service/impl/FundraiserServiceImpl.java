@@ -49,7 +49,7 @@ public class FundraiserServiceImpl implements FundraiserService {
         Fundraiser fundraiser = FundraiserRepository.findById(id)
                 .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with ID " + id + " not found"));
 
-        access.requireAccess(fundraiser);
+        access.requireView(fundraiser);
         return mapToResponse(fundraiser);
     }
 

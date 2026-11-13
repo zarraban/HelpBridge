@@ -43,6 +43,8 @@ class FundraiserAccessIntegrationTest {
     @Autowired AssistanceTypeRepository types;
     @Autowired FundraiserRepository fundraisers;
     @Autowired EvidenceRepository evidences;
+    @Autowired com.example.help_bridge.users.volunteer.repository.VolunteerRepository volunteers;
+    @Autowired FundraiserAssignmentRepository assignments;
     Fundraiser own;
     Fundraiser foreign;
     Evidence foreignEvidence;
@@ -445,6 +447,64 @@ class FundraiserAccessIntegrationTest {
                         .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
                 .andExpect(redirectedUrl("/fundraisers/" + fundraiser.getId()))
                 .andExpect(flash().attribute("message", containsString("успішно закрито")));
+    }
+
+    private com.example.help_bridge.users.volunteer.entity.Volunteer volunteer(String email, Fund fund) {
+        var volunteer = new com.example.help_bridge.users.volunteer.entity.Volunteer();
+        volunteer.setFund(fund); volunteer.setFirstName("Волонтер"); volunteer.setLastName("Тест");
+        volunteer.setEmail(email); volunteer.setPhone("+380501234567");
+        volunteer.setStatus(com.example.help_bridge.users.volunteer.entity.VolunteerStatus.ACTIVE);
+        var saved = volunteers.save(volunteer);
+        em.flush();
+        return saved;
+    }
+
+    @Test
+    void actualPoliciesProtectAssignmentsEvidenceAndTeamAcrossFunds() throws Exception {
+        var ownFund = requests.findById(own.getRequestId()).orElseThrow().getFund();
+        var otherFund = requests.findById(foreign.getRequestId()).orElseThrow().getFund();
+        var worker = volunteer("worker@access.test", ownFund);
+        var outsider = volunteer("outsider@access.test", otherFund);
+        var rep = user("FUND_REPRESENTATIVE:rep@access.test").roles("FUND_REPRESENTATIVE");
+        mvc.perform(post("/api/fundraisers/{id}/assignments", own.getId()).with(rep).contentType("application/json")
+                .content("{\"volunteerId\":" + worker.getId() + "}" )).andExpect(status().isCreated());
+        var assignment = assignments.findByFundraiserId(own.getId()).getFirst();
+        mvc.perform(post("/api/fundraisers/{id}/assignments", foreign.getId()).with(rep).contentType("application/json")
+                .content("{\"volunteerId\":" + worker.getId() + "}" )).andExpect(status().isForbidden());
+        mvc.perform(post("/api/fundraisers/{id}/assignments", own.getId()).with(rep).contentType("application/json")
+                .content("{\"volunteerId\":" + outsider.getId() + "}" )).andExpect(status().isForbidden());
+        var otherViewer = user("VOLUNTEER:outsider@access.test").roles("VOLUNTEER");
+        mvc.perform(get("/my/fundraisers/{id}", own.getId()).with(otherViewer).accept("text/html"))
+                .andExpect(status().isForbidden());
+        mvc.perform(patch("/api/fundraiser-assignments/{id}/complete", assignment.getId()).with(otherViewer).contentType("application/json")
+                .content("{\"closingComment\":\"Допомогу доставлено\"}")).andExpect(status().isForbidden());
+        mvc.perform(post("/api/fundraisers/{id}/evidences", own.getId()).with(otherViewer).contentType("application/json")
+                .content("{\"receiptNumber\":\"RCPT-1\"}")).andExpect(status().isForbidden());
+        mvc.perform(delete("/api/funds/{fundId}/volunteers/{id}", ownFund.getId(), worker.getId()).with(rep))
+                .andExpect(status().isConflict());
+        org.junit.jupiter.api.Assertions.assertEquals(AssignmentStatus.ACTIVE, assignments.findById(assignment.getId()).orElseThrow().getStatus());
+        org.junit.jupiter.api.Assertions.assertTrue(evidences.findAllByFundraiserIdOrderByCreatedAtAsc(own.getId()).isEmpty());
+        org.junit.jupiter.api.Assertions.assertTrue(worker.isActive());
+    }
+
+    @Test
+    void returnedAssignmentCannotBeCompletedAndHistoricalVolunteerCannotAddEvidence() throws Exception {
+        var fund = requests.findById(own.getRequestId()).orElseThrow().getFund();
+        var worker = volunteer("returning@access.test", fund);
+        var assignment = new FundraiserAssignment(); assignment.setFundraiser(own);
+        assignment.setVolunteerId(worker.getId()); assignment.setStatus(AssignmentStatus.ACTIVE);
+        assignment = assignments.saveAndFlush(assignment);
+        var viewer = user("VOLUNTEER:returning@access.test").roles("VOLUNTEER");
+        mvc.perform(patch("/api/fundraiser-assignments/{id}/return", assignment.getId()).with(viewer).contentType("application/json")
+                .content("{\"returnReason\":\"Не можу продовжити\"}")).andExpect(status().isOk());
+        mvc.perform(patch("/api/fundraiser-assignments/{id}/complete", assignment.getId()).with(viewer).contentType("application/json")
+                .content("{\"closingComment\":\"Повторна спроба завершення\"}")).andExpect(status().isConflict());
+        mvc.perform(post("/api/fundraisers/{id}/evidences", own.getId()).with(viewer).contentType("application/json")
+                .content("{\"receiptNumber\":\"RCPT-1\"}")).andExpect(status().isForbidden());
+        mvc.perform(get("/my/fundraisers/{id}", own.getId()).with(viewer).accept("text/html"))
+                .andExpect(status().isOk()).andExpect(content().string(containsString("Не можу продовжити")));
+        org.junit.jupiter.api.Assertions.assertEquals(AssignmentStatus.RETURNED, assignment.getStatus());
+        org.junit.jupiter.api.Assertions.assertNull(assignment.getClosingComment());
     }
 
 }

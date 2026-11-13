@@ -11,6 +11,7 @@ public record CompleteAssignmentResponse(
         AssignmentStatus status,
         LocalDateTime finishedAt,
         FundraiserStatus fundraiserStatus,
-        int evidenceCount
+        int evidenceCount,
+        String closingComment
 ) {
 }

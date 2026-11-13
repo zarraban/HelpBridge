@@ -34,6 +34,11 @@ class FundraiserAssignmentServiceImplTest {
     @Mock
     private VolunteerDirectory volunteerDirectory;
 
+    @Mock
+    private com.example.help_bridge.fundraising.fundraiser.security.FundraiserAccessPolicy access;
+    @Mock
+    private com.example.help_bridge.users.volunteer.security.VolunteerAccessPolicy volunteerAccess;
+
     @InjectMocks
     private FundraiserAssignmentServiceImpl assignmentService;
 

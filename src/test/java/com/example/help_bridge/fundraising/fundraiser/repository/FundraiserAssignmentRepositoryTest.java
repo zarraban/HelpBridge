@@ -11,7 +11,7 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
 import java.time.LocalDateTime;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
 class FundraiserAssignmentRepositoryTest {
@@ -74,4 +74,28 @@ class FundraiserAssignmentRepositoryTest {
 
         assertEquals(1, count(VOLUNTEER_ID));
     }
+
+    @Test
+    void assignmentQueriesUseFundraiserRelationAndRespectVolunteerAndStatus() {
+        assignment(fundraiser, VOLUNTEER_ID, AssignmentStatus.ACTIVE, null);
+        var other = em.persist(new Fundraiser());
+        assignment(other, VOLUNTEER_ID, AssignmentStatus.RETURNED, FROM);
+        Long fundraiserId = fundraiser.getId();
+        Long otherId = other.getId();
+        em.flush(); em.clear();
+
+        assertTrue(repository.existsByVolunteerIdAndStatus(VOLUNTEER_ID, AssignmentStatus.ACTIVE));
+        assertFalse(repository.existsByVolunteerIdAndStatus(99L, AssignmentStatus.ACTIVE));
+        assertFalse(repository.existsByVolunteerIdAndStatus(VOLUNTEER_ID, AssignmentStatus.COMPLETED));
+        assertEquals(1, repository.findByFundraiserId(fundraiserId).size());
+        assertTrue(repository.existsByFundraiserIdAndStatus(fundraiserId, AssignmentStatus.ACTIVE));
+        assertFalse(repository.existsByFundraiserIdAndStatus(otherId, AssignmentStatus.ACTIVE));
+        assertTrue(repository.existsByFundraiserIdAndVolunteerIdAndStatus(
+                fundraiserId, VOLUNTEER_ID, AssignmentStatus.ACTIVE));
+        assertFalse(repository.existsByFundraiserIdAndVolunteerIdAndStatus(
+                fundraiserId, 99L, AssignmentStatus.ACTIVE));
+        assertFalse(repository.existsByFundraiserIdAndVolunteerIdAndStatus(
+                otherId, VOLUNTEER_ID, AssignmentStatus.ACTIVE));
+    }
+
 }

@@ -24,7 +24,6 @@ public class EvidenceController {
         this.evidenceService = evidenceService;
     }
 
-    // TODO volunteer can't add evidences to other fundraisers except for his own
     @PreAuthorize("hasAnyRole('VOLUNTEER', 'FUND_REPRESENTATIVE')")
     @PostMapping("/fundraisers/{fundraiserId}/evidences")
     public ResponseEntity<EvidenceResponse> addEvidenceToFundraiser(
@@ -43,6 +42,7 @@ public class EvidenceController {
     }
 
     // only fund representative can delete evidences(even if they contain mistakes)
+    @PreAuthorize("hasRole('FUND_REPRESENTATIVE')")
     @DeleteMapping("/evidences/{id}")
     public ResponseEntity<String> deleteEvidenceById(
             @PathVariable("id") Long evidenceId

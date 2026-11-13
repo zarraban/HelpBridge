@@ -204,7 +204,8 @@ public class GlobalExceptionHandler {
         return problemDetail;
     }
 
-    @ExceptionHandler({InvalidAssignmentStateException.class, InvalidFundraiserStateException.class})
+    @ExceptionHandler({InvalidAssignmentStateException.class, InvalidFundraiserStateException.class,
+            com.example.help_bridge.users.volunteer.exception.VolunteerHasActiveAssignmentsException.class})
     public ProblemDetail handleInvalidStateException(RuntimeException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
                 HttpStatus.CONFLICT,

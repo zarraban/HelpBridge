@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Мої призначення')}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('my-assignments')}"></nav>
+<main id="main-content" class="volunteer-workspace" tabindex="-1">
+    <header th:replace="~{fragments/layout :: pageHeader('Мої призначення', 'Ваші активні завдання та історія роботи.', ~{})}"></header>
+    <th:block th:replace="~{fragments/layout :: messages}"></th:block>
+    <section aria-labelledby="active-heading">
+        <h2 id="active-heading">Активні призначення</h2>
+        <p class="card empty-state" th:if="${#lists.isEmpty(activeAssignments)}">Активних призначень поки немає. Нові завдання з’являться, коли представник фонду призначить вас на збір.</p>
+        <th:block th:each="a : ${activeAssignments}"><article th:replace="~{volunteer-workspace/assignment-card :: card(${a}, true)}"></article></th:block>
+    </section>
+    <section aria-labelledby="past-heading">
+        <h2 id="past-heading">Історія призначень</h2>
+        <p class="card empty-state" th:if="${#lists.isEmpty(pastAssignments)}">Завершених або повернутих призначень поки немає.</p>
+        <th:block th:each="a : ${pastAssignments}"><article th:replace="~{volunteer-workspace/assignment-card :: card(${a}, true)}"></article></th:block>
+    </section>
+</main>
+</body>
+</html>

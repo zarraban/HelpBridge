@@ -37,6 +37,8 @@ public class EvidenceServiceImpl implements EvidenceService {
         Fundraiser fundraiser = fundraiserRepository.findById(fundraiserId)
                 .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with ID " + fundraiserId + " not found"));
 
+        access.requireAddEvidence(fundraiser);
+
         if (fundraiser.getStatus() == FundraiserStatus.CLOSED) {
             throw new InvalidFundraiserStateException("Cannot add evidence to a closed fundraiser");
         }
@@ -69,7 +71,7 @@ public class EvidenceServiceImpl implements EvidenceService {
     public List<EvidenceResponse> getEvidencesByFundraiserId(Long fundraiserId) {
         Fundraiser fundraiser = fundraiserRepository.findById(fundraiserId)
                 .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with ID " + fundraiserId + " not found"));
-        access.requireAccess(fundraiser);
+        access.requireView(fundraiser);
         return evidenceRepository.findAllByFundraiserIdOrderByCreatedAtAsc(fundraiserId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -79,7 +81,7 @@ public class EvidenceServiceImpl implements EvidenceService {
     public String deleteEvidenceById(Long evidenceId) {
         Evidence evidence = evidenceRepository.findById(evidenceId)
                 .orElseThrow(() -> new EvidenceNotFoundException(evidenceId));
-        access.requireAccess(evidence.getFundraiser());
+        access.requireRepresentative(evidence.getFundraiser());
         evidenceRepository.delete(evidence);
         return "Deleted successfully";
     }

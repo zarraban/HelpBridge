@@ -233,7 +233,7 @@ class WebLoginTest {
                 .andExpect(status().isOk()).andExpect(view().name("home"));
         mvc.perform(get("/home").with(user("volunteer").roles("VOLUNTEER")))
                 .andExpect(status().isOk()).andExpect(view().name("home"))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Ви увійшли як волонтер")));
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("href=\"/my/assignments\"")));
     }
 
     @Test

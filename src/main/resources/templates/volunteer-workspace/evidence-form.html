@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Додати доказ')}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('my-assignments')}"></nav>
+<main id="main-content" class="volunteer-workspace" tabindex="-1">
+    <header th:replace="~{fragments/layout :: pageHeader(${'Додати доказ до збору №' + fundraiser.fundraiserId}, 'Надайте підтвердження виконаної допомоги.', ~{})}"></header>
+    <form class="card" data-submit-once th:object="${form}" method="post" th:action="@{/my/fundraisers/{id}/evidences(id=${fundraiser.fundraiserId})}">
+        <p class="alert alert-warning" role="alert" th:unless="${canAddEvidence}">Додавання недоступне: збір закрито або у вас більше немає активного призначення. Введені дані залишилися у формі.</p>
+        <p class="alert alert-error" role="alert" th:if="${#fields.hasErrors('*')}">Доказ не збережено. Перевірте помилки нижче; введені дані залишилися у формі.</p>
+        <p class="alert alert-error" role="alert" th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+        <p class="field-hint">Заповніть хоча б одне поле. Можна поєднати квитанцію, фото та відгук.</p>
+        <div class="field">
+            <label for="receiptNumber">Номер квитанції</label>
+            <input id="receiptNumber" type="text" th:field="*{receiptNumber}" minlength="5" maxlength="50" th:errorclass="field-invalid" aria-describedby="receiptNumber-hint receiptNumber-error" th:attr="aria-invalid=${#fields.hasErrors('receiptNumber')}">
+            <span id="receiptNumber-hint" class="field-hint">Від 5 до 50 символів, якщо вказано.</span>
+            <span id="receiptNumber-error" class="field-error" th:if="${#fields.hasErrors('receiptNumber')}" th:errors="*{receiptNumber}"></span>
+        </div>
+        <div class="field">
+            <label for="attachmentUrl">Посилання на фото</label>
+            <input id="attachmentUrl" type="url" th:field="*{attachmentUrl}" maxlength="500" th:errorclass="field-invalid" aria-describedby="attachmentUrl-hint attachmentUrl-error" th:attr="aria-invalid=${#fields.hasErrors('attachmentUrl')}">
+            <span id="attachmentUrl-hint" class="field-hint">Повне HTTP/HTTPS-посилання на доступне фото із закінченням .jpg, .jpeg або .png. До 500 символів. Наприклад: https://example.com/proof.jpg.</span>
+            <span id="attachmentUrl-error" class="field-error" th:if="${#fields.hasErrors('attachmentUrl')}" th:errors="*{attachmentUrl}"></span>
+        </div>
+        <div class="field">
+            <label for="recipientFeedback">Відгук отримувача</label>
+            <textarea id="recipientFeedback" th:field="*{recipientFeedback}" rows="6" maxlength="1000" th:errorclass="field-invalid" aria-describedby="recipientFeedback-hint recipientFeedback-error" th:attr="aria-invalid=${#fields.hasErrors('recipientFeedback')}"></textarea>
+            <span id="recipientFeedback-hint" class="field-hint">До 1000 символів.</span>
+            <span id="recipientFeedback-error" class="field-error" th:if="${#fields.hasErrors('recipientFeedback')}" th:errors="*{recipientFeedback}"></span>
+        </div>
+        <div class="form-actions">
+            <button class="btn" type="submit" th:if="${canAddEvidence}">Додати доказ</button>
+            <a class="btn btn-secondary" th:href="@{/my/fundraisers/{id}#evidences(id=${fundraiser.fundraiserId})}">До доказів збору</a>
+        </div>
+        <p class="field-hint" data-submit-status role="status" hidden>Зберігаємо доказ…</p>
+    </form>
+</main>
+</body>
+</html>

@@ -28,12 +28,16 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest({com.example.help_bridge.fundraising.fundraiser.web.FundraiserWebController.class,com.example.help_bridge.fundraising.request.web.RequestBookingWebController.class, LoginController.class, RequestWebController.class, com.example.help_bridge.fundraising.request.web.RequestDocumentWebController.class})
+@WebMvcTest({com.example.help_bridge.fundraising.fundraiser.web.VolunteerEvidenceWebController.class,com.example.help_bridge.fundraising.fundraiser.web.VolunteerAssignmentActionWebController.class,com.example.help_bridge.fundraising.fundraiser.web.VolunteerWorkspaceWebController.class,com.example.help_bridge.fundraising.fundraiser.web.FundraiserWebController.class,com.example.help_bridge.fundraising.request.web.RequestBookingWebController.class, LoginController.class, RequestWebController.class, com.example.help_bridge.fundraising.request.web.RequestDocumentWebController.class})
 @Import(SecurityConfiguration.class)
 class MobileLayoutE2EIT {
     @MockitoBean com.example.help_bridge.fundraising.request.security.RequestAccessPolicy access;
     @MockitoBean com.example.help_bridge.fundraising.request.service.RequestDocumentService documentService;
+    @MockitoBean com.example.help_bridge.fundraising.fundraiser.service.VolunteerWorkspaceService workspace;
+    @MockitoBean com.example.help_bridge.fundraising.fundraiser.service.EvidenceService evidenceService;
     @Autowired MockMvc mvc;
+    @MockitoBean com.example.help_bridge.fundraising.fundraiser.service.FundraiserAssignmentService assignments;
+    @MockitoBean com.example.help_bridge.users.volunteer.service.VolunteerService volunteers;
     @MockitoBean RequestService requestService;
     @MockitoBean com.example.help_bridge.fundraising.request.service.RequestBookingService bookingService;
     @MockitoBean com.example.help_bridge.fundraising.fund.repository.FundRepository funds;
@@ -116,6 +120,27 @@ class MobileLayoutE2EIT {
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         String cabinet = mvc.perform(get("/home").with(user("representative").roles("FUND_REPRESENTATIVE")))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        var ownAssignment = new com.example.help_bridge.fundraising.fundraiser.dto.response.FundraiserAssignmentResponse(
+                1L, 5L, com.example.help_bridge.fundraising.fundraiser.entity.AssignmentStatus.ACTIVE,
+                java.time.LocalDateTime.now(), null, null, 1L, "Збір №1", fundraiser.status(), null);
+        when(workspace.getMyAssignments()).thenReturn(java.util.List.of(ownAssignment));
+        String ownAssignments = mvc.perform(get("/my/assignments").with(user("volunteer@test.org").roles("VOLUNTEER")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        when(workspace.getMyAssignments()).thenReturn(java.util.List.of());
+        String emptyOwnAssignments = mvc.perform(get("/my/assignments").with(user("volunteer@test.org").roles("VOLUNTEER")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        when(workspace.getMyFundraiser(1L)).thenReturn(new com.example.help_bridge.fundraising.fundraiser.dto.response.VolunteerFundraiserResponse(
+                fundraiser, new com.example.help_bridge.fundraising.fundraiser.dto.response.VolunteerFundraiserResponse.RequestSummary(
+                        "Лікування", java.math.BigDecimal.TEN, java.time.LocalDate.now(), "Установа", "ДовгийОпис".repeat(100)), java.util.List.of(ownAssignment)));
+        String ownDetails = mvc.perform(get("/my/fundraisers/1").with(user("volunteer@test.org").roles("VOLUNTEER")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        when(workspace.getMyAssignment(1L)).thenReturn(ownAssignment);
+        String completeAssignment = mvc.perform(get("/my/assignments/1/complete").with(user("volunteer@test.org").roles("VOLUNTEER")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        String returnAssignment = mvc.perform(get("/my/assignments/1/return").with(user("volunteer@test.org").roles("VOLUNTEER")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        String evidenceForm = mvc.perform(get("/my/fundraisers/1/evidences/new").with(user("volunteer@test.org").roles("VOLUNTEER")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         String css = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources/static/css/app.css"));
         String js = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources/static/js/forms.js"));
         try (var playwright = com.microsoft.playwright.Playwright.create();
@@ -132,6 +157,12 @@ class MobileLayoutE2EIT {
                     closingSubmissions.incrementAndGet();
                 }
                 String content = switch (path) {
+                    case "/my/fundraisers/1/evidences/new" -> evidenceForm;
+                    case "/my/assignments/1/complete" -> completeAssignment;
+                    case "/my/assignments/1/return" -> returnAssignment;
+                    case "/my/assignments" -> ownAssignments;
+                    case "/my/assignments/empty" -> emptyOwnAssignments;
+                    case "/my/fundraisers/1" -> ownDetails;
                     case "/home" -> cabinet;
                     case "/fundraisers" -> fundraiserList;
                     case "/fundraisers/empty" -> emptyFundraisers;
@@ -157,12 +188,29 @@ class MobileLayoutE2EIT {
             });
             for (int width : new int[]{320, 390, 768, 1280}) {
                 page.setViewportSize(width, 900);
-                for (String path : new String[]{"/home", "/fundraisers", "/fundraisers/empty", "/fundraisers/1", "/fundraisers/1/close", "/login", "/requests", "/requests/new", "/requests/1", "/requests/1/edit", "/requests/1/delete", "/requests/1/documents/new", "/requests/1/documents/1/edit", "/requests/1/documents/1/delete", "/requests/1/review-details", "/requests/1/reject", "/requests/1/book"}) {
+                for (String path : new String[]{"/my/fundraisers/1/evidences/new", "/my/assignments/1/complete", "/my/assignments/1/return", "/my/assignments", "/my/assignments/empty", "/my/fundraisers/1", "/home", "/fundraisers", "/fundraisers/empty", "/fundraisers/1", "/fundraisers/1/close", "/login", "/requests", "/requests/new", "/requests/1", "/requests/1/edit", "/requests/1/delete", "/requests/1/documents/new", "/requests/1/documents/1/edit", "/requests/1/documents/1/delete", "/requests/1/review-details", "/requests/1/reject", "/requests/1/book"}) {
                     page.navigate("https://helpbridge.test" + path);
                     assertThat((Boolean) page.evaluate("document.documentElement.scrollWidth <= innerWidth")).as(path + " at " + width).isTrue();
                 }
             }
             page.setViewportSize(320, 900);
+            page.navigate("https://helpbridge.test/my/fundraisers/1");
+            page.getByText("Додати доказ", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
+            com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("#receiptNumber")).isVisible();
+            page.locator("#receiptNumber").fill("RCPT-1");
+            page.locator("#attachmentUrl").fill("https://files.test/proof.jpg");
+            page.locator("#recipientFeedback").fill("Отримувач підтвердив допомогу");
+            page.getByText("До доказів збору", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
+            com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("#evidences")).isVisible();
+            page.navigate("https://helpbridge.test/my/assignments");
+            page.getByText("Завершити", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
+            com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("#closingComment")).isVisible();
+            page.locator("#closingComment").fill("Допомогу доставлено отримувачу");
+            page.getByText("Скасувати", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
+            page.getByText("Повернути", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
+            com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("#returnReason")).isVisible();
+            page.getByText("Скасувати", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
+            com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("#active-heading")).isVisible();
             page.navigate("https://helpbridge.test/requests");
             page.locator(".skip-link").focus();
             page.keyboard().press("Enter");
@@ -207,7 +255,8 @@ class MobileLayoutE2EIT {
             page.getByText("Скасувати", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
             assertThat(page.url()).endsWith("/requests/1");
             page.navigate("https://helpbridge.test/requests/1/book");
-            var submitting = page.evaluate("""
+            page.waitForNavigation(() -> {
+                var submitting = page.evaluate("""
                     () => {
                         const form = document.querySelector('form[data-submit-once]');
                         form.requestSubmit();
@@ -217,9 +266,8 @@ class MobileLayoutE2EIT {
                             && !form.querySelector('[data-submit-status]').hidden;
                     }
                     """);
-            assertThat(submitting).isEqualTo(true);
-            page.waitForCondition(() -> bookingSubmissions.get() == 1);
-            page.waitForLoadState();
+                assertThat(submitting).isEqualTo(true);
+            });
             assertThat(bookingSubmissions.get()).isEqualTo(1);
             page.navigate("https://helpbridge.test/requests/1/review-details");
             com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("#review")).isVisible();
@@ -247,7 +295,8 @@ class MobileLayoutE2EIT {
             page.getByText("Скасувати", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
             assertThat(page.url()).endsWith("/fundraisers/1");
             page.navigate("https://helpbridge.test/fundraisers/1/close");
-            assertThat(page.evaluate("""
+            page.waitForNavigation(() -> {
+                assertThat(page.evaluate("""
                     () => {
                         const form = document.querySelector('form[data-submit-once]');
                         form.requestSubmit();
@@ -256,8 +305,7 @@ class MobileLayoutE2EIT {
                             && form.querySelector('button[type=submit]').disabled;
                     }
                     """)).isEqualTo(true);
-            page.waitForCondition(() -> closingSubmissions.get() == 1);
-            page.waitForLoadState();
+            });
             assertThat(closingSubmissions.get()).isEqualTo(1);
             page.navigate("https://helpbridge.test/login");
             com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("[data-submit-status]")).isHidden();

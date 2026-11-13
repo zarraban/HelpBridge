@@ -266,3 +266,14 @@ main > section + h2 { margin-top: 2rem; }
 .fundraiser-filters .field { flex: 1 1 12rem; margin: 0; }
 .fundraiser-pagination { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 1.25rem; }
 .evidence-item + .evidence-item { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+
+.team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: 1rem; }
+.team-grid .card { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.team-grid h2 { margin-top: 0; font-size: 1.2rem; }
+.team-grid .form-actions { margin-top: 1rem; }
+
+#assignments { scroll-margin-top: 1rem; }
+.assignment-item { overflow-wrap: anywhere; }
+.assignment-item + .assignment-item { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+
+.volunteer-workspace .details-text { overflow-wrap: anywhere; }
