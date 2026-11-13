@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Мої призначення')}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('my-assignments')}"></nav>
+<main id="main-content" class="volunteer-workspace" tabindex="-1">
+    <header th:replace="~{fragments/layout :: pageHeader(${'Збір №' + fundraiser.fundraiserId}, 'Інформація для виконання вашого призначення.', ~{::backAction})}">
+        <th:block th:fragment="backAction"><a class="btn btn-secondary" th:href="@{/my/assignments}">До моїх призначень</a></th:block>
+    </header>
+    <th:block th:replace="~{fragments/layout :: messages}"></th:block>
+    <section class="card details-section" aria-labelledby="summary-heading">
+        <h2 id="summary-heading">Потреба та стан збору</h2>
+        <p th:switch="${fundraiser.status?.name()}">
+            <span class="badge badge-warning" th:case="'PENDING_ASSIGNMENT'">Очікує призначення</span>
+            <span class="badge" th:case="'IN_PROGRESS'">В роботі</span>
+            <span class="badge badge-success" th:case="'CLOSED'">Закритий</span>
+            <span class="badge badge-neutral" th:case="*">Невідомий статус</span>
+        </p>
+        <th:block th:if="${request != null}">
+            <dl class="details-grid">
+                <div><dt>Тип допомоги</dt><dd th:text="${request.assistanceType}"></dd></div>
+                <div><dt>Потрібна сума</dt><dd><span th:text="${#numbers.formatDecimal(request.amount, 1, 'WHITESPACE', 2, 'COMMA')}"></span> грн</dd></div>
+                <div><dt>Крайній термін</dt><dd th:text="${#temporals.format(request.deadline, 'dd.MM.yyyy')}"></dd></div>
+                <div><dt>Установа</dt><dd th:text="${request.institutionName}"></dd></div>
+            </dl>
+            <h3>Яка допомога потрібна</h3><p class="details-text" th:text="${request.needDescription}"></p>
+        </th:block>
+        <p class="muted" th:if="${request == null}">Інформація про пов’язану заявку зараз недоступна.</p>
+    </section>
+    <section aria-labelledby="own-history-heading">
+        <h2 id="own-history-heading">Мої призначення на цей збір</h2>
+        <th:block th:each="a : ${assignments}"><article th:replace="~{volunteer-workspace/assignment-card :: card(${a}, false)}"></article></th:block>
+    </section>
+    <section id="evidences" class="card details-section" aria-labelledby="evidences-heading">
+        <h2 id="evidences-heading">Докази надання допомоги</h2>
+        <p class="muted" th:if="${#lists.isEmpty(evidences)}">До цього збору ще не додано доказів.</p>
+        <th:block th:unless="${#lists.isEmpty(evidences)}">
+            <p class="field-hint">Вкладення відкриваються в новій вкладці.</p>
+            <article class="evidence-item" th:each="e : ${evidences}">
+                <h3 th:text="${'Доказ №' + e.id}"></h3>
+                <dl class="details-grid">
+                    <div><dt>Номер чека</dt><dd th:text="${!#strings.isEmpty(e.receiptNumber) ? e.receiptNumber : 'Не вказано'}"></dd></div>
+                    <div><dt>Дата додавання</dt><dd th:text="${e.createdAt != null ? #temporals.format(e.createdAt, 'dd.MM.yyyy HH:mm') : 'Не вказано'}"></dd></div>
+                </dl>
+                <h4>Відгук отримувача</h4>
+                <p class="details-text" th:text="${!#strings.isEmpty(e.feedback) ? e.feedback : 'Відгук не додано.'}"></p>
+                <a th:if="${e.url != null}" th:href="${e.url}" target="_blank" rel="noopener noreferrer" th:aria-label="${'Відкрити вкладення доказу №' + e.id + ' у новій вкладці'}">Відкрити вкладення<span class="visually-hidden"> у новій вкладці</span></a>
+                <p class="field-hint" th:if="${e.url == null}">Вкладення відсутнє або посилання недоступне.</p>
+            </article>
+        </th:block>
+    </section>
+</main>
+</body>
+</html>

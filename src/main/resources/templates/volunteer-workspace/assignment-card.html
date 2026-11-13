@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<body>
+<article class="card assignment-item" th:fragment="card(a, link)">
+    <h3 th:text="${a.fundraiserTitle ?: 'Збір недоступний'}"></h3>
+    <div th:switch="${a.status?.name()}">
+        <span class="badge" th:case="'ACTIVE'">Активне</span>
+        <span class="badge badge-warning" th:case="'RETURNED'">Повернуто</span>
+        <span class="badge badge-success" th:case="'COMPLETED'">Завершено</span>
+        <span class="badge badge-neutral" th:case="*">Невідомий статус</span>
+    </div>
+    <p th:switch="${a.fundraiserStatus?.name()}">Стан збору:
+        <span th:case="'PENDING_ASSIGNMENT'">Очікує призначення</span>
+        <span th:case="'IN_PROGRESS'">В роботі</span>
+        <span th:case="'CLOSED'">Закритий</span>
+        <span th:case="*">Невідомий</span>
+    </p>
+    <dl class="details-grid">
+        <div><dt>Призначено</dt><dd th:text="${a.assignedAt != null ? #temporals.format(a.assignedAt, 'dd.MM.yyyy HH:mm') : 'Не вказано'}"></dd></div>
+        <div><dt>Завершено / повернуто</dt><dd th:text="${a.finishedAt != null ? #temporals.format(a.finishedAt, 'dd.MM.yyyy HH:mm') : 'Ще в роботі'}"></dd></div>
+    </dl>
+    <th:block th:if="${!#strings.isEmpty(a.returnReason)}"><h4>Причина повернення</h4><p class="details-text" th:text="${a.returnReason}"></p></th:block>
+    <th:block th:if="${!#strings.isEmpty(a.closingComment)}"><h4>Коментар завершення</h4><p class="details-text" th:text="${a.closingComment}"></p></th:block>
+    <p th:if="${link && a.fundraiserId != null}"><a class="btn btn-secondary" th:href="@{/my/fundraisers/{id}(id=${a.fundraiserId})}" th:aria-label="${'Переглянути збір №' + a.fundraiserId}">Деталі збору</a></p>
+</article>
+</body>
+</html>

@@ -33,8 +33,10 @@
         </li>
     </ul>
 
-    <a class="nav-item" sec:authorize="hasRole('VOLUNTEER')" th:href="@{/home}"
-       th:attr="aria-current=${activePage == 'home' ? 'page' : null}">Мій кабінет</a>
+    <ul class="nav-links" sec:authorize="hasRole('VOLUNTEER')">
+        <li><a th:href="@{/my/assignments}" th:attr="aria-current=${activePage == 'my-assignments' ? 'page' : null}">Мої призначення</a></li>
+        <li><a th:href="@{/home}" th:attr="aria-current=${activePage == 'home' ? 'page' : null}">Мій кабінет</a></li>
+    </ul>
 
     <span sec:authorize="isAuthenticated()" class="user">
         <span th:text="${#strings.contains(#authentication.name, ':') ? #strings.substringAfter(#authentication.name, ':') : #authentication.name}">user</span>
