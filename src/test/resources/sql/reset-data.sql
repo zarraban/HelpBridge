@@ -1,6 +1,7 @@
 -- Очищає дані, створені тестом. Довідник assistance_type заповнює AssistanceTypeInitializer
 -- під час старту контексту, тому з нього видаляються лише додані тестами коди.
 TRUNCATE TABLE
+    audit_log,
     mailing_recipient,
     mailing_task,
     donors,
