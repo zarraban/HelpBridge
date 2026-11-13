@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Збори')}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('fundraisers')}"></nav>
+<main id="main-content" tabindex="-1">
+    <header th:replace="~{fragments/layout :: pageHeader('Збори', 'Переглядайте збори та стежте за їхнім станом.', ${null})}"></header>
+    <th:block th:replace="~{fragments/layout :: messages}"></th:block>
+    <p class="muted" sec:authorize="hasRole('FUND_REPRESENTATIVE')">Тут показано лише збори вашого фонду.</p>
+    <p class="muted" sec:authorize="hasRole('SYSTEM_ADMIN')">Тут показано збори всіх фондів.</p>
+
+    <form class="card fundraiser-filters" method="get" th:action="@{/fundraisers}" aria-label="Налаштування списку зборів">
+        <div class="field">
+            <label for="sortBy">Сортувати за</label>
+            <select id="sortBy" name="sortBy">
+                <option value="createdAt" th:selected="${sortBy == 'createdAt'}">Датою створення</option>
+                <option value="status" th:selected="${sortBy == 'status'}">Статусом</option>
+                <option value="closedAt" th:selected="${sortBy == 'closedAt'}">Датою закриття</option>
+            </select>
+        </div>
+        <div class="field">
+            <label for="sort">Порядок</label>
+            <select id="sort" name="sort">
+                <option value="asc" th:selected="${sort == 'asc'}">За зростанням</option>
+                <option value="desc" th:selected="${sort == 'desc'}">За спаданням</option>
+            </select>
+        </div>
+        <div class="field">
+            <label for="size">Зборів на сторінці</label>
+            <select id="size" name="size">
+                <option th:if="${!#lists.contains(pageSizes, size)}" th:value="${size}" th:text="${size}" selected></option>
+                <option th:each="n : ${pageSizes}" th:value="${n}" th:text="${n}" th:selected="${size == n}"></option>
+            </select>
+        </div>
+        <button class="btn" type="submit">Застосувати</button>
+    </form>
+
+    <section th:if="${fundraisers.totalElements == 0}" class="card empty-state">
+        <h2>Зборів поки немає</h2>
+        <p>Збір з’явиться після того, як фонд забронює заявку на допомогу.</p>
+        <a class="btn btn-secondary" th:href="@{/requests}">До заявок</a>
+    </section>
+
+    <th:block th:if="${fundraisers.totalElements > 0}">
+        <p th:text="${'Усього зборів: ' + fundraisers.totalElements}"></p>
+        <p id="fundraisers-scroll-hint" class="field-hint table-scroll-hint">Гортайте таблицю вбік. З клавіатури: перейдіть до таблиці клавішею Tab і використовуйте стрілки ← →.</p>
+        <div class="table-container" role="region" aria-label="Список зборів" aria-describedby="fundraisers-scroll-hint" tabindex="0">
+            <table>
+                <thead><tr>
+                    <th scope="col">Номер збору</th>
+                    <th scope="col">Заявка</th>
+                    <th scope="col">Статус</th>
+                    <th scope="col">Створено</th>
+                    <th scope="col">Закрито</th>
+                </tr></thead>
+                <tbody><tr th:each="f : ${fundraisers.content}">
+                    <td th:text="${'№' + f.fundraiserId}"></td>
+                    <td><a th:if="${f.requestId != null}" th:href="@{/requests/{id}(id=${f.requestId})}" th:text="${'Заявка №' + f.requestId}"></a><span th:if="${f.requestId == null}">Не вказана</span></td>
+                    <td th:switch="${f.status?.name()}">
+                        <span class="badge badge-warning" th:case="'PENDING_ASSIGNMENT'">Очікує призначення</span>
+                        <span class="badge" th:case="'IN_PROGRESS'">В роботі</span>
+                        <span class="badge badge-success" th:case="'CLOSED'">Закритий</span>
+                        <span class="badge badge-neutral" th:case="*">Невідомий статус</span>
+                    </td>
+                    <td th:text="${f.createdAt != null ? #temporals.format(f.createdAt, 'dd.MM.yyyy HH:mm') : 'Не вказано'}"></td>
+                    <td th:text="${f.closedAt != null ? #temporals.format(f.closedAt, 'dd.MM.yyyy HH:mm') : '—'}"></td>
+                </tr></tbody>
+            </table>
+        </div>
+        <nav class="fundraiser-pagination" aria-label="Сторінки списку зборів" th:if="${fundraisers.totalPages > 1}">
+            <a class="btn btn-secondary" th:if="${fundraisers.hasPrevious()}" th:href="@{/fundraisers(page=1,size=${size},sortBy=${sortBy},sort=${sort})}">Перша</a>
+            <a class="btn btn-secondary" rel="prev" th:if="${fundraisers.hasPrevious()}" th:href="@{/fundraisers(page=${page - 1},size=${size},sortBy=${sortBy},sort=${sort})}">Попередня</a>
+            <span aria-current="page" th:text="${'Сторінка ' + page + ' із ' + fundraisers.totalPages}"></span>
+            <a class="btn btn-secondary" rel="next" th:if="${fundraisers.hasNext()}" th:href="@{/fundraisers(page=${page + 1},size=${size},sortBy=${sortBy},sort=${sort})}">Наступна</a>
+            <a class="btn btn-secondary" th:if="${fundraisers.hasNext()}" th:href="@{/fundraisers(page=${fundraisers.totalPages},size=${size},sortBy=${sortBy},sort=${sort})}">Остання</a>
+        </nav>
+    </th:block>
+</main>
+</body>
+</html>

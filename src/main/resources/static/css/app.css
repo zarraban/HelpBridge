@@ -261,3 +261,7 @@ main > section + h2 { margin-top: 2rem; }
 
 .document-actions { margin-top: 0.5rem; }
 #documents { scroll-margin-top: 1rem; }
+
+.fundraiser-filters { display: flex; flex-wrap: wrap; gap: 1rem; align-items: end; margin-bottom: 1.5rem; }
+.fundraiser-filters .field { flex: 1 1 12rem; margin: 0; }
+.fundraiser-pagination { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 1.25rem; }

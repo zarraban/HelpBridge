@@ -4,6 +4,7 @@ import com.example.help_bridge.fundraising.request.exception.InvalidRequestState
 import com.example.help_bridge.fundraising.request.exception.RequestNotFoundException;
 import com.example.help_bridge.fundraising.request.exception.RequestDocumentNotFoundException;
 import com.example.help_bridge.fundraising.request.web.RequestWebController;
+import com.example.help_bridge.fundraising.fundraiser.web.FundraiserWebController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -17,7 +18,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE;
 
-@ControllerAdvice(basePackageClasses = {LoginController.class, RequestWebController.class})
+@ControllerAdvice(basePackageClasses = {LoginController.class, RequestWebController.class, FundraiserWebController.class})
 @Order(HIGHEST_PRECEDENCE + 1)
 public class WebExceptionAdvice {
     private static final Logger log = LoggerFactory.getLogger(WebExceptionAdvice.class);

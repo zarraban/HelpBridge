@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Map;
 
+import static org.hamcrest.Matchers.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -154,6 +155,65 @@ class FundraiserAccessIntegrationTest {
         }
         mvc.perform(get("/api/fundraiser").with(admin).param("page", "2147483647").param("size", "100"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void webListRendersOnlyOwnFundAndUkrainianStatuses() throws Exception {
+        mvc.perform(get("/fundraisers").accept("text/html")
+                        .with(user("FUND_REPRESENTATIVE:rep@access.test").roles("FUND_REPRESENTATIVE")))
+                .andExpect(status().isOk()).andExpect(view().name("fundraisers/list"))
+                .andExpect(model().attribute("fundraisers", hasProperty("numberOfElements", is(1))))
+                .andExpect(content().string(containsString("<td>№" + own.getId() + "</td>")))
+                .andExpect(content().string(containsString("В роботі")))
+                .andExpect(content().string(containsString("href=\"/requests/" + own.getRequestId() + "\"")));
+    }
+
+    @Test
+    void webPaginationPreservesSettingsAndSelectedOptions() throws Exception {
+        var admin = user("SYSTEM_ADMIN:admin@test").roles("SYSTEM_ADMIN");
+        mvc.perform(get("/fundraisers").accept("text/html").with(admin)
+                        .param("size", "1").param("sortBy", "status").param("sort", "desc"))
+                .andExpect(status().isOk()).andExpect(model().attribute("fundraisers", hasProperty("numberOfElements", is(1))))
+                .andExpect(content().string(containsString("value=\"status\" selected=\"selected\"")))
+                .andExpect(content().string(containsString("value=\"desc\" selected=\"selected\"")))
+                .andExpect(content().string(containsString("value=\"1\" selected")))
+                .andExpect(content().string(containsString("href=\"/fundraisers?page=2&amp;size=1&amp;sortBy=status&amp;sort=desc\"")))
+                .andExpect(content().string(not(containsString("rel=\"prev\""))));
+        mvc.perform(get("/fundraisers").accept("text/html").with(admin)
+                        .param("size", "1").param("sortBy", "status").param("sort", "desc").param("page", "2"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("href=\"/fundraisers?page=1&amp;size=1&amp;sortBy=status&amp;sort=desc\"")))
+                .andExpect(content().string(not(containsString("rel=\"next\""))));
+        mvc.perform(get("/fundraisers").accept("text/html").with(admin)
+                        .param("size", "1").param("sortBy", "status").param("sort", "desc").param("page", "3"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/fundraisers?sortBy=status&sort=desc&size=1&page=2"));
+    }
+
+    @Test
+    void webEmptyListAndInvalidParametersHaveHtmlPages() throws Exception {
+        fundraisers.delete(own);
+        fundraisers.flush();
+        var rep = user("FUND_REPRESENTATIVE:rep@access.test").roles("FUND_REPRESENTATIVE");
+        mvc.perform(get("/fundraisers").accept("text/html").with(rep))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Зборів поки немає")))
+                .andExpect(content().string(not(containsString("<table>"))));
+        for (String[] parameter : new String[][]{{"page", "0"}, {"size", "101"}, {"sortBy", "bad"}, {"page", "abc"}}) {
+            mvc.perform(get("/fundraisers").accept("text/html").with(rep).param(parameter[0], parameter[1]))
+                    .andExpect(status().isBadRequest()).andExpect(view().name("error/4xx"));
+        }
+    }
+
+    @Test
+    void webListRejectsOtherRolesAndRedirectsAnonymousToLogin() throws Exception {
+        for (String role : new String[]{"APPLICANT", "VOLUNTEER", "DONOR"}) {
+            mvc.perform(get("/fundraisers").accept("text/html")
+                            .with(user(role + ":owner@fundraiser.test").roles(role)))
+                    .andExpect(status().isForbidden()).andExpect(view().name("error/403"));
+        }
+        mvc.perform(get("/fundraisers").accept("text/html"))
+                .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/login"));
     }
 
 }
