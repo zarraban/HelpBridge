@@ -63,7 +63,8 @@ class FundraiserServiceAccessTest {
 
     @Test
     void representativeListUsesFundScopedQuery() {
-        when(fundraisers.findAllByFundId(2L)).thenReturn(List.of(fundraiser));
+        when(fundraisers.findAllByFundId(eq(2L), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(fundraiser)));
         assertEquals(1, service.getAllFundraisers("asc", 1L, 5L).size());
         verify(fundraisers, never()).findAll();
     }
@@ -71,9 +72,10 @@ class FundraiserServiceAccessTest {
     @Test
     void adminListUsesAllFundraisers() {
         when(identity.currentViewer()).thenReturn(new RequestAccessPolicy.Viewer("SYSTEM_ADMIN", null, null));
-        when(fundraisers.findAll()).thenReturn(List.of(fundraiser));
+        when(fundraisers.findAll(any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(fundraiser)));
         assertEquals(1, service.getAllFundraisers("asc", 1L, 5L).size());
-        verify(fundraisers, never()).findAllByFundId(any());
+        verify(fundraisers, never()).findAllByFundId(any(), any());
     }
 
     @Test

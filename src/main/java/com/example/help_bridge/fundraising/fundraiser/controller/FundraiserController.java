@@ -5,7 +5,6 @@ import com.example.help_bridge.fundraising.fundraiser.dto.response.FundraiserRes
 import com.example.help_bridge.fundraising.fundraiser.dto.response.SendMailingResponse;
 import com.example.help_bridge.fundraising.fundraiser.service.FundraiserService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -27,14 +26,20 @@ public class FundraiserController {
         return ResponseEntity.ok(fundraiserService.getFundraiserById(id));
     }
 
-    // TODO add field which will be used to sort by
     @GetMapping
     public ResponseEntity<List<FundraiserResponse>> getAllFundraisers(
+            @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
             @RequestParam(value = "sort", defaultValue = "asc") String sort,
             @RequestParam(value = "page", defaultValue = "1") Long page,
             @RequestParam(value = "size", defaultValue = "5") Long size
     ){
-        return ResponseEntity.ok(fundraiserService.getAllFundraisers(sort, page, size));
+        var result = fundraiserService.getFundraisers(sortBy, sort, page, size);
+        return ResponseEntity.ok()
+                .header("X-Total-Count", Long.toString(result.getTotalElements()))
+                .header("X-Total-Pages", Integer.toString(result.getTotalPages()))
+                .header("X-Page", Long.toString(page))
+                .header("X-Page-Size", Long.toString(size))
+                .body(result.getContent());
     }
 
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'FUND_REPRESENTATIVE')")

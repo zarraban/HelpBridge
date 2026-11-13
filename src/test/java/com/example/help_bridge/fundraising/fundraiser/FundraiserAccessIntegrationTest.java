@@ -33,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class FundraiserAccessIntegrationTest {
     @Autowired MockMvc mvc;
+    @Autowired org.springframework.jdbc.core.simple.JdbcClient jdbc;
     @Autowired FundRepository funds;
     @Autowired FundRepresentativeRepository representatives;
     @Autowired UserRepository users;
@@ -102,4 +103,57 @@ class FundraiserAccessIntegrationTest {
             mvc.perform(get("/api/fundraisers/{id}/evidences", own.getId()).with(viewer)).andExpect(status().isForbidden());
         }
     }
+    @Test
+    void paginationCountsOnlyOwnFundAndUsesStableIdOrderForEqualDates() throws Exception {
+        var extra = new Fundraiser();
+        extra.setRequestId(own.getRequestId());
+        extra.setStatus(FundraiserStatus.IN_PROGRESS);
+        extra = fundraisers.saveAndFlush(extra);
+        jdbc.sql("update fundraiser set created_at = '2026-01-01 12:00:00'").update();
+        var rep = user("FUND_REPRESENTATIVE:rep@access.test").roles("FUND_REPRESENTATIVE");
+        mvc.perform(get("/api/fundraiser").with(rep).param("size", "1"))
+                .andExpect(status().isOk()).andExpect(header().string("X-Total-Count", "2"))
+                .andExpect(header().string("X-Total-Pages", "2"))
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].fundraiserId").value(own.getId()));
+        mvc.perform(get("/api/fundraiser").with(rep).param("size", "1").param("page", "2"))
+                .andExpect(status().isOk()).andExpect(header().string("X-Page", "2"))
+                .andExpect(jsonPath("$[0].fundraiserId").value(extra.getId()));
+        mvc.perform(get("/api/fundraiser").with(rep).param("size", "1").param("sort", "desc"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].fundraiserId").value(extra.getId()));
+        mvc.perform(get("/api/fundraiser").with(rep).param("page", "3").param("size", "1"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0))
+                .andExpect(header().string("X-Total-Count", "2"));
+    }
+
+    @Test
+    void adminCanSortByDatesAndStatus() throws Exception {
+        jdbc.sql("update fundraiser set created_at = '2026-01-01 00:00:00', closed_at = '2026-01-03 00:00:00', status = 'CLOSED' where id = ?")
+                .param(own.getId()).update();
+        jdbc.sql("update fundraiser set created_at = '2026-01-02 00:00:00', closed_at = '2026-01-04 00:00:00' where id = ?")
+                .param(foreign.getId()).update();
+        var admin = user("SYSTEM_ADMIN:admin@test").roles("SYSTEM_ADMIN");
+        for (String field : new String[]{"createdAt", "closedAt"}) {
+            mvc.perform(get("/api/fundraiser").with(admin).param("sortBy", field).param("sort", "desc").param("size", "1"))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$[0].fundraiserId").value(foreign.getId()))
+                    .andExpect(header().string("X-Total-Count", "2"));
+        }
+        mvc.perform(get("/api/fundraiser").with(admin).param("sortBy", "status").param("size", "1"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].fundraiserId").value(own.getId()));
+    }
+
+    @Test
+    void invalidPaginationAndSortingReturnBadRequest() throws Exception {
+        var admin = user("SYSTEM_ADMIN:admin@test").roles("SYSTEM_ADMIN");
+        for (String[] parameter : new String[][]{
+                {"page", "0"}, {"page", "-1"}, {"page", "2147483648"}, {"page", "9223372036854775807"},
+                {"page", "abc"}, {"size", "0"}, {"size", "-1"}, {"size", "101"},
+                {"sort", "wrong"}, {"sortBy", "requestId"}, {"sortBy", "id desc"}}) {
+            mvc.perform(get("/api/fundraiser").with(admin).param(parameter[0], parameter[1]))
+                    .andExpect(status().isBadRequest());
+        }
+        mvc.perform(get("/api/fundraiser").with(admin).param("page", "2147483647").param("size", "100"))
+                .andExpect(status().isBadRequest());
+    }
+
 }
