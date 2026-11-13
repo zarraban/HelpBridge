@@ -55,7 +55,7 @@
                     <th scope="col">Закрито</th>
                 </tr></thead>
                 <tbody><tr th:each="f : ${fundraisers.content}">
-                    <td th:text="${'№' + f.fundraiserId}"></td>
+                    <td><a th:href="@{/fundraisers/{id}(id=${f.fundraiserId})}" th:text="${'Збір №' + f.fundraiserId}"></a></td>
                     <td><a th:if="${f.requestId != null}" th:href="@{/requests/{id}(id=${f.requestId})}" th:text="${'Заявка №' + f.requestId}"></a><span th:if="${f.requestId == null}">Не вказана</span></td>
                     <td th:switch="${f.status?.name()}">
                         <span class="badge badge-warning" th:case="'PENDING_ASSIGNMENT'">Очікує призначення</span>

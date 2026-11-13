@@ -1,11 +1,14 @@
 package com.example.help_bridge.fundraising.fundraiser.web;
 
 import com.example.help_bridge.fundraising.fundraiser.service.FundraiserService;
+import com.example.help_bridge.fundraising.request.service.RequestService;
+import com.example.help_bridge.fundraising.request.exception.RequestNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -19,6 +22,24 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FundraiserWebController {
     private final FundraiserService fundraisers;
+    private final RequestService requests;
+
+    @GetMapping("/{id}")
+    public String details(@PathVariable Long id, Model model) {
+        var fundraiser = fundraisers.getFundraiserById(id);
+        model.addAttribute("fundraiser", fundraiser);
+        model.addAttribute("evidences", fundraiser.evidences().stream().map(EvidenceLink::from).toList());
+        if (fundraiser.requestId() != null) {
+            try {
+                model.addAttribute("request", requests.getRequestById(fundraiser.requestId()));
+                model.addAttribute("assistanceTypes", requests.getAssistanceTypes());
+            } catch (RequestNotFoundException exception) {
+                model.addAttribute("requestUnavailable", true);
+            }
+        }
+        return "fundraisers/details";
+    }
+
 
     @GetMapping
     public String list(@RequestParam(defaultValue = "createdAt") String sortBy,

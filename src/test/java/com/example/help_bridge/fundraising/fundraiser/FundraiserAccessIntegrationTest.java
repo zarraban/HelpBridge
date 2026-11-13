@@ -34,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class FundraiserAccessIntegrationTest {
     @Autowired MockMvc mvc;
+    @Autowired jakarta.persistence.EntityManager em;
     @Autowired org.springframework.jdbc.core.simple.JdbcClient jdbc;
     @Autowired FundRepository funds;
     @Autowired FundRepresentativeRepository representatives;
@@ -163,7 +164,7 @@ class FundraiserAccessIntegrationTest {
                         .with(user("FUND_REPRESENTATIVE:rep@access.test").roles("FUND_REPRESENTATIVE")))
                 .andExpect(status().isOk()).andExpect(view().name("fundraisers/list"))
                 .andExpect(model().attribute("fundraisers", hasProperty("numberOfElements", is(1))))
-                .andExpect(content().string(containsString("<td>№" + own.getId() + "</td>")))
+                .andExpect(content().string(containsString("href=\"/fundraisers/" + own.getId() + "\">Збір №" + own.getId())))
                 .andExpect(content().string(containsString("В роботі")))
                 .andExpect(content().string(containsString("href=\"/requests/" + own.getRequestId() + "\"")));
     }
@@ -214,6 +215,77 @@ class FundraiserAccessIntegrationTest {
         }
         mvc.perform(get("/fundraisers").accept("text/html"))
                 .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/login"));
+    }
+
+    @Test
+    void representativeCanReadOwnDetailsAndEmptyEvidenceState() throws Exception {
+        mvc.perform(get("/fundraisers/{id}", own.getId()).accept("text/html")
+                        .with(user("FUND_REPRESENTATIVE:rep@access.test").roles("FUND_REPRESENTATIVE")))
+                .andExpect(status().isOk()).andExpect(view().name("fundraisers/details"))
+                .andExpect(content().string(containsString("Збір №" + own.getId())))
+                .andExpect(content().string(containsString("До цього збору ще не додано доказів.")))
+                .andExpect(content().string(containsString("Збір ще не закрито")))
+                .andExpect(content().string(containsString("href=\"/requests/" + own.getRequestId() + "\"")))
+                .andExpect(content().string(containsString("Clinic")))
+                .andExpect(content().string(containsString("href=\"/fundraisers\"")));
+    }
+
+    @Test
+    void adminDetailsRenderEvidenceAndEscapeTextAndUnsafeAttachment() throws Exception {
+        foreignEvidence.setRecipientFeedback("<script>alert('feedback')</script>");
+        foreignEvidence.setAttachmentUrl("https://files.test/proof.pdf");
+        evidences.save(foreignEvidence);
+        em.flush();
+        em.clear();
+        var admin = user("SYSTEM_ADMIN:admin@test").roles("SYSTEM_ADMIN");
+        mvc.perform(get("/fundraisers/{id}", foreign.getId()).accept("text/html").with(admin))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("R-1")))
+                .andExpect(content().string(containsString("href=\"https://files.test/proof.pdf\"")))
+                .andExpect(content().string(containsString("rel=\"noopener noreferrer\"")))
+                .andExpect(content().string(not(containsString("<script>alert('feedback')</script>"))))
+                .andExpect(content().string(containsString("&lt;script&gt;")));
+        var evidence = evidences.findById(foreignEvidence.getId()).orElseThrow();
+        evidence.setAttachmentUrl("javascript:alert(1)");
+        evidences.save(evidence);
+        em.flush();
+        em.clear();
+        mvc.perform(get("/fundraisers/{id}", foreign.getId()).accept("text/html").with(admin))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("javascript:"))))
+                .andExpect(content().string(containsString("Вкладення відсутнє або посилання недоступне.")));
+    }
+
+    @Test
+    void webDetailsRejectForeignFundsAndOtherRolesAndHandleMissingIds() throws Exception {
+        mvc.perform(get("/fundraisers/{id}", foreign.getId()).accept("text/html")
+                        .with(user("FUND_REPRESENTATIVE:rep@access.test").roles("FUND_REPRESENTATIVE")))
+                .andExpect(status().isForbidden()).andExpect(view().name("error/403"));
+        for (String role : new String[]{"APPLICANT", "VOLUNTEER", "DONOR"}) {
+            mvc.perform(get("/fundraisers/{id}", own.getId()).accept("text/html")
+                            .with(user(role + ":owner@fundraiser.test").roles(role)))
+                    .andExpect(status().isForbidden());
+        }
+        var admin = user("SYSTEM_ADMIN:admin@test").roles("SYSTEM_ADMIN");
+        mvc.perform(get("/fundraisers/9223372036854775807").accept("text/html").with(admin))
+                .andExpect(status().isNotFound()).andExpect(view().name("error/404"));
+        mvc.perform(get("/fundraisers/abc").accept("text/html").with(admin))
+                .andExpect(status().isBadRequest()).andExpect(view().name("error/4xx"));
+    }
+
+    @Test
+    void closedFundraiserWithoutRequestStillHasReadableDetails() throws Exception {
+        var orphan = new Fundraiser();
+        orphan.setRequestId(Long.MAX_VALUE);
+        orphan.setStatus(FundraiserStatus.CLOSED);
+        orphan.setClosedAt(java.time.LocalDateTime.of(2026, 11, 10, 12, 30));
+        orphan = fundraisers.saveAndFlush(orphan);
+        mvc.perform(get("/fundraisers/{id}", orphan.getId()).accept("text/html")
+                        .with(user("SYSTEM_ADMIN:admin@test").roles("SYSTEM_ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Закритий")))
+                .andExpect(content().string(containsString("10.11.2026 12:30")))
+                .andExpect(content().string(containsString("Пов’язану заявку не знайдено або її не вказано.")));
     }
 
 }
