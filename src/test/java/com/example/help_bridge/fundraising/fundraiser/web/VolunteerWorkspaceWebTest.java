@@ -34,10 +34,11 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest({VolunteerWorkspaceWebController.class, VolunteerAssignmentActionWebController.class, LoginController.class})
+@WebMvcTest({VolunteerWorkspaceWebController.class, VolunteerAssignmentActionWebController.class, VolunteerEvidenceWebController.class, LoginController.class})
 @Import({SecurityConfiguration.class, VolunteerWorkspaceService.class, VolunteerAccessPolicy.class})
 class VolunteerWorkspaceWebTest {
     @Autowired MockMvc mvc;
+    @MockitoBean EvidenceService evidenceService;
     @MockitoBean FundraiserService fundraisers;
     @MockitoBean FundraiserAssignmentService assignments;
     @MockitoBean RequestRepository requests;
@@ -245,6 +246,102 @@ class VolunteerWorkspaceWebTest {
                     .andExpect(redirectedUrl("/login?expired"));
         }
         verifyNoInteractions(assignments, volunteers);
+    }
+
+    @Test void activeAssignmentOffersEvidenceFormAndSuccessfulSaveRedirectsToEvidenceList() throws Exception {
+        ownAssignment(AssignmentStatus.ACTIVE);
+        fundraiser(FundraiserStatus.IN_PROGRESS);
+        mvc.perform(get("/my/fundraisers/10").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")))
+                .andExpect(content().string(containsString("/my/fundraisers/10/evidences/new")));
+        mvc.perform(get("/my/fundraisers/10/evidences/new").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")))
+                .andExpect(status().isOk()).andExpect(content().string(containsString("name=\"attachmentUrl\"")));
+        mvc.perform(post("/my/fundraisers/10/evidences").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")).with(csrf())
+                        .param("receiptNumber", " RCPT-1 ").param("attachmentUrl", " https://files.test/proof.jpg ").param("recipientFeedback", " Отримано "))
+                .andExpect(redirectedUrl("/my/fundraisers/10#evidences")).andExpect(flash().attributeExists("message"));
+        verify(evidenceService).addEvidenceToFundraiser(10L, new com.example.help_bridge.fundraising.fundraiser.dto.request.AddEvidenceRequest("RCPT-1", "Отримано", "https://files.test/proof.jpg"));
+    }
+    @Test void evidenceRequiresAtLeastOneFieldAndValidLengthsAndSafeUrl() throws Exception {
+        ownAssignment(AssignmentStatus.ACTIVE);
+        fundraiser(FundraiserStatus.IN_PROGRESS);
+        mvc.perform(post("/my/fundraisers/10/evidences").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")).with(csrf())
+                        .param("receiptNumber", "   ").param("recipientFeedback", " "))
+                .andExpect(status().isOk()).andExpect(model().attributeHasErrors("form"))
+                .andExpect(content().string(containsString("Заповніть хоча б одне поле")));
+        for (String url : List.of("javascript:alert(1)", "https://user:password@files.test/proof.jpg", "/relative.jpg", "not-a-url")) {
+            mvc.perform(post("/my/fundraisers/10/evidences").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")).with(csrf())
+                            .param("attachmentUrl", url).param("recipientFeedback", "Дані залишаються"))
+                    .andExpect(model().attributeHasFieldErrors("form", "attachmentUrl"))
+                    .andExpect(content().string(containsString("Дані залишаються")));
+        }
+        mvc.perform(post("/my/fundraisers/10/evidences").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")).with(csrf())
+                        .param("receiptNumber", "1234").param("recipientFeedback", "я".repeat(1001)))
+                .andExpect(model().attributeHasFieldErrors("form", "receiptNumber", "recipientFeedback"));
+        verifyNoInteractions(evidenceService);
+    }
+    @Test void evidenceCanContainFeedbackOnlyAndEmptyOptionalFieldsAreNull() throws Exception {
+        ownAssignment(AssignmentStatus.ACTIVE);
+        fundraiser(FundraiserStatus.IN_PROGRESS);
+        mvc.perform(post("/my/fundraisers/10/evidences").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")).with(csrf())
+                        .param("receiptNumber", "").param("attachmentUrl", "").param("recipientFeedback", "я".repeat(1000)))
+                .andExpect(redirectedUrl("/my/fundraisers/10#evidences"));
+        verify(evidenceService).addEvidenceToFundraiser(10L, new com.example.help_bridge.fundraising.fundraiser.dto.request.AddEvidenceRequest(null, "я".repeat(1000), null));
+    }
+    @Test void invalidEvidenceStrategyRetainsValuesAndExplainsFormats() throws Exception {
+        ownAssignment(AssignmentStatus.ACTIVE);
+        fundraiser(FundraiserStatus.IN_PROGRESS);
+        when(evidenceService.addEvidenceToFundraiser(any(), any())).thenThrow(new com.example.help_bridge.fundraising.fundraiser.exception.InvalidEvidenceException("not an image"));
+        mvc.perform(post("/my/fundraisers/10/evidences").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")).with(csrf())
+                        .param("attachmentUrl", "https://files.test/proof.pdf"))
+                .andExpect(status().isOk()).andExpect(content().string(containsString("https://files.test/proof.pdf")))
+                .andExpect(content().string(containsString(".jpg, .jpeg або .png")));
+    }
+    @Test void historicalAssignmentsAndClosedFundraisersCannotAddEvidence() throws Exception {
+        for (AssignmentStatus status : List.of(AssignmentStatus.COMPLETED, AssignmentStatus.RETURNED, AssignmentStatus.ACTIVE)) {
+            ownAssignment(status);
+            fundraiser(status == AssignmentStatus.ACTIVE ? FundraiserStatus.CLOSED : FundraiserStatus.IN_PROGRESS);
+            mvc.perform(get("/my/fundraisers/10").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")))
+                    .andExpect(content().string(not(containsString("/my/fundraisers/10/evidences/new"))));
+            mvc.perform(get("/my/fundraisers/10/evidences/new").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")))
+                    .andExpect(status().isConflict()).andExpect(model().attribute("canAddEvidence", false));
+            mvc.perform(post("/my/fundraisers/10/evidences").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")).with(csrf()).param("receiptNumber", "RCPT-1"))
+                    .andExpect(status().isConflict()).andExpect(model().attribute("canAddEvidence", false));
+        }
+        verifyNoInteractions(evidenceService);
+    }
+    @Test void closingFundraiserDuringSaveRetainsEvidenceDataAndDisablesButton() throws Exception {
+        ownAssignment(AssignmentStatus.ACTIVE);
+        fundraiser(FundraiserStatus.IN_PROGRESS);
+        when(evidenceService.addEvidenceToFundraiser(any(), any())).thenThrow(new com.example.help_bridge.fundraising.fundraiser.exception.InvalidFundraiserStateException("closed"));
+        mvc.perform(post("/my/fundraisers/10/evidences").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")).with(csrf()).param("receiptNumber", "RCPT-1"))
+                .andExpect(status().isConflict()).andExpect(model().attribute("canAddEvidence", false))
+                .andExpect(content().string(containsString("RCPT-1")));
+    }
+    @Test void evidenceForeignFundRoleAndCsrfAreProtected() throws Exception {
+        ownAssignment(AssignmentStatus.ACTIVE);
+        mvc.perform(get("/my/fundraisers/99/evidences/new").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")).accept("text/html"))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/my/fundraisers/99/evidences").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")).with(csrf()).accept("text/html").param("receiptNumber", "RCPT-1"))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/my/fundraisers/10/evidences/new")).andExpect(redirectedUrl("/login"));
+        mvc.perform(post("/my/fundraisers/10/evidences").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")))
+                .andExpect(redirectedUrl("/login?expired"));
+        for (String role : List.of("FUND_REPRESENTATIVE", "SYSTEM_ADMIN", "APPLICANT", "DONOR")) {
+            mvc.perform(post("/my/fundraisers/10/evidences").with(user("other").roles(role)).with(csrf()).accept("text/html"))
+                    .andExpect(status().isForbidden());
+        }
+        verifyNoInteractions(evidenceService, fundraisers);
+    }
+    @Test void savedEvidenceIsRenderedWithSafeLinksAndEscapedFeedback() throws Exception {
+        ownAssignment(AssignmentStatus.ACTIVE);
+        when(fundraisers.getFundraiserById(10L)).thenReturn(new FundraiserResponse(10L, null, FundraiserStatus.IN_PROGRESS, now, null,
+                List.of(new EvidenceResponse(1L, 10L, "RCPT-1", "<script>alert(1)</script>", "https://files.test/proof.jpg", now),
+                        new EvidenceResponse(2L, 10L, null, "Відгук", "javascript:alert(1)", now))));
+        mvc.perform(get("/my/fundraisers/10").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")))
+                .andExpect(content().string(containsString("RCPT-1")))
+                .andExpect(content().string(containsString("href=\"https://files.test/proof.jpg\"")))
+                .andExpect(content().string(containsString("rel=\"noopener noreferrer\"")))
+                .andExpect(content().string(containsString("&lt;script&gt;alert(1)&lt;/script&gt;")))
+                .andExpect(content().string(not(containsString("href=\"javascript:"))));
     }
 
 }

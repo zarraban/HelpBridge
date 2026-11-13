@@ -1,6 +1,7 @@
 package com.example.help_bridge.fundraising.fundraiser.web;
 
 import com.example.help_bridge.fundraising.fundraiser.entity.AssignmentStatus;
+import com.example.help_bridge.fundraising.fundraiser.entity.FundraiserStatus;
 import com.example.help_bridge.fundraising.fundraiser.service.VolunteerWorkspaceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,6 +30,8 @@ public class VolunteerWorkspaceWebController {
         model.addAttribute("fundraiser", details.fundraiser());
         model.addAttribute("request", details.request());
         model.addAttribute("assignments", details.assignments());
+        model.addAttribute("canAddEvidence", details.fundraiser().status() != FundraiserStatus.CLOSED
+                && details.assignments().stream().anyMatch(a -> a.status() == AssignmentStatus.ACTIVE));
         model.addAttribute("evidences", details.fundraiser().evidences().stream().map(EvidenceLink::from).toList());
         return "volunteer-workspace/details";
     }

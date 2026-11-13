@@ -34,6 +34,7 @@
     </section>
     <section id="evidences" class="card details-section" aria-labelledby="evidences-heading">
         <h2 id="evidences-heading">Докази надання допомоги</h2>
+        <p th:if="${canAddEvidence}"><a class="btn" th:href="@{/my/fundraisers/{id}/evidences/new(id=${fundraiser.fundraiserId})}">Додати доказ</a></p>
         <p class="muted" th:if="${#lists.isEmpty(evidences)}">До цього збору ще не додано доказів.</p>
         <th:block th:unless="${#lists.isEmpty(evidences)}">
             <p class="field-hint">Вкладення відкриваються в новій вкладці.</p>
