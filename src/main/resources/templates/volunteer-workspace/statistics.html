@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Моя статистика')}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('statistics')}"></nav>
+<main id="main-content" class="container">
+    <header th:replace="~{fragments/layout :: pageHeader('Моя статистика', null, null)}"></header>
+    <th:block th:replace="~{fragments/layout :: messages}"></th:block>
+    <form class="card form-card" method="get" th:action="@{/my/statistics}" th:object="${form}">
+        <input type="hidden" name="show" value="true">
+        <div class="field">
+            <label for="from">З дати</label>
+            <input type="date" th:field="*{from}" th:max="${today}">
+            <p class="field-error" th:errors="*{from}"></p>
+        </div>
+        <div class="field">
+            <label for="to">До дати</label>
+            <input type="date" th:field="*{to}" th:max="${today}">
+            <p class="field-error" th:errors="*{to}"></p>
+        </div>
+        <p class="field-error" role="alert" th:if="${#fields.hasErrors('periodValid')}">Початкова дата має бути не пізнішою за кінцеву.</p>
+        <div class="form-actions"><button class="btn" type="submit">Показати</button></div>
+    </form>
+    <section class="card" th:if="${statistics != null}" aria-live="polite">
+        <h2>Закриті збори за період</h2>
+        <p id="closed-fundraisers-count" th:text="${statistics.closedFundraisersCount()}"></p>
+    </section>
+</main>
+</body>
+</html>

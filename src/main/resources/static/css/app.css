@@ -251,6 +251,10 @@ main > section + h2 { margin-top: 2rem; }
 .details-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 1.5rem; margin: 1rem 0 0; }
 .details-grid dt { color: var(--muted); font-size: 0.9rem; }
 .details-grid dd { margin: 0.25rem 0 0; overflow-wrap: anywhere; }
+.table-wrap { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th, .data-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+.data-table td a { display: inline-block; margin-inline-end: 0.5rem; }
 .details-text { white-space: pre-wrap; margin: 0; }
 .document-list { margin: 0; padding-left: 1.25rem; }
 .document-list li { padding: 0.5rem 0; overflow-wrap: anywhere; }

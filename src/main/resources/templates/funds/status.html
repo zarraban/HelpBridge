@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Змінити статус фонду')}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('funds')}"></nav>
+<main id="main-content" class="container">
+    <header th:replace="~{fragments/layout :: pageHeader('Змінити статус фонду', null, null)}"></header>
+    <th:block th:replace="~{fragments/layout :: messages}"></th:block>
+    <p th:text="${fund.fundName()}"></p>
+    <p th:if="${statuses.isEmpty()}" class="alert" role="status">Поточний статус уже остаточний.</p>
+    <form class="card form-card" method="post" th:action="@{/funds/{id}/status(id=${fund.id()})}" th:object="${form}">
+        <p class="field-error" role="alert" th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+        <div class="field" th:unless="${statuses.isEmpty()}">
+            <label for="status">Новий статус</label>
+            <select th:field="*{status}">
+                <option value="">Оберіть статус</option>
+                <option th:each="status : ${statuses}" th:value="${status}" th:text="#{fund.status.__${status}__}"></option>
+            </select>
+            <p class="field-error" th:errors="*{status}"></p>
+            <label for="comment">Коментар</label>
+            <textarea th:field="*{comment}" rows="4"></textarea>
+            <p class="field-error" th:errors="*{comment}"></p>
+        </div>
+        <div class="form-actions">
+            <button class="btn" type="submit" th:unless="${statuses.isEmpty()}">Зберегти</button>
+            <a class="btn btn-secondary" th:href="@{/funds/{id}(id=${fund.id()})}">До картки фонду</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>
