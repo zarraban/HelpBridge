@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Підтвердження видалення')}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('')}"></nav>
+<main id="main-content" class="container">
+    <header th:replace="~{fragments/layout :: pageHeader('Підтвердження видалення', null, null)}"></header>
+    <th:block th:replace="~{fragments/layout :: messages}"></th:block>
+    <form class="card form-card" method="post" th:action="@{${action}}">
+        <p>Видалити запис <strong th:text="${name}"></strong>?</p>
+        <div class="form-actions">
+            <button class="btn btn-danger" type="submit">Видалити</button>
+            <a class="btn btn-secondary" th:href="@{${back}}">Скасувати</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

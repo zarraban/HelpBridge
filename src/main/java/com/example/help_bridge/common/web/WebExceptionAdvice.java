@@ -6,6 +6,13 @@ import com.example.help_bridge.fundraising.request.exception.RequestDocumentNotF
 import com.example.help_bridge.fundraising.request.web.RequestWebController;
 import com.example.help_bridge.fundraising.fundraiser.web.FundraiserWebController;
 import com.example.help_bridge.fundraising.fundraiser.exception.FundraiserNotFoundException;
+import com.example.help_bridge.fundraising.fund.web.FundWebController;
+import com.example.help_bridge.users.donor.exception.DonorNotFoundException;
+import com.example.help_bridge.users.donor.web.DonorWebController;
+import com.example.help_bridge.users.fundrepresentative.exception.FundRepresentativeNotFoundException;
+import com.example.help_bridge.users.fundrepresentative.web.FundRepresentativeWebController;
+import com.example.help_bridge.users.systemadmin.exception.SystemAdminNotFoundException;
+import com.example.help_bridge.users.systemadmin.web.SystemAdminWebController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -20,13 +27,15 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE;
 
 @ControllerAdvice(basePackageClasses = {LoginController.class, RequestWebController.class, FundraiserWebController.class,
+        FundWebController.class, DonorWebController.class, FundRepresentativeWebController.class, SystemAdminWebController.class,
         com.example.help_bridge.users.volunteer.web.VolunteerWebController.class})
 @Order(HIGHEST_PRECEDENCE + 1)
 public class WebExceptionAdvice {
     private static final Logger log = LoggerFactory.getLogger(WebExceptionAdvice.class);
 
     @ExceptionHandler({RequestNotFoundException.class, RequestDocumentNotFoundException.class, FundraiserNotFoundException.class, com.example.help_bridge.users.volunteer.exception.VolunteerNotFoundException.class,
-            com.example.help_bridge.fundraising.fund.exception.FundNotFoundException.class})
+            com.example.help_bridge.fundraising.fund.exception.FundNotFoundException.class,
+            DonorNotFoundException.class, FundRepresentativeNotFoundException.class, SystemAdminNotFoundException.class})
     public ModelAndView missingRequest() {
         return new ModelAndView("error/404", HttpStatus.NOT_FOUND);
     }

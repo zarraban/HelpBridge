@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Фонди')}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('funds')}"></nav>
+<main id="main-content" class="container">
+    <header th:replace="~{fragments/layout :: pageHeader('Фонди', null, null)}"></header>
+    <th:block th:replace="~{fragments/layout :: messages}"></th:block>
+    <div class="form-actions"><a class="btn" th:href="@{/funds/new}">Додати фонд</a></div>
+    <section class="card empty-state" th:if="${funds.isEmpty()}"><p>Фондів поки немає.</p></section>
+    <div class="table-wrap" th:unless="${funds.isEmpty()}">
+        <table class="data-table">
+            <thead><tr><th scope="col">Назва</th><th scope="col">ЄДРПОУ</th><th scope="col">Статус</th></tr></thead>
+            <tbody>
+                <tr th:each="fund : ${funds}">
+                    <td><a th:href="@{/funds/{id}(id=${fund.id()})}" th:text="${fund.fundName()}"></a></td>
+                    <td th:text="${fund.edrpou()}"></td>
+                    <td th:text="#{fund.status.__${fund.status()}__}"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+</body>
+</html>

@@ -70,6 +70,8 @@
         <p class="alert alert-success" th:if="${closed}">Збір уже закрито. Повторне закриття не потрібне.</p>
         <p class="alert alert-warning" th:if="${!closed && !hasEvidence}">Закриття недоступне: до збору ще не додано доказів надання допомоги.</p>
         <a class="btn" th:if="${canClose}" th:href="@{/fundraisers/{id}/close(id=${fundraiser.fundraiserId})}">Закрити збір</a>
+        <a class="btn btn-secondary" sec:authorize="hasRole('FUND_REPRESENTATIVE')"
+           th:href="@{/fundraisers/{id}/mail(id=${fundraiser.fundraiserId})}">Розсилка донорам</a>
     </section>
 
     <section id="evidences" class="card details-section" aria-labelledby="evidences-heading">

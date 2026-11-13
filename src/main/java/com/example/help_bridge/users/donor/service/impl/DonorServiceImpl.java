@@ -9,6 +9,8 @@ import com.example.help_bridge.users.donor.repository.DonorRepository;
 import com.example.help_bridge.users.donor.service.DonorService;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +47,12 @@ public class DonorServiceImpl implements DonorService {
         return donorRepository.findAll().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<DonorResponse> getDonorPage(Pageable pageable) {
+        return donorRepository.findAll(pageable).map(this::mapToResponse);
     }
 
     @Override

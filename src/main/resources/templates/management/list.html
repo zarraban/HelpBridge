@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head(${title})}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('')}"></nav>
+<main id="main-content" class="container">
+    <header th:replace="~{fragments/layout :: pageHeader(${title}, null, null)}"></header>
+    <th:block th:replace="~{fragments/layout :: messages}"></th:block>
+    <div class="form-actions">
+        <a class="btn" th:href="@{${path + '/new'}}">Додати</a>
+        <a class="btn btn-secondary" th:if="${page != null}" th:href="@{${path}(sort=${sort == 'asc' ? 'desc' : 'asc'})}"
+           th:text="${sort == 'asc' ? 'Спочатку новіші' : 'Спочатку старіші'}"></a>
+    </div>
+    <section th:if="${rows.isEmpty()}" class="card empty-state"><p>Записів поки немає.</p></section>
+    <div class="table-wrap" th:unless="${rows.isEmpty()}">
+        <table class="data-table">
+            <thead><tr><th scope="col" th:each="column : ${columns}" th:text="${column}"></th><th scope="col">Дії</th></tr></thead>
+            <tbody>
+                <tr th:each="row : ${rows}">
+                    <td th:each="cell : ${row.cells()}" th:text="${cell}"></td>
+                    <td>
+                        <a th:href="@{${path + '/' + row.id() + '/edit'}}">Редагувати</a>
+                        <a th:href="@{${path + '/' + row.id() + '/delete'}}">Видалити</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <nav class="form-actions" th:if="${page != null}" aria-label="Сторінки списку">
+        <a th:if="${page > 1}" th:href="@{${path}(sort=${sort},page=${page - 1})}">Попередня</a>
+        <span th:text="|Сторінка ${page}|"></span>
+        <a th:if="${hasNext}" th:href="@{${path}(sort=${sort},page=${page + 1})}">Наступна</a>
+    </nav>
+</main>
+</body>
+</html>

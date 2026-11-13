@@ -81,6 +81,12 @@ public class SecurityConfiguration {
                 .csrf(Customizer.withDefaults())
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/login", "/css/**", "/js/**", "/error", "/error/**", "/actuator/health").permitAll()
+                        .requestMatchers("/system-admins", "/system-admins/**", "/fund-representatives",
+                                "/fund-representatives/**", "/donors", "/donors/**", "/funds/new",
+                                "/funds/*/status", "/funds/*/delete").hasRole("SYSTEM_ADMIN")
+                        .requestMatchers("/funds", "/funds/**").hasAnyRole("SYSTEM_ADMIN", "FUND_REPRESENTATIVE")
+                        .requestMatchers("/fundraisers/*/mail").hasRole("FUND_REPRESENTATIVE")
+                        .requestMatchers("/my/statistics").hasRole("VOLUNTEER")
                         .requestMatchers("/requests/new").hasRole("APPLICANT")
                         .requestMatchers(HttpMethod.POST, "/requests").hasRole("APPLICANT")
                         .requestMatchers(HttpMethod.POST, "/requests/*/review").hasRole("SYSTEM_ADMIN")

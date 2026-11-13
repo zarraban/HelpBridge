@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head(${fund.fundName()})}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('funds')}"></nav>
+<main id="main-content" class="container">
+    <header th:replace="~{fragments/layout :: pageHeader(${fund.fundName()}, null, null)}"></header>
+    <th:block th:replace="~{fragments/layout :: messages}"></th:block>
+    <section class="card">
+        <dl class="details-grid">
+            <dt>Статус</dt><dd th:text="#{fund.status.__${fund.status()}__}"></dd>
+            <dt>ЄДРПОУ</dt><dd th:text="${fund.edrpou()}"></dd>
+            <dt>Банківські реквізити</dt><dd th:text="${fund.bankDetail()}"></dd>
+            <dt>Юридична адреса</dt><dd th:text="${fund.registeredAddress()}"></dd>
+            <dt>Фактична адреса</dt><dd th:text="${fund.actualAddress()}"></dd>
+            <dt>Телефон</dt><dd th:text="${fund.phoneNumber()}"></dd>
+            <dt>Електронна пошта</dt><dd th:text="${fund.corpEmail()}"></dd>
+            <dt>Вебсайт</dt><dd th:text="${fund.website()}"></dd>
+            <dt>Опис</dt><dd th:text="${#strings.isEmpty(fund.description()) ? 'Опис ще не додано' : fund.description()}"></dd>
+        </dl>
+        <div th:unless="${fund.socialMediaUrls().isEmpty()}">
+            <h2>Соціальні мережі</h2>
+            <ul><li th:each="entry : ${fund.socialMediaUrls()}" th:text="|${entry.key} · ${entry.value}|"></li></ul>
+        </div>
+        <div class="form-actions">
+            <a class="btn" th:href="@{/funds/{id}/edit(id=${fund.id()})}">Редагувати</a>
+            <a class="btn btn-secondary" th:if="${fund.status().name() == 'APPROVED'}"
+               th:href="@{/funds/{id}/description(id=${fund.id()})}">Змінити опис</a>
+            <a class="btn btn-secondary" sec:authorize="hasRole('SYSTEM_ADMIN')" th:if="${canChangeStatus}"
+               th:href="@{/funds/{id}/status(id=${fund.id()})}">Змінити статус</a>
+            <a class="btn btn-danger" sec:authorize="hasRole('SYSTEM_ADMIN')"
+               th:href="@{/funds/{id}/delete(id=${fund.id()})}">Видалити фонд</a>
+        </div>
+    </section>
+    <section class="card">
+        <h2>Представники</h2>
+        <p th:if="${fund.representatives().isEmpty()}">Фонд поки не має представників.</p>
+        <ul th:unless="${fund.representatives().isEmpty()}">
+            <li th:each="person : ${fund.representatives()}">
+                <span th:text="|${person.firstName()} ${person.lastName()} · ${person.email()}|"></span>
+                <a sec:authorize="hasRole('SYSTEM_ADMIN')" th:href="@{/fund-representatives/{id}/edit(id=${person.id()})}">Редагувати</a>
+            </li>
+        </ul>
+    </section>
+</main>
+</body>
+</html>

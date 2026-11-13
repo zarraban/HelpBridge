@@ -31,9 +31,17 @@
         <li sec:authorize="hasRole('SYSTEM_ADMIN')">
             <a th:href="@{/requests#verification}">Перевірка заявок</a>
         </li>
+        <li sec:authorize="hasAnyRole('SYSTEM_ADMIN', 'FUND_REPRESENTATIVE')">
+            <a th:href="@{/funds}" th:attr="aria-current=${activePage == 'funds' ? 'page' : null}"
+               th:text="${#authorization.expression('hasRole(''SYSTEM_ADMIN'')') ? 'Фонди' : 'Мій фонд'}">Фонди</a>
+        </li>
+        <li sec:authorize="hasRole('SYSTEM_ADMIN')"><a th:href="@{/fund-representatives}">Представники</a></li>
+        <li sec:authorize="hasRole('SYSTEM_ADMIN')"><a th:href="@{/system-admins}">Адміністратори</a></li>
+        <li sec:authorize="hasRole('SYSTEM_ADMIN')"><a th:href="@{/donors}">Донори</a></li>
     </ul>
 
     <ul class="nav-links" sec:authorize="hasRole('VOLUNTEER')">
+        <li><a th:href="@{/my/statistics}" th:attr="aria-current=${activePage == 'statistics' ? 'page' : null}">Статистика</a></li>
         <li><a th:href="@{/my/assignments}" th:attr="aria-current=${activePage == 'my-assignments' ? 'page' : null}">Мої призначення</a></li>
         <li><a th:href="@{/home}" th:attr="aria-current=${activePage == 'home' ? 'page' : null}">Мій кабінет</a></li>
     </ul>

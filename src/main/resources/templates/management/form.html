@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head(${title})}"></head>
+<body>
+<a th:replace="~{fragments/layout :: skipLink}"></a>
+<nav th:replace="~{fragments/layout :: nav('')}"></nav>
+<main id="main-content" class="container">
+    <header th:replace="~{fragments/layout :: pageHeader(${title}, null, null)}"></header>
+    <th:block th:replace="~{fragments/layout :: messages}"></th:block>
+    <p th:if="${noRecipients}" class="alert" role="status">Для цього збору ще немає донорів.</p>
+    <form th:unless="${noRecipients}" data-submit-once class="card form-card" method="post" th:action="@{${action}}" th:object="${form}">
+        <p th:each="error : ${#fields.globalErrors()}" class="field-error" role="alert" th:text="${error}"></p>
+        <div th:each="field : ${fields}" class="field">
+            <label th:for="${field.name()}" th:text="${field.label()}"></label>
+            <textarea th:if="${field.type() == 'textarea'}" th:field="*{__${field.name()}__}" rows="5"></textarea>
+            <input th:if="${field.type() == 'password'}" type="password" autocomplete="new-password"
+                   th:id="${field.name()}" th:name="${field.name()}">
+            <input th:if="${field.type() != 'textarea' and field.type() != 'password'}"
+                   th:type="${field.type()}" th:field="*{__${field.name()}__}">
+            <p class="field-error" role="alert" th:errors="*{__${field.name()}__}"></p>
+        </div>
+        <div class="form-actions">
+            <button class="btn" type="submit" th:text="${submitLabel ?: 'Зберегти'}">Зберегти</button>
+            <a class="btn btn-secondary" th:href="@{${back}}">Скасувати</a>
+        </div>
+    </form>
+    <a th:if="${noRecipients}" class="btn btn-secondary" th:href="@{${back}}">До збору</a>
+</main>
+</body>
+</html>
