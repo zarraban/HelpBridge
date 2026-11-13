@@ -1,5 +1,8 @@
 package com.example.help_bridge.fundraising.fundraiser.service.impl;
 
+import com.example.help_bridge.users.volunteer.security.VolunteerAccessPolicy;
+import com.example.help_bridge.fundraising.fundraiser.security.FundraiserAccessPolicy;
+
 import com.example.help_bridge.fundraising.fundraiser.dto.request.AssignVolunteerRequest;
 import com.example.help_bridge.fundraising.fundraiser.dto.request.CompleteAssignmentRequest;
 import com.example.help_bridge.fundraising.fundraiser.dto.request.ReturnAssignmentRequest;
@@ -35,11 +38,15 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
     private final FundraiserAssignmentRepository assignmentJpaRepository;
     private final FundraiserRepository FundraiserRepository;
     private final VolunteerDirectory volunteerDirectory;
+    private final FundraiserAccessPolicy access;
+    private final VolunteerAccessPolicy volunteerAccess;
 
     @Override
     public CompleteAssignmentResponse completeAssignment(Long assignmentId, CompleteAssignmentRequest request) {
         FundraiserAssignment assignment = assignmentJpaRepository.findById(assignmentId)
                 .orElseThrow(() -> new AssignmentNotFoundException("Assignment with the specified ID was not found"));
+
+        access.requireAssignmentAction(assignment);
 
         if (!assignment.getStatus().canTransitionTo(AssignmentStatus.COMPLETED)) {
             throw new InvalidAssignmentStateException("Cannot transition assignment status from " + assignment.getStatus() + " to COMPLETED");
@@ -68,6 +75,8 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
     public ReturnAssignmentResponse returnAssignment(Long assignmentId, ReturnAssignmentRequest request) {
         FundraiserAssignment assignment = assignmentJpaRepository.findById(assignmentId)
                 .orElseThrow(() -> new AssignmentNotFoundException("Assignment with the specified ID was not found"));
+
+        access.requireAssignmentAction(assignment);
 
         if (!assignment.getStatus().canTransitionTo(AssignmentStatus.RETURNED)) {
             throw new InvalidAssignmentStateException("Cannot transition assignment status from " + assignment.getStatus() + " to RETURNED");
@@ -98,10 +107,12 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
         Fundraiser fundraiser = FundraiserRepository.findById(fundraiserId)
                 .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with the specified ID was not found"));
 
+        access.requireAccess(fundraiser);
         if (fundraiser.getStatus() == FundraiserStatus.CLOSED) {
             throw new InvalidAssignmentStateException("Cannot assign a volunteer to a closed fundraiser");
         }
         volunteerDirectory.requireActiveVolunteer(request.volunteerId());
+        access.requireAssignableVolunteer(fundraiser, request.volunteerId());
         if (assignmentJpaRepository.existsByFundraiserIdAndVolunteerIdAndStatus(
                 fundraiserId, request.volunteerId(), AssignmentStatus.ACTIVE)) {
             throw new InvalidAssignmentStateException("Volunteer " + request.volunteerId()
@@ -131,6 +142,9 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
     @Override
     @Transactional(readOnly = true)
     public List<FundraiserAssignmentResponse> getFundraiserAssignments(Long fundraiserId) {
+        var fundraiser = FundraiserRepository.findById(fundraiserId)
+                .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser not found"));
+        access.requireAccess(fundraiser);
         return assignmentJpaRepository.findByFundraiserId(fundraiserId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -139,6 +153,7 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
     @Override
     @Transactional(readOnly = true)
     public List<FundraiserAssignmentResponse> getVolunteerAssignments(Long volunteerId) {
+        volunteerAccess.requireReadVolunteer(volunteerId);
         return assignmentJpaRepository.findByVolunteerId(volunteerId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());

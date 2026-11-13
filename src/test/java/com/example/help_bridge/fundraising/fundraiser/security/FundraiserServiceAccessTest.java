@@ -23,6 +23,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class FundraiserServiceAccessTest {
     @Mock RequestAccessPolicy identity;
+    @Mock com.example.help_bridge.users.volunteer.security.VolunteerAccessPolicy volunteers;
+    @Mock FundraiserAssignmentRepository assignments;
     @Mock RequestRepository requests;
     @Mock FundraiserRepository fundraisers;
     @Mock EvidenceRepository evidences;
@@ -33,7 +35,7 @@ class FundraiserServiceAccessTest {
 
     @BeforeEach
     void setUp() {
-        var access = new FundraiserAccessPolicy(identity, requests);
+        var access = new FundraiserAccessPolicy(identity, volunteers, assignments, requests);
         service = new FundraiserServiceImpl(fundraisers, events, access);
         evidenceService = new EvidenceServiceImpl(evidences, fundraisers, List.of(), access);
         fundraiser = new Fundraiser();

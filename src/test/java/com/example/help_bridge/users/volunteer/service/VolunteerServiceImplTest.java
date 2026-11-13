@@ -58,6 +58,9 @@ class VolunteerServiceImplTest {
     private static final String NEW_PHONE = "+380671112233";
 
     @Mock
+    private com.example.help_bridge.users.volunteer.security.VolunteerAccessPolicy access;
+
+    @Mock
     private VolunteerRepository repository;
 
     @Mock
@@ -73,7 +76,7 @@ class VolunteerServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new VolunteerServiceImpl(repository, eventPublisher, fundRepository, passwordEncoder);
+        service = new VolunteerServiceImpl(repository, eventPublisher, fundRepository, passwordEncoder, access);
         lenient().when(fundRepository.findById(FUND_ID)).thenReturn(Optional.of(fund()));
     }
 

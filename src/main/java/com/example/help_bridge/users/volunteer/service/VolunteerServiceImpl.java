@@ -1,5 +1,7 @@
 package com.example.help_bridge.users.volunteer.service;
 
+import com.example.help_bridge.users.volunteer.security.VolunteerAccessPolicy;
+
 import com.example.help_bridge.fundraising.fund.entity.Fund;
 import com.example.help_bridge.fundraising.fund.exception.FundNotFoundException;
 import com.example.help_bridge.fundraising.fund.repository.FundRepository;
@@ -28,6 +30,7 @@ import java.util.Optional;
 @Transactional
 public class VolunteerServiceImpl implements VolunteerService {
 
+    private final VolunteerAccessPolicy access;
     private final VolunteerRepository repository;
     private final ApplicationEventPublisher eventPublisher;
     private final FundRepository fundRepository;
@@ -37,7 +40,9 @@ public class VolunteerServiceImpl implements VolunteerService {
             VolunteerRepository repository,
             ApplicationEventPublisher eventPublisher,
             FundRepository fundRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            VolunteerAccessPolicy access) {
+        this.access = access;
         this.repository = repository;
         this.eventPublisher = eventPublisher;
         this.fundRepository = fundRepository;
@@ -47,6 +52,7 @@ public class VolunteerServiceImpl implements VolunteerService {
     @Override
     @Transactional(readOnly = true)
     public List<VolunteerResponse> getFundVolunteers(Long fundId) {
+        access.requireManageFund(fundId);
         return repository.findAllByFundWithFund(fundId, VolunteerStatus.ACTIVE).stream()
                 .map(this::toResponse).toList();
     }
@@ -54,6 +60,7 @@ public class VolunteerServiceImpl implements VolunteerService {
     @Override
     @Transactional(readOnly = true)
     public VolunteerResponse getFundVolunteer(Long fundId, Long volunteerId) {
+        access.requireManageFund(fundId);
         return repository.findByFundIdAndIdAndStatus(fundId, volunteerId, VolunteerStatus.ACTIVE)
                 .map(this::toResponse)
                 .orElseThrow(() -> new VolunteerNotFoundException("Volunteer with ID '" + volunteerId + "' not found"));
@@ -61,6 +68,7 @@ public class VolunteerServiceImpl implements VolunteerService {
 
     @Override
     public VolunteerResponse registerVolunteer(RegisterVolunteerCommand command) {
+        access.requireManageFund(command.fundId());
         String email = normalizeEmail(command.email());
         Optional<Volunteer> byEmail = repository.findByFundIdAndEmailIgnoreCase(command.fundId(), email);
         Optional<Volunteer> byPhone = repository.findByFundIdAndPhone(command.fundId(), command.phone());
@@ -102,6 +110,7 @@ public class VolunteerServiceImpl implements VolunteerService {
 
     @Override
     public VolunteerResponse updateVolunteer(UpdateVolunteerCommand command) {
+        access.requireManageFund(command.fundId());
         Volunteer volunteer = repository.findByFundIdAndIdAndStatus(command.fundId(), command.id(), VolunteerStatus.ACTIVE)
                 .orElseThrow(() -> new VolunteerNotFoundException("Volunteer with ID '" + command.id() + "' not found"));
 
@@ -138,6 +147,7 @@ public class VolunteerServiceImpl implements VolunteerService {
 
     @Override
     public void removeVolunteer(Long fundId, Long volunteerId) {
+        access.requireManageFund(fundId);
         Volunteer volunteer = repository.findByFundIdAndIdAndStatus(fundId, volunteerId, VolunteerStatus.ACTIVE)
                 .orElseThrow(() -> new VolunteerNotFoundException("Volunteer with ID '" + volunteerId + "' not found"));
 
