@@ -110,4 +110,20 @@ class AssignmentHistoryPersistenceTest {
         assertEquals(1, service.getFundraiserAssignments(id).size());
     }
 
+    @Test void returningOneOfSeveralActiveAssignmentsKeepsFundraiserInProgress() {
+        var first = activeAssignment();
+        var second = new FundraiserAssignment();
+        second.setFundraiser(first.getFundraiser());
+        second.setVolunteerId(6L);
+        second.setStatus(AssignmentStatus.ACTIVE);
+        second = em.persistAndFlush(second);
+        Long fundraiserId = first.getFundraiserId();
+        service.returnAssignment(first.getId(), new ReturnAssignmentRequest("Не можу продовжити"));
+        em.flush(); em.clear();
+        assertEquals(FundraiserStatus.IN_PROGRESS, em.find(Fundraiser.class, fundraiserId).getStatus());
+        service.returnAssignment(second.getId(), new ReturnAssignmentRequest("Також повертаю"));
+        em.flush(); em.clear();
+        assertEquals(FundraiserStatus.PENDING_ASSIGNMENT, em.find(Fundraiser.class, fundraiserId).getStatus());
+    }
+
 }

@@ -22,6 +22,10 @@
     <th:block th:if="${!#strings.isEmpty(a.returnReason)}"><h4>Причина повернення</h4><p class="details-text" th:text="${a.returnReason}"></p></th:block>
     <th:block th:if="${!#strings.isEmpty(a.closingComment)}"><h4>Коментар завершення</h4><p class="details-text" th:text="${a.closingComment}"></p></th:block>
     <p th:if="${link && a.fundraiserId != null}"><a class="btn btn-secondary" th:href="@{/my/fundraisers/{id}(id=${a.fundraiserId})}" th:aria-label="${'Переглянути збір №' + a.fundraiserId}">Деталі збору</a></p>
+    <div class="form-actions" th:if="${a.status?.name() == 'ACTIVE'}">
+        <a class="btn" th:href="@{/my/assignments/{id}/complete(id=${a.assignmentId})}" th:aria-label="${'Завершити призначення №' + a.assignmentId}">Завершити</a>
+        <a class="btn btn-secondary" th:href="@{/my/assignments/{id}/return(id=${a.assignmentId})}" th:aria-label="${'Повернути призначення №' + a.assignmentId}">Повернути</a>
+    </div>
 </article>
 </body>
 </html>

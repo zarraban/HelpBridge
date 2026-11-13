@@ -34,7 +34,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest({VolunteerWorkspaceWebController.class, LoginController.class})
+@WebMvcTest({VolunteerWorkspaceWebController.class, VolunteerAssignmentActionWebController.class, LoginController.class})
 @Import({SecurityConfiguration.class, VolunteerWorkspaceService.class, VolunteerAccessPolicy.class})
 class VolunteerWorkspaceWebTest {
     @Autowired MockMvc mvc;
@@ -150,4 +150,101 @@ class VolunteerWorkspaceWebTest {
                 .andExpect(status().isOk()).andExpect(content().string(containsString("href=\"/my/assignments\"")))
                 .andExpect(content().string(not(containsString("Розділи ваших призначень"))));
     }
+    void ownAssignment(AssignmentStatus status) {
+        activeVolunteer();
+        when(assignments.getVolunteerAssignments(5L)).thenReturn(List.of(assignment(30L, status)));
+    }
+    @Test void activeAssignmentHasActionLinksAndBothFormsRender() throws Exception {
+        ownAssignment(AssignmentStatus.ACTIVE);
+        mvc.perform(get("/my/assignments").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")))
+                .andExpect(content().string(containsString("/my/assignments/30/complete")))
+                .andExpect(content().string(containsString("/my/assignments/30/return")));
+        mvc.perform(get("/my/assignments/30/complete").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")))
+                .andExpect(status().isOk()).andExpect(content().string(containsString("name=\"closingComment\"")))
+                .andExpect(content().string(containsString("не закриває збір")));
+        mvc.perform(get("/my/assignments/30/return").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")))
+                .andExpect(status().isOk()).andExpect(content().string(containsString("name=\"returnReason\"")));
+    }
+    @Test void validCompletionAndReturnPassCommentsAndRedirectToUpdatedList() throws Exception {
+        ownAssignment(AssignmentStatus.ACTIVE);
+        mvc.perform(post("/my/assignments/30/complete").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")).with(csrf())
+                        .param("closingComment", "Допомогу доставлено"))
+                .andExpect(redirectedUrl("/my/assignments")).andExpect(flash().attributeExists("message"));
+        verify(assignments).completeAssignment(30L, new com.example.help_bridge.fundraising.fundraiser.dto.request.CompleteAssignmentRequest("Допомогу доставлено"));
+        mvc.perform(post("/my/assignments/30/return").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")).with(csrf())
+                        .param("returnReason", "Не можу продовжити"))
+                .andExpect(redirectedUrl("/my/assignments")).andExpect(flash().attributeExists("message"));
+        verify(assignments).returnAssignment(30L, new com.example.help_bridge.fundraising.fundraiser.dto.request.ReturnAssignmentRequest("Не можу продовжити"));
+    }
+    @Test void invalidCommentsAreRejectedAndTextIsRetained() throws Exception {
+        ownAssignment(AssignmentStatus.ACTIVE);
+        for (String action : List.of("complete", "return")) {
+            String field = action.equals("complete") ? "closingComment" : "returnReason";
+            for (String comment : List.of("", "   ", "abc", "я".repeat(501))) {
+                mvc.perform(post("/my/assignments/30/" + action).with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")).with(csrf())
+                                .param(field, comment))
+                        .andExpect(status().isOk()).andExpect(model().attributeHasFieldErrors("form", field))
+                        .andExpect(content().string(containsString(comment)));
+            }
+        }
+        verify(assignments, never()).completeAssignment(any(), any());
+        verify(assignments, never()).returnAssignment(any(), any());
+    }
+    @Test void nonActiveAssignmentsHideActionsAndRejectRepeatedPosts() throws Exception {
+        for (AssignmentStatus state : List.of(AssignmentStatus.COMPLETED, AssignmentStatus.RETURNED)) {
+            ownAssignment(state);
+            mvc.perform(get("/my/assignments").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")))
+                    .andExpect(content().string(not(containsString("/my/assignments/30/complete"))))
+                    .andExpect(content().string(not(containsString("/my/assignments/30/return"))));
+            for (String action : List.of("complete", "return")) {
+                mvc.perform(get("/my/assignments/30/" + action).with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")))
+                        .andExpect(status().isConflict()).andExpect(model().attribute("actionable", false));
+                mvc.perform(post("/my/assignments/30/" + action).with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")).with(csrf())
+                                .param("closingComment", "Допомогу доставлено").param("returnReason", "Не можу продовжити"))
+                        .andExpect(status().isConflict()).andExpect(model().attribute("actionable", false));
+            }
+        }
+        verify(assignments, never()).completeAssignment(any(), any());
+        verify(assignments, never()).returnAssignment(any(), any());
+    }
+    @Test void staleFormConflictPreservesCommentAndDisablesSubmission() throws Exception {
+        ownAssignment(AssignmentStatus.ACTIVE);
+        when(assignments.completeAssignment(any(), any())).thenThrow(new com.example.help_bridge.fundraising.fundraiser.exception.InvalidAssignmentStateException("changed"));
+        mvc.perform(post("/my/assignments/30/complete").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")).with(csrf())
+                        .param("closingComment", "Допомогу доставлено"))
+                .andExpect(status().isConflict()).andExpect(model().attribute("actionable", false))
+                .andExpect(content().string(containsString("Допомогу доставлено")))
+                .andExpect(content().string(not(containsString("Підтвердити завершення</button>"))));
+    }
+    @Test void missingAssignmentDuringSaveExplainsFailure() throws Exception {
+        ownAssignment(AssignmentStatus.ACTIVE);
+        when(assignments.returnAssignment(any(), any())).thenThrow(new com.example.help_bridge.fundraising.fundraiser.exception.AssignmentNotFoundException("gone"));
+        mvc.perform(post("/my/assignments/30/return").with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")).with(csrf())
+                        .param("returnReason", "Не можу продовжити"))
+                .andExpect(redirectedUrl("/my/assignments")).andExpect(flash().attributeExists("error"));
+    }
+    @Test void foreignAssignmentActionsAreDeniedBeforeMutation() throws Exception {
+        ownAssignment(AssignmentStatus.ACTIVE);
+        for (String action : List.of("complete", "return")) {
+            mvc.perform(get("/my/assignments/99/" + action).with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")).accept("text/html"))
+                    .andExpect(status().isForbidden());
+            mvc.perform(post("/my/assignments/99/" + action).with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")).with(csrf()).accept("text/html")
+                            .param("closingComment", "Допомогу доставлено").param("returnReason", "Не можу продовжити"))
+                    .andExpect(status().isForbidden());
+        }
+        verify(assignments, never()).completeAssignment(any(), any());
+        verify(assignments, never()).returnAssignment(any(), any());
+    }
+    @Test void actionPostsRequireVolunteerRoleAndCsrf() throws Exception {
+        for (String action : List.of("complete", "return")) {
+            for (String role : List.of("FUND_REPRESENTATIVE", "SYSTEM_ADMIN", "DONOR", "APPLICANT")) {
+                mvc.perform(post("/my/assignments/30/" + action).with(user("other").roles(role)).with(csrf()).accept("text/html"))
+                        .andExpect(status().isForbidden());
+            }
+            mvc.perform(post("/my/assignments/30/" + action).with(user("VOLUNTEER:vera@test.org").roles("VOLUNTEER")))
+                    .andExpect(redirectedUrl("/login?expired"));
+        }
+        verifyNoInteractions(assignments, volunteers);
+    }
+
 }

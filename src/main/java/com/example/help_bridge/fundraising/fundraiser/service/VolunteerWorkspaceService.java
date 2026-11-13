@@ -28,6 +28,11 @@ public class VolunteerWorkspaceService {
                 .toList();
     }
 
+    public FundraiserAssignmentResponse getMyAssignment(Long id) {
+        return getMyAssignments().stream().filter(a -> id.equals(a.assignmentId())).findFirst()
+                .orElseThrow(() -> new AccessDeniedException("This assignment is not yours or is unavailable"));
+    }
+
     public VolunteerFundraiserResponse getMyFundraiser(Long id) {
         var ownAssignments = getMyAssignments().stream().filter(a -> id.equals(a.fundraiserId())).toList();
         if (ownAssignments.isEmpty()) throw new AccessDeniedException("You are not assigned to this fundraiser");

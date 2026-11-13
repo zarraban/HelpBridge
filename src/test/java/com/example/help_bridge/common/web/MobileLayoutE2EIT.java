@@ -28,7 +28,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest({com.example.help_bridge.fundraising.fundraiser.web.VolunteerWorkspaceWebController.class,com.example.help_bridge.fundraising.fundraiser.web.FundraiserWebController.class,com.example.help_bridge.fundraising.request.web.RequestBookingWebController.class, LoginController.class, RequestWebController.class, com.example.help_bridge.fundraising.request.web.RequestDocumentWebController.class})
+@WebMvcTest({com.example.help_bridge.fundraising.fundraiser.web.VolunteerAssignmentActionWebController.class,com.example.help_bridge.fundraising.fundraiser.web.VolunteerWorkspaceWebController.class,com.example.help_bridge.fundraising.fundraiser.web.FundraiserWebController.class,com.example.help_bridge.fundraising.request.web.RequestBookingWebController.class, LoginController.class, RequestWebController.class, com.example.help_bridge.fundraising.request.web.RequestDocumentWebController.class})
 @Import(SecurityConfiguration.class)
 class MobileLayoutE2EIT {
     @MockitoBean com.example.help_bridge.fundraising.request.security.RequestAccessPolicy access;
@@ -133,6 +133,11 @@ class MobileLayoutE2EIT {
                         "Лікування", java.math.BigDecimal.TEN, java.time.LocalDate.now(), "Установа", "ДовгийОпис".repeat(100)), java.util.List.of(ownAssignment)));
         String ownDetails = mvc.perform(get("/my/fundraisers/1").with(user("volunteer@test.org").roles("VOLUNTEER")))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        when(workspace.getMyAssignment(1L)).thenReturn(ownAssignment);
+        String completeAssignment = mvc.perform(get("/my/assignments/1/complete").with(user("volunteer@test.org").roles("VOLUNTEER")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        String returnAssignment = mvc.perform(get("/my/assignments/1/return").with(user("volunteer@test.org").roles("VOLUNTEER")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         String css = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources/static/css/app.css"));
         String js = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources/static/js/forms.js"));
         try (var playwright = com.microsoft.playwright.Playwright.create();
@@ -149,6 +154,8 @@ class MobileLayoutE2EIT {
                     closingSubmissions.incrementAndGet();
                 }
                 String content = switch (path) {
+                    case "/my/assignments/1/complete" -> completeAssignment;
+                    case "/my/assignments/1/return" -> returnAssignment;
                     case "/my/assignments" -> ownAssignments;
                     case "/my/assignments/empty" -> emptyOwnAssignments;
                     case "/my/fundraisers/1" -> ownDetails;
@@ -177,12 +184,21 @@ class MobileLayoutE2EIT {
             });
             for (int width : new int[]{320, 390, 768, 1280}) {
                 page.setViewportSize(width, 900);
-                for (String path : new String[]{"/my/assignments", "/my/assignments/empty", "/my/fundraisers/1", "/home", "/fundraisers", "/fundraisers/empty", "/fundraisers/1", "/fundraisers/1/close", "/login", "/requests", "/requests/new", "/requests/1", "/requests/1/edit", "/requests/1/delete", "/requests/1/documents/new", "/requests/1/documents/1/edit", "/requests/1/documents/1/delete", "/requests/1/review-details", "/requests/1/reject", "/requests/1/book"}) {
+                for (String path : new String[]{"/my/assignments/1/complete", "/my/assignments/1/return", "/my/assignments", "/my/assignments/empty", "/my/fundraisers/1", "/home", "/fundraisers", "/fundraisers/empty", "/fundraisers/1", "/fundraisers/1/close", "/login", "/requests", "/requests/new", "/requests/1", "/requests/1/edit", "/requests/1/delete", "/requests/1/documents/new", "/requests/1/documents/1/edit", "/requests/1/documents/1/delete", "/requests/1/review-details", "/requests/1/reject", "/requests/1/book"}) {
                     page.navigate("https://helpbridge.test" + path);
                     assertThat((Boolean) page.evaluate("document.documentElement.scrollWidth <= innerWidth")).as(path + " at " + width).isTrue();
                 }
             }
             page.setViewportSize(320, 900);
+            page.navigate("https://helpbridge.test/my/assignments");
+            page.getByText("Завершити", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
+            com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("#closingComment")).isVisible();
+            page.locator("#closingComment").fill("Допомогу доставлено отримувачу");
+            page.getByText("Скасувати", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
+            page.getByText("Повернути", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
+            com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("#returnReason")).isVisible();
+            page.getByText("Скасувати", new com.microsoft.playwright.Page.GetByTextOptions().setExact(true)).click();
+            com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat(page.locator("#active-heading")).isVisible();
             page.navigate("https://helpbridge.test/requests");
             page.locator(".skip-link").focus();
             page.keyboard().press("Enter");
