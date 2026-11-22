@@ -18,7 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @IntegrationTest
-@WithMockUser(roles = "FUND_REPRESENTATIVE")
+@WithMockUser(username = "FUND_REPRESENTATIVE:rep@mail.test", roles = "FUND_REPRESENTATIVE")
 class NotificationEventListenerIntegrationTest {
 
     @Autowired
@@ -83,10 +83,32 @@ class NotificationEventListenerIntegrationTest {
     }
 
     private long insertFundraiser() {
+        long fundId = jdbc.sql("""
+                insert into funds (fund_name, edrpou, bank_detail, registered_address, actual_address,
+                                   phone_number, corp_email, website, social_media_urls, status)
+                values ('Mail Fund', '87654321', 'UA00', 'Kyiv', 'Kyiv', '+380501112233',
+                        'fund@mail.test', 'https://fund.test', '{}', 'APPROVED') returning id
+                """).query(Long.class).single();
+        jdbc.sql("""
+                insert into fund_representatives (first_name, last_name, email, phone, password_hash, fund_id)
+                values ('Test', 'Representative', 'rep@mail.test', '+380501112234', 'hash', ?)
+                """).param(fundId).update();
+        long userId = jdbc.sql("""
+                insert into users (email, password_hash, first_name, last_name)
+                values ('applicant@mail.test', 'hash', 'Test', 'Applicant') returning id
+                """).query(Long.class).single();
+        long requestId = jdbc.sql("""
+                insert into requests (version, assistance_type_code, amount, deadline, situation_description,
+                                      need_description, institution_name, application_number,
+                                      data_processing_consent, created_at, status, user_id, fund_id)
+                values (0, 'MEDICAL', 100, CURRENT_DATE + 30, 'Situation', 'Need', 'Hospital', 'MAIL-1',
+                        true, now(), 'IN_PROGRESS', ?, ?) returning id
+                """).params(userId, fundId).query(Long.class).single();
         return jdbc.sql("""
                         insert into fundraiser (request_id, status, created_at)
-                        values (1, 'IN_PROGRESS', now())
+                        values (?, 'IN_PROGRESS', now())
                         returning id""")
+                .param(requestId)
                 .query(Long.class)
                 .single();
     }

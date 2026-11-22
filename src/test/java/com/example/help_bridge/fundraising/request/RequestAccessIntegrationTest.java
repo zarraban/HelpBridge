@@ -376,7 +376,7 @@ class RequestAccessIntegrationTest {
                     .andExpect(content().string(org.hamcrest.Matchers.containsString("aria-invalid=\"true\"")));
         }
         mvc.perform(documentPost("").with(request -> { request.setParameter("fileName", " "); return request; }))
-                .andExpect(status().isOk()).andExpect(content().string(org.hamcrest.Matchers.containsString("Вкажіть назву документа")));
+                .andExpect(status().isOk()).andExpect(model().attributeHasFieldErrors("form", "fileName"));
         assertThat(documentRepository.findByRequestId(own.getId())).isEmpty();
     }
 

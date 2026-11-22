@@ -50,6 +50,7 @@ class RoleAuthorizationTest {
     private static final Set<AccountType> ADMIN_OR_REP = EnumSet.of(AccountType.SYSTEM_ADMIN, AccountType.FUND_REPRESENTATIVE);
     private static final Set<AccountType> VOLUNTEER_OR_REP = EnumSet.of(AccountType.VOLUNTEER, AccountType.FUND_REPRESENTATIVE);
     private static final Set<AccountType> ADMIN_OR_APPLICANT = EnumSet.of(AccountType.SYSTEM_ADMIN, AccountType.APPLICANT);
+    private static final Set<AccountType> REQUEST_READERS = EnumSet.of(AccountType.SYSTEM_ADMIN, AccountType.FUND_REPRESENTATIVE, AccountType.APPLICANT);
     private static final Set<AccountType> ANY_ACCOUNT = EnumSet.allOf(AccountType.class);
 
     private static final String ID = "9999";
@@ -107,8 +108,8 @@ class RoleAuthorizationTest {
                 new Endpoint(HttpMethod.POST, "/api/fundraisers/" + ID + "/evidences", """
                         {"receiptNumber":"1"}""", VOLUNTEER_OR_REP),
 
-                new Endpoint(HttpMethod.GET, "/api/v1/requests", null, ANY_ACCOUNT),
-                new Endpoint(HttpMethod.GET, "/api/v1/requests/" + ID, null, ANY_ACCOUNT),
+                new Endpoint(HttpMethod.GET, "/api/v1/requests", null, REQUEST_READERS),
+                new Endpoint(HttpMethod.GET, "/api/v1/requests/" + ID, null, REQUEST_READERS),
                 new Endpoint(HttpMethod.GET, "/api/v1/requests/shared-pool", null, ADMIN_OR_REP),
                 new Endpoint(HttpMethod.POST, "/api/v1/requests", """
                         {"userId":9999,"assistanceType":"MEDICAL","amount":1500.00,"deadline":"2099-01-15",
@@ -119,7 +120,7 @@ class RoleAuthorizationTest {
                          "situationDescription":"s","needDescription":"n","institutionName":"inst",
                          "applicationNumber":"A-1"}""", ADMIN_OR_APPLICANT),
                 new Endpoint(HttpMethod.DELETE, "/api/v1/requests/" + ID, null, ADMIN_OR_APPLICANT),
-                new Endpoint(HttpMethod.GET, "/api/v1/requests/" + ID + "/documents", null, ANY_ACCOUNT),
+                new Endpoint(HttpMethod.GET, "/api/v1/requests/" + ID + "/documents", null, REQUEST_READERS),
                 new Endpoint(HttpMethod.POST, "/api/v1/requests/" + ID + "/documents", """
                         {"fileName":"a.pdf","fileUrl":"http://x/a"}""", ADMIN_OR_APPLICANT),
                 new Endpoint(HttpMethod.PUT, "/api/v1/requests/" + ID + "/documents/" + ID, """
@@ -195,9 +196,15 @@ class RoleAuthorizationTest {
     }
 
     private int call(Endpoint endpoint, String token) throws Exception {
-        MockHttpServletRequestBuilder builder = request(endpoint.method(), endpoint.path());
+        // Role checks use the representative's own fund and the applicant's own ID.
+        long fundId = fundRepresentativeRepository.findByEmailIgnoreCase(REP_EMAIL).orElseThrow().getFund().getId();
+        long applicantId = userRepository.findByEmail(APPLICANT_EMAIL).orElseThrow().getId();
+        String path = endpoint.path().replace("/api/funds/9999/volunteers", "/api/funds/" + fundId + "/volunteers");
+        MockHttpServletRequestBuilder builder = request(endpoint.method(), path);
         if (endpoint.body() != null) {
-            builder.contentType(MediaType.APPLICATION_JSON).content(endpoint.body());
+            builder.contentType(MediaType.APPLICATION_JSON).content(endpoint.body()
+                    .replace("\"fundId\":9999", "\"fundId\":" + fundId)
+                    .replace("\"userId\":9999", "\"userId\":" + applicantId));
         }
         if (token != null) {
             builder.header("Authorization", "Bearer " + token);
