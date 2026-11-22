@@ -9,7 +9,8 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.Ordered;
-import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.aop.support.AopUtils;
+import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -44,26 +45,15 @@ public class AuditAspect {
     @Around("auditPointcut()")
     public Object audit(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-        Method method = signature.getMethod();
-        AuditAction auditAction = AnnotationUtils.findAnnotation(method, AuditAction.class);
-        if (auditAction == null && joinPoint.getTarget() != null) {
-            auditAction = AnnotationUtils.findAnnotation(joinPoint.getTarget().getClass(), AuditAction.class);
-        }
+        Class<?> targetClass = joinPoint.getTarget() == null
+                ? signature.getDeclaringType()
+                : AopUtils.getTargetClass(joinPoint.getTarget());
+        Method method = AopUtils.getMostSpecificMethod(signature.getMethod(), targetClass);
+        AuditAction auditAction = AnnotatedElementUtils.findMergedAnnotation(method, AuditAction.class);
         if (auditAction == null) {
-            auditAction = AnnotationUtils.findAnnotation(signature.getDeclaringType(), AuditAction.class);
+            auditAction = AnnotatedElementUtils.findMergedAnnotation(targetClass, AuditAction.class);
         }
-
-        String action = null;
-        if (auditAction != null) {
-            if (!auditAction.value().isBlank()) {
-                action = auditAction.value();
-            } else if (!auditAction.action().isBlank()) {
-                action = auditAction.action();
-            }
-        }
-        if (action == null || action.isBlank()) {
-            action = signature.getName();
-        }
+        String action = resolveAction(auditAction, signature.getName());
 
         String username = resolveUsername();
         String methodName = resolveMethodName(joinPoint, signature);
@@ -110,6 +100,19 @@ public class AuditAspect {
         ));
 
         return result;
+    }
+
+    private String resolveAction(AuditAction auditAction, String methodName) {
+        if (auditAction == null) {
+            return methodName;
+        }
+        if (!auditAction.value().isBlank()) {
+            return auditAction.value();
+        }
+        if (!auditAction.action().isBlank()) {
+            return auditAction.action();
+        }
+        return methodName;
     }
 
     private String resolveMethodName(ProceedingJoinPoint joinPoint, MethodSignature signature) {

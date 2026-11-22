@@ -1,5 +1,6 @@
 package com.example.help_bridge.fundraising.fundraiser.service.impl;
 
+import com.example.help_bridge.common.audit.AuditAction;
 import com.example.help_bridge.fundraising.fundraiser.exception.FundraiserNotFoundException;
 import com.example.help_bridge.fundraising.fundraiser.exception.EvidenceNotFoundException;
 import com.example.help_bridge.fundraising.fundraiser.entity.FundraiserStatus;
@@ -33,6 +34,7 @@ public class EvidenceServiceImpl implements EvidenceService {
     private final FundraiserAccessPolicy access;
 
     @Override
+    @AuditAction("EVIDENCE_ADDED")
     public EvidenceResponse addEvidenceToFundraiser(Long fundraiserId, AddEvidenceRequest request) {
         Fundraiser fundraiser = fundraiserRepository.findById(fundraiserId)
                 .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with ID " + fundraiserId + " not found"));
@@ -78,6 +80,7 @@ public class EvidenceServiceImpl implements EvidenceService {
     }
 
     @Override
+    @AuditAction("EVIDENCE_DELETED")
     public String deleteEvidenceById(Long evidenceId) {
         Evidence evidence = evidenceRepository.findById(evidenceId)
                 .orElseThrow(() -> new EvidenceNotFoundException(evidenceId));

@@ -1,5 +1,6 @@
 package com.example.help_bridge.users.volunteer.service;
 
+import com.example.help_bridge.common.audit.AuditAction;
 import com.example.help_bridge.users.volunteer.security.VolunteerAccessPolicy;
 import com.example.help_bridge.fundraising.fundraiser.repository.FundraiserAssignmentRepository;
 import com.example.help_bridge.fundraising.fundraiser.entity.AssignmentStatus;
@@ -73,6 +74,7 @@ public class VolunteerServiceImpl implements VolunteerService {
     }
 
     @Override
+    @AuditAction("VOLUNTEER_CREATED_OR_REACTIVATED")
     public VolunteerResponse registerVolunteer(RegisterVolunteerCommand command) {
         access.requireManageFund(command.fundId());
         String email = normalizeEmail(command.email());
@@ -115,6 +117,7 @@ public class VolunteerServiceImpl implements VolunteerService {
     }
 
     @Override
+    @AuditAction("VOLUNTEER_UPDATED")
     public VolunteerResponse updateVolunteer(UpdateVolunteerCommand command) {
         access.requireManageFund(command.fundId());
         Volunteer volunteer = repository.findByFundIdAndIdAndStatus(command.fundId(), command.id(), VolunteerStatus.ACTIVE)
@@ -152,6 +155,7 @@ public class VolunteerServiceImpl implements VolunteerService {
     }
 
     @Override
+    @AuditAction("VOLUNTEER_DEACTIVATED")
     public void removeVolunteer(Long fundId, Long volunteerId) {
         access.requireManageFund(fundId);
         Volunteer volunteer = repository.findByFundIdAndIdAndStatus(fundId, volunteerId, VolunteerStatus.ACTIVE)

@@ -1,5 +1,6 @@
 package com.example.help_bridge.fundraising.request.service;
 
+import com.example.help_bridge.common.audit.AuditAction;
 import com.example.help_bridge.fundraising.request.dto.request.RequestDocumentDto.CreateDocumentRequest;
 import com.example.help_bridge.fundraising.request.dto.request.RequestDocumentDto.DocumentResponse;
 import com.example.help_bridge.fundraising.request.entity.Request;
@@ -31,6 +32,7 @@ public class RequestDocumentServiceImpl implements RequestDocumentService {
     }
 
     @Override
+    @AuditAction("REQUEST_DOCUMENT_ADDED")
     public DocumentResponse addDocument(Long requestId, CreateDocumentRequest dto) {
         Request request = writableRequest(requestId);
 
@@ -56,6 +58,7 @@ public class RequestDocumentServiceImpl implements RequestDocumentService {
     }
 
     @Override
+    @AuditAction("REQUEST_DOCUMENT_UPDATED")
     public DocumentResponse updateDocument(Long requestId, Long documentId, CreateDocumentRequest dto) {
         writableRequest(requestId);
         RequestDocument document = documentRepository.findByIdAndRequestId(documentId, requestId)
@@ -65,6 +68,7 @@ public class RequestDocumentServiceImpl implements RequestDocumentService {
     }
 
     @Override
+    @AuditAction("REQUEST_DOCUMENT_DELETED")
     public void deleteDocument(Long requestId, Long documentId) {
         Request request = writableRequest(requestId);
 
