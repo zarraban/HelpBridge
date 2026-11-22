@@ -1,5 +1,6 @@
 package com.example.help_bridge.fundraising.request.service;
 
+import com.example.help_bridge.common.audit.AuditAction;
 import com.example.help_bridge.fundraising.request.dto.request.RequestVerificationDto;
 import com.example.help_bridge.fundraising.request.entity.Request;
 import com.example.help_bridge.fundraising.request.exception.RequestNotFoundException;
@@ -18,6 +19,7 @@ public class RequestVerificationServiceImpl implements RequestVerificationServic
     }
 
     @Override
+    @AuditAction("REQUEST_REVIEWED")
     public void reviewRequest(Long id, RequestVerificationDto reviewRequest) {
         Request request = requestRepository.findById(id)
                 .orElseThrow(() -> new RequestNotFoundException(id));

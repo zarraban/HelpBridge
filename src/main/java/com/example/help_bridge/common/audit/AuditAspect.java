@@ -1,5 +1,6 @@
 package com.example.help_bridge.common.audit;
 
+import com.example.help_bridge.common.logging.SensitiveDataMasker;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -8,7 +9,8 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.Ordered;
-import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.aop.support.AopUtils;
+import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -25,10 +27,6 @@ import java.util.regex.Pattern;
 @Order(Ordered.LOWEST_PRECEDENCE - 10)
 public class AuditAspect {
 
-    private static final Pattern KEY_VALUE = Pattern.compile(
-            "(?i)(\"?(?:password|passwordHash|token|cvv|cvc|bankDetail|iban)\"?\\s*[:=]\\s*)(\"[^\"]*\"|[^,\\s;}\\)]+)");
-    private static final Pattern CARD = Pattern.compile("\\b(?:\\d[ -]?){13,19}\\b");
-    private static final Pattern IBAN = Pattern.compile("\\bUA\\d{2}[0-9A-Z]{25}\\b");
     private static final Pattern SENSITIVE_PARAM_NAME = Pattern.compile(
             "(?i).*(password|token|secret|cvv|cvc|bankdetail|iban).*");
 
@@ -47,26 +45,15 @@ public class AuditAspect {
     @Around("auditPointcut()")
     public Object audit(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-        Method method = signature.getMethod();
-        AuditAction auditAction = AnnotationUtils.findAnnotation(method, AuditAction.class);
-        if (auditAction == null && joinPoint.getTarget() != null) {
-            auditAction = AnnotationUtils.findAnnotation(joinPoint.getTarget().getClass(), AuditAction.class);
-        }
+        Class<?> targetClass = joinPoint.getTarget() == null
+                ? signature.getDeclaringType()
+                : AopUtils.getTargetClass(joinPoint.getTarget());
+        Method method = AopUtils.getMostSpecificMethod(signature.getMethod(), targetClass);
+        AuditAction auditAction = AnnotatedElementUtils.findMergedAnnotation(method, AuditAction.class);
         if (auditAction == null) {
-            auditAction = AnnotationUtils.findAnnotation(signature.getDeclaringType(), AuditAction.class);
+            auditAction = AnnotatedElementUtils.findMergedAnnotation(targetClass, AuditAction.class);
         }
-
-        String action = null;
-        if (auditAction != null) {
-            if (!auditAction.value().isBlank()) {
-                action = auditAction.value();
-            } else if (!auditAction.action().isBlank()) {
-                action = auditAction.action();
-            }
-        }
-        if (action == null || action.isBlank()) {
-            action = signature.getName();
-        }
+        String action = resolveAction(auditAction, signature.getName());
 
         String username = resolveUsername();
         String methodName = resolveMethodName(joinPoint, signature);
@@ -115,6 +102,19 @@ public class AuditAspect {
         return result;
     }
 
+    private String resolveAction(AuditAction auditAction, String methodName) {
+        if (auditAction == null) {
+            return methodName;
+        }
+        if (!auditAction.value().isBlank()) {
+            return auditAction.value();
+        }
+        if (!auditAction.action().isBlank()) {
+            return auditAction.action();
+        }
+        return methodName;
+    }
+
     private String resolveMethodName(ProceedingJoinPoint joinPoint, MethodSignature signature) {
         String className = joinPoint.getTarget() != null
                 ? joinPoint.getTarget().getClass().getSimpleName()
@@ -153,9 +153,9 @@ public class AuditAspect {
             }
         }
         try {
-            return mask(objectMapper.writeValueAsString(processedArgs));
+            return SensitiveDataMasker.mask(objectMapper.writeValueAsString(processedArgs));
         } catch (Throwable t) {
-            return mask(Arrays.deepToString(processedArgs));
+            return SensitiveDataMasker.mask(Arrays.deepToString(processedArgs));
         }
     }
 
@@ -164,21 +164,12 @@ public class AuditAspect {
             return null;
         }
         if (result instanceof String stringResult) {
-            return mask(stringResult);
+            return SensitiveDataMasker.mask(stringResult);
         }
         try {
-            return mask(objectMapper.writeValueAsString(result));
+            return SensitiveDataMasker.mask(objectMapper.writeValueAsString(result));
         } catch (Throwable t) {
-            return mask(String.valueOf(result));
+            return SensitiveDataMasker.mask(String.valueOf(result));
         }
-    }
-
-    private String mask(String value) {
-        if (value == null) {
-            return null;
-        }
-        String masked = KEY_VALUE.matcher(value).replaceAll("$1****");
-        masked = IBAN.matcher(masked).replaceAll("UA****");
-        return CARD.matcher(masked).replaceAll("****");
     }
 }

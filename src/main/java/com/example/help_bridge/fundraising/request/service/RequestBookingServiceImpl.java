@@ -1,5 +1,6 @@
 package com.example.help_bridge.fundraising.request.service;
 
+import com.example.help_bridge.common.audit.AuditAction;
 import com.example.help_bridge.fundraising.fund.entity.Fund;
 import com.example.help_bridge.fundraising.fund.entity.FundStatus;
 import com.example.help_bridge.fundraising.fund.exception.FundNotFoundException;
@@ -34,6 +35,7 @@ public class RequestBookingServiceImpl implements RequestBookingService {
     }
 
     @Override
+    @AuditAction("REQUEST_BOOKED_BY_FUND")
     public RequestResponse bookRequest(Long requestId, Long fundId) {
         var viewer = access.currentViewer();
         viewer.requireBookingFund(fundId);

@@ -1,5 +1,6 @@
 package com.example.help_bridge.fundraising.fund.service.impl;
 
+import com.example.help_bridge.common.audit.AuditAction;
 import com.example.help_bridge.fundraising.fund.dto.request.FundCreateRequest;
 import com.example.help_bridge.fundraising.fund.dto.request.FundDescriptUpdateRequest;
 import com.example.help_bridge.fundraising.fund.dto.request.FundStatusUpdateRequest;
@@ -70,6 +71,7 @@ public class FundServiceImpl implements FundService {
 
     @Override
     @Transactional
+    @AuditAction("FUND_CREATED")
     public FundResponse createFund(FundCreateRequest request) {
         if (fundRepository.existsByEdrpou(request.edrpou())) {
             throw new DuplicateFundException(request.edrpou());
@@ -80,6 +82,7 @@ public class FundServiceImpl implements FundService {
 
     @Override
     @Transactional
+    @AuditAction("FUND_STATUS_UPDATED")
     public FundResponse updateFundStatus(Long id, FundStatusUpdateRequest request) {
         Fund fund = getFundOrThrow(id);
         FundStatus currentStatus = fund.getStatus();
@@ -107,6 +110,7 @@ public class FundServiceImpl implements FundService {
 
     @Override
     @Transactional
+    @AuditAction("FUND_DESCRIPTION_UPDATED")
     public FundResponse updateFundDescription(Long id, FundDescriptUpdateRequest request) {
         Fund fund = getFundOrThrow(id);
         if (fund.getStatus() != FundStatus.APPROVED) {
@@ -118,6 +122,7 @@ public class FundServiceImpl implements FundService {
 
     @Override
     @Transactional
+    @AuditAction("FUND_UPDATED")
     public FundResponse updateFund(Long id, FundUpdateRequest request) {
         Fund fund = getFundOrThrow(id);
         fund.setFundName(request.fundName());
@@ -135,6 +140,7 @@ public class FundServiceImpl implements FundService {
 
     @Override
     @Transactional
+    @AuditAction("FUND_DELETED")
     public void deleteFundById(Long id) {
         Fund fund = getFundOrThrow(id);
         if (requestRepository.existsByFundId(id)) {
@@ -186,6 +192,7 @@ public class FundServiceImpl implements FundService {
 
     @Override
     @Transactional
+    @AuditAction("FUND_REPRESENTATIVE_REMOVED")
     public void removeRepresentative(Long fundId, Long representativeId) {
         Fund fund = fundRepository.findByIdWithRepresentatives(fundId)
                 .orElseThrow(() -> new FundNotFoundException(fundId));

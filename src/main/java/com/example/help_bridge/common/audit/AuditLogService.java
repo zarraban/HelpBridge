@@ -13,6 +13,19 @@ public class AuditLogService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void save(AuditLogCommand command) {
-        repository.save(new AuditLogEntity(command));
+        repository.save(toEntity(command));
+    }
+
+    private AuditLogEntity toEntity(AuditLogCommand command) {
+        return new AuditLogEntity(
+                command.action(),
+                command.username(),
+                command.methodName(),
+                command.arguments(),
+                command.result(),
+                command.occurredAt(),
+                command.successful(),
+                command.exceptionType(),
+                command.exceptionMessage());
     }
 }

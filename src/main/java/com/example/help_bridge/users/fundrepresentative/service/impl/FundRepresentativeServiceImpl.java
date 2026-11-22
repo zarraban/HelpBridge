@@ -1,5 +1,6 @@
 package com.example.help_bridge.users.fundrepresentative.service.impl;
 
+import com.example.help_bridge.common.audit.AuditAction;
 import com.example.help_bridge.fundraising.fund.entity.Fund;
 import com.example.help_bridge.fundraising.fund.exception.FundNotFoundException;
 import com.example.help_bridge.fundraising.fund.repository.FundRepository;
@@ -34,6 +35,7 @@ public class FundRepresentativeServiceImpl implements FundRepresentativeService 
 
     @Override
     @Transactional
+    @AuditAction("FUND_REPRESENTATIVE_CREATED")
     public FundRepresentativeResponse create(FundRepresentativeRequest request) {
         if (repository.existsByEmail(request.email())) {
             throw new DuplicateFundRepresentativeException(request.email());
@@ -74,6 +76,7 @@ public class FundRepresentativeServiceImpl implements FundRepresentativeService 
 
     @Override
     @Transactional
+    @AuditAction("FUND_REPRESENTATIVE_UPDATED")
     public FundRepresentativeResponse update(Long id, FundRepresentativeUpdateRequest request) {
         FundRepresentative representative = repository.findByIdWithFund(id)
                 .orElseThrow(() -> new FundRepresentativeNotFoundException(id));
@@ -91,6 +94,7 @@ public class FundRepresentativeServiceImpl implements FundRepresentativeService 
 
     @Override
     @Transactional
+    @AuditAction("FUND_REPRESENTATIVE_DELETED")
     public void delete(Long id) {
         if (!repository.existsById(id)) {
             throw new FundRepresentativeNotFoundException(id);

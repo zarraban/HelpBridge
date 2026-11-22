@@ -1,5 +1,6 @@
 package com.example.help_bridge.fundraising.fundraiser.service.impl;
 
+import com.example.help_bridge.common.audit.AuditAction;
 import com.example.help_bridge.users.volunteer.security.VolunteerAccessPolicy;
 import com.example.help_bridge.fundraising.fundraiser.security.FundraiserAccessPolicy;
 
@@ -42,6 +43,7 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
     private final VolunteerAccessPolicy volunteerAccess;
 
     @Override
+    @AuditAction("ASSIGNMENT_COMPLETED")
     public CompleteAssignmentResponse completeAssignment(Long assignmentId, CompleteAssignmentRequest request) {
         FundraiserAssignment assignment = assignmentJpaRepository.findById(assignmentId)
                 .orElseThrow(() -> new AssignmentNotFoundException("Assignment with the specified ID was not found"));
@@ -74,6 +76,7 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
     }
 
     @Override
+    @AuditAction("ASSIGNMENT_RETURNED")
     public ReturnAssignmentResponse returnAssignment(Long assignmentId, ReturnAssignmentRequest request) {
         FundraiserAssignment assignment = assignmentJpaRepository.findById(assignmentId)
                 .orElseThrow(() -> new AssignmentNotFoundException("Assignment with the specified ID was not found"));
@@ -105,6 +108,7 @@ public class FundraiserAssignmentServiceImpl implements FundraiserAssignmentServ
     }
 
     @Override
+    @AuditAction("VOLUNTEER_ASSIGNED_TO_FUNDRAISER")
     public AssignVolunteerResponse assignVolunteerToFund(Long fundraiserId, AssignVolunteerRequest request) {
         Fundraiser fundraiser = FundraiserRepository.findById(fundraiserId)
                 .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with the specified ID was not found"));

@@ -1,5 +1,6 @@
 package com.example.help_bridge.fundraising.fundraiser.service.impl;
 
+import com.example.help_bridge.common.audit.AuditAction;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -97,6 +98,7 @@ public class FundraiserServiceImpl implements FundraiserService {
     }
 
     @Override
+    @AuditAction("DONOR_MAILING_REQUESTED")
     public SendMailingResponse sendMailToDonors(SendMailingRequest request) {
         var fundraiser = FundraiserRepository.findById(request.fundraiserId())
                 .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser not found"));
@@ -110,6 +112,7 @@ public class FundraiserServiceImpl implements FundraiserService {
         return new SendMailingResponse(request.fundraiserId(), 0, LocalDateTime.now());
     }
 
+    @AuditAction("FUNDRAISER_CLOSED")
     public void closeFundraiser(Long id) {
         Fundraiser fundraiser = FundraiserRepository.findById(id)
                 .orElseThrow(() -> new FundraiserNotFoundException("Fundraiser with ID " + id + " not found"));

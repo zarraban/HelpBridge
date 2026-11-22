@@ -1,5 +1,6 @@
 package com.example.help_bridge.users.systemadmin.service.impl;
 
+import com.example.help_bridge.common.audit.AuditAction;
 import com.example.help_bridge.users.systemadmin.dto.request.SystemAdminCreateRequest;
 import com.example.help_bridge.users.systemadmin.dto.request.SystemAdminUpdateRequest;
 import com.example.help_bridge.users.systemadmin.dto.response.SystemAdminResponse;
@@ -43,6 +44,7 @@ public class SystemAdminServiceImpl implements SystemAdminService {
 
     @Override
     @Transactional
+    @AuditAction("SYSTEM_ADMIN_CREATED")
     public SystemAdminResponse createSystemAdmin(SystemAdminCreateRequest request) {
         if (systemAdminRepository.existsByEmail(request.email())) {
             throw new DuplicateSystemAdminException(request.email());
@@ -62,6 +64,7 @@ public class SystemAdminServiceImpl implements SystemAdminService {
 
     @Override
     @Transactional
+    @AuditAction("SYSTEM_ADMIN_UPDATED")
     public SystemAdminResponse updateSystemAdmin(Long id, SystemAdminUpdateRequest request) {
         SystemAdmin admin = getOrThrow(id);
         admin.setFirstName(request.firstName());
@@ -71,6 +74,7 @@ public class SystemAdminServiceImpl implements SystemAdminService {
 
     @Override
     @Transactional
+    @AuditAction("SYSTEM_ADMIN_DELETED")
     public void deleteSystemAdminById(Long id) {
         SystemAdmin admin = getOrThrow(id);
         try {

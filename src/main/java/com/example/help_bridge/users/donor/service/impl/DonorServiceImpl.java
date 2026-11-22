@@ -1,5 +1,6 @@
 package com.example.help_bridge.users.donor.service.impl;
 
+import com.example.help_bridge.common.audit.AuditAction;
 import com.example.help_bridge.fundraising.fundraiser.entity.Fundraiser;
 import com.example.help_bridge.fundraising.fundraiser.exception.FundraiserNotFoundException;
 import com.example.help_bridge.users.donor.dto.request.DonorRequest;
@@ -28,6 +29,7 @@ public class DonorServiceImpl implements DonorService {
     private final EntityManager entityManager;
 
     @Override
+    @AuditAction("DONOR_CREATED")
     public DonorResponse addNewDonor(DonorRequest request) {
         Donor saved = donorRepository.save(mapToEntity(request));
         return mapToResponse(saved);
@@ -64,6 +66,7 @@ public class DonorServiceImpl implements DonorService {
     }
 
     @Override
+    @AuditAction("DONOR_UPDATED")
     public DonorResponse updateDonorFields(Long donorId, DonorRequest request) {
         Donor donor = donorRepository.findById(donorId)
                 .orElseThrow(() -> new DonorNotFoundException("Donor with the specified ID was not found"));
@@ -76,6 +79,7 @@ public class DonorServiceImpl implements DonorService {
     }
 
     @Override
+    @AuditAction("DONOR_DELETED")
     public DonorResponse deleteDonorById(Long donorId) {
         Donor donor = donorRepository.findById(donorId)
                 .orElseThrow(() -> new DonorNotFoundException("Donor with the specified ID was not found"));

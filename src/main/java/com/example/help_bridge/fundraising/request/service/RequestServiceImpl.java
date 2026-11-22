@@ -1,5 +1,6 @@
 package com.example.help_bridge.fundraising.request.service;
 
+import com.example.help_bridge.common.audit.AuditAction;
 import com.example.help_bridge.fundraising.request.dto.request.RequestDto.CreateRequestRequest;
 import com.example.help_bridge.fundraising.request.dto.request.RequestDto.RequestResponse;
 import com.example.help_bridge.fundraising.request.dto.request.RequestDto.UpdateRequestRequest;
@@ -42,6 +43,7 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
+    @AuditAction("REQUEST_CREATED")
     public RequestResponse createRequest(CreateRequestRequest dto) {
         access.currentViewer().requireCreateFor(dto.userId());
         User requester = userRepository.findById(dto.userId())
@@ -120,6 +122,7 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
+    @AuditAction("REQUEST_UPDATED")
     public RequestResponse updateRequest(Long id, UpdateRequestRequest dto) {
         var viewer = access.currentViewer();
         Request request = requestRepository.findByIdWithDetails(id)
@@ -141,6 +144,7 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
+    @AuditAction("REQUEST_DELETED")
     public void deleteRequest(Long id) {
         var viewer = access.currentViewer();
         Request request = requestRepository.findById(id)

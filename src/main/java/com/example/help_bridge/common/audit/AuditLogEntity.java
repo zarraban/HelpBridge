@@ -20,27 +20,28 @@ public class AuditLogEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(name = "action", nullable = false, columnDefinition = "TEXT")
     private String action;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(name = "username", nullable = false, columnDefinition = "TEXT")
     private String username;
 
     @Column(name = "method_name", nullable = false, columnDefinition = "TEXT")
     private String methodName;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "arguments", columnDefinition = "TEXT")
     private String arguments;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "result", columnDefinition = "TEXT")
     private String result;
 
     @Column(name = "occurred_at", nullable = false)
     private Instant occurredAt;
 
-    @Column(nullable = false)
+    @Column(name = "successful", nullable = false)
     private boolean successful;
 
     @Column(name = "exception_type", columnDefinition = "TEXT")
@@ -49,15 +50,24 @@ public class AuditLogEntity {
     @Column(name = "exception_message", columnDefinition = "TEXT")
     private String exceptionMessage;
 
-    public AuditLogEntity(AuditLogCommand command) {
-        action = command.action();
-        username = command.username();
-        methodName = command.methodName();
-        arguments = command.arguments();
-        result = command.result();
-        occurredAt = command.occurredAt();
-        successful = command.successful();
-        exceptionType = command.exceptionType();
-        exceptionMessage = command.exceptionMessage();
+    public AuditLogEntity(
+            String action,
+            String username,
+            String methodName,
+            String arguments,
+            String result,
+            Instant occurredAt,
+            boolean successful,
+            String exceptionType,
+            String exceptionMessage) {
+        this.action = action;
+        this.username = username;
+        this.methodName = methodName;
+        this.arguments = arguments;
+        this.result = result;
+        this.occurredAt = occurredAt;
+        this.successful = successful;
+        this.exceptionType = exceptionType;
+        this.exceptionMessage = exceptionMessage;
     }
 }
