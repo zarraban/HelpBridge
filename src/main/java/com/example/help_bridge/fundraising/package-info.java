@@ -1,5 +1,5 @@
 @ApplicationModule(
-        allowedDependencies = {"users", "users::exception", "users::*"},
+        allowedDependencies = {"common::audit", "common::web", "users", "users::exception", "users::*"},
         type = ApplicationModule.Type.OPEN
 )
 package com.example.help_bridge.fundraising;
