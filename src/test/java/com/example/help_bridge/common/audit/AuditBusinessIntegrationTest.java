@@ -17,31 +17,48 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+
 import java.util.List;
 import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.*;
 
 @SpringBootTest(properties = {"security.jwt.secret=test-secret-012345678901234567890123456789", "logging.level.root=WARN"})
 @ActiveProfiles("dev")
 class AuditBusinessIntegrationTest {
-    @Autowired EvidenceService evidenceService;
-    @Autowired EvidenceRepository evidences;
-    @Autowired FundraiserRepository fundraisers;
-    @Autowired FundraiserAssignmentRepository assignments;
-    @Autowired VolunteerRepository volunteers;
-    @Autowired SystemAdminService service;
-    @Autowired AuditLogRepository logs;
-    @Autowired org.springframework.transaction.PlatformTransactionManager transactionManager;
-    @Autowired com.example.help_bridge.users.systemadmin.repository.SystemAdminRepository admins;
+    @Autowired
+    EvidenceService evidenceService;
+    @Autowired
+    EvidenceRepository evidences;
+    @Autowired
+    FundraiserRepository fundraisers;
+    @Autowired
+    FundraiserAssignmentRepository assignments;
+    @Autowired
+    VolunteerRepository volunteers;
+    @Autowired
+    SystemAdminService service;
+    @Autowired
+    AuditLogRepository logs;
+    @Autowired
+    org.springframework.transaction.PlatformTransactionManager transactionManager;
+    @Autowired
+    com.example.help_bridge.users.systemadmin.repository.SystemAdminRepository admins;
 
-    @BeforeEach void setUp() {
+    @BeforeEach
+    void setUp() {
         logs.deleteAllInBatch();
         SecurityContextHolder.getContext().setAuthentication(
                 UsernamePasswordAuthenticationToken.authenticated("audit-admin", "", List.of()));
     }
-    @AfterEach void cleanUp() { SecurityContextHolder.clearContext(); }
 
-    @Test void successfulBusinessOperationPersistsMaskedPayload() {
+    @AfterEach
+    void cleanUp() {
+        SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    void successfulBusinessOperationPersistsMaskedPayload() {
         var dto = service.createSystemAdmin(request());
         var log = logs.findAll().getFirst();
         assertThat(log.isSuccessful()).isTrue();
@@ -52,7 +69,8 @@ class AuditBusinessIntegrationTest {
         assertThat(log.getOccurredAt()).isNotNull();
     }
 
-    @Test void businessFailureSurvivesRollbackAndKeepsExceptionType() {
+    @Test
+    void businessFailureSurvivesRollbackAndKeepsExceptionType() {
         var request = request();
         service.createSystemAdmin(request);
         logs.deleteAllInBatch();
@@ -65,7 +83,8 @@ class AuditBusinessIntegrationTest {
         assertThat(log.getResult()).isNull();
     }
 
-    @Test void businessAuditSurvivesOuterRollback() {
+    @Test
+    void businessAuditSurvivesOuterRollback() {
         var request = request();
         var transaction = new org.springframework.transaction.support.TransactionTemplate(transactionManager);
         transaction.executeWithoutResult(status -> {
@@ -76,7 +95,8 @@ class AuditBusinessIntegrationTest {
         assertThat(logs.findAll()).hasSize(1);
     }
 
-    @Test void validationFailureIsAuditedAndOriginalExceptionEscapes() {
+    @Test
+    void validationFailureIsAuditedAndOriginalExceptionEscapes() {
         var volunteer = volunteers.findByEmail(DevDataSeeder.VOLUNTEER_EMAIL).orElseThrow();
         var fundraiser = new Fundraiser();
         fundraiser.setStatus(FundraiserStatus.IN_PROGRESS);
