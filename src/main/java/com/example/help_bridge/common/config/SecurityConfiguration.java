@@ -4,28 +4,35 @@ import com.example.help_bridge.common.security.filter.JwtAuthenticationFilter;
 import com.example.help_bridge.common.security.filter.JwtLoginFilter;
 import com.example.help_bridge.common.security.service.JwtService;
 import com.example.help_bridge.common.security.service.JwtValidatorService;
+import com.example.help_bridge.common.web.WebLoginFailureHandler;
 import org.springframework.context.annotation.Bean;
-import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.security.config.Customizer;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
-import com.example.help_bridge.common.web.WebLoginFailureHandler;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsChecker;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.AuthenticationEntryPoint;
-import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import tools.jackson.databind.ObjectMapper;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -44,6 +51,39 @@ public class SecurityConfiguration {
 
     @Bean
     @Order(1)
+    public SecurityFilterChain actuatorFilterChain(HttpSecurity http,
+                                                   AuthenticationManager authenticationManager,
+                                                   PasswordEncoder passwordEncoder) throws Exception {
+        UserDetails actuatorAdmin = User.builder()
+                .username("actuator-admin")
+                .password(passwordEncoder.encode("AdminPass123!"))
+                .roles("SYSTEM_ADMIN", "ADMIN")
+                .build();
+        UserDetails admin = User.builder()
+                .username("admin")
+                .password(passwordEncoder.encode("admin123"))
+                .roles("SYSTEM_ADMIN", "ADMIN")
+                .build();
+        DaoAuthenticationProvider inMemoryProvider = new DaoAuthenticationProvider(new InMemoryUserDetailsManager(actuatorAdmin, admin));
+        inMemoryProvider.setPasswordEncoder(passwordEncoder);
+
+        AuthenticationManager actuatorAuthManager = new ProviderManager(List.of(inMemoryProvider), authenticationManager);
+
+        return http
+                .securityMatcher("/actuator/**")
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
+                        .anyRequest().hasAnyRole("SYSTEM_ADMIN", "ADMIN"))
+                .httpBasic(Customizer.withDefaults())
+                .authenticationManager(actuatorAuthManager)
+                .build();
+    }
+
+    @Bean
+    @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    JwtValidatorService jwtValidatorService,
                                                    JwtService jwtService,
@@ -73,14 +113,14 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    @Order(2)
+    @Order(3)
     public SecurityFilterChain webFilterChain(HttpSecurity http,
                                               AuthenticationManager authenticationManager) throws Exception {
         return http
                 .authenticationManager(authenticationManager)
                 .csrf(Customizer.withDefaults())
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/login", "/css/**", "/js/**", "/error", "/error/**", "/actuator/health").permitAll()
+                        .requestMatchers("/login", "/css/**", "/js/**", "/error", "/error/**").permitAll()
                         .requestMatchers("/system-admins", "/system-admins/**", "/fund-representatives",
                                 "/fund-representatives/**", "/donors", "/donors/**", "/funds/new",
                                 "/funds/*/status", "/funds/*/delete").hasRole("SYSTEM_ADMIN")
