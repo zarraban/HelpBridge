@@ -6,7 +6,6 @@ import com.example.help_bridge.playwrightTests.pages.RequestsListPage;
 import com.example.help_bridge.playwrightTests.support.BrowserTestSupport;
 import com.example.help_bridge.support.E2ETest;
 import com.example.help_bridge.users.auth.AccountType;
-import com.microsoft.playwright.Locator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -71,6 +70,8 @@ class RequestFormBrowserE2EIT extends BrowserTestSupport {
 
         form.submit();
         assertThat(form.fieldErrors().first()).isVisible();
-        assertThat(form.fieldErrors().filter(new Locator.FilterOptions().setHasText("Вкажіть суму"))).isVisible();
+        assertThat(page.locator("#amount")).hasAttribute("aria-invalid", "true");
+        assertThat(page.locator("#amount-error")).isVisible();
+        assertThat(page.locator("#amount-error")).not().isEmpty();
     }
 }

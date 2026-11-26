@@ -184,7 +184,8 @@ class RequestLifecycleBrowserE2EIT extends BrowserTestSupport {
     private Page login(BrowserContext session, AccountType role, String email) {
         Page result = session.newPage();
         new LoginPage(result).open().loginAs(role, email, PASSWORD);
-        assertThat(result).hasURL(Pattern.compile(".*/requests(#verification)?$"));
+        String destination = role == AccountType.APPLICANT ? "/requests(#verification)?$" : "/home$";
+        assertThat(result).hasURL(Pattern.compile(".*" + destination));
         return result;
     }
 

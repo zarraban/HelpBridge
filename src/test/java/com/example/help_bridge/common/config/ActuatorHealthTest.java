@@ -27,9 +27,9 @@ class ActuatorHealthTest {
     }
 
     @Test
-    @DisplayName("Non-permitted actuator endpoints should require authentication and redirect to /login")
+    @DisplayName("Non-permitted actuator endpoints should require HTTP Basic authentication")
     void otherActuatorEndpointsShouldRequireAuthentication() throws Exception {
         mockMvc.perform(get("/actuator/env"))
-                .andExpect(status().is3xxRedirection());
+                .andExpect(status().isUnauthorized());
     }
 }
