@@ -19,20 +19,15 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsChecker;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import tools.jackson.databind.ObjectMapper;
-
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -52,22 +47,13 @@ public class SecurityConfiguration {
     @Bean
     @Order(1)
     public SecurityFilterChain actuatorFilterChain(HttpSecurity http,
-                                                   AuthenticationManager authenticationManager,
+                                                   UserDetailsService userDetailsService,
                                                    PasswordEncoder passwordEncoder) throws Exception {
-        UserDetails actuatorAdmin = User.builder()
-                .username("actuator-admin")
-                .password(passwordEncoder.encode("AdminPass123!"))
-                .roles("SYSTEM_ADMIN", "ADMIN")
-                .build();
-        UserDetails admin = User.builder()
-                .username("admin")
-                .password(passwordEncoder.encode("admin123"))
-                .roles("SYSTEM_ADMIN", "ADMIN")
-                .build();
-        DaoAuthenticationProvider inMemoryProvider = new DaoAuthenticationProvider(new InMemoryUserDetailsManager(actuatorAdmin, admin));
-        inMemoryProvider.setPasswordEncoder(passwordEncoder);
-
-        AuthenticationManager actuatorAuthManager = new ProviderManager(List.of(inMemoryProvider), authenticationManager);
+        // HTTP Basic separates username/password at ':', so accept the admin email here.
+        DaoAuthenticationProvider adminProvider = new DaoAuthenticationProvider(
+                email -> userDetailsService.loadUserByUsername("SYSTEM_ADMIN:" + email.trim()));
+        adminProvider.setPasswordEncoder(passwordEncoder);
+        AuthenticationManager actuatorAuthManager = new ProviderManager(adminProvider);
 
         return http
                 .securityMatcher("/actuator/**")
@@ -76,7 +62,7 @@ public class SecurityConfiguration {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
-                        .anyRequest().hasAnyRole("SYSTEM_ADMIN", "ADMIN"))
+                        .anyRequest().hasRole("SYSTEM_ADMIN"))
                 .httpBasic(Customizer.withDefaults())
                 .authenticationManager(actuatorAuthManager)
                 .build();
