@@ -12,9 +12,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -170,6 +172,25 @@ class RequestRepositoryTest {
         assertThat(requestRepository.existsByApplicationNumber("A-1")).isTrue();
         assertThat(requestRepository.existsByApplicationNumber("missing")).isFalse();
         assertThat(requestRepository.countByStatus(RequestStatus.PENDING_VERIFICATION)).isEqualTo(1);
+    }
+
+    @Test
+    void countByStatusAndCreatedAtBefore_countsOnlyPendingRequestsOlderThanCutoff() {
+        LocalDateTime cutoff = LocalDateTime.of(2026, 1, 10, 12, 0);
+        Request overdue = newRequest("overdue");
+        Request atCutoff = newRequest("at cutoff");
+        Request recent = newRequest("recent");
+        Request approved = newRequest("approved");
+        approved.approve();
+
+        ReflectionTestUtils.setField(overdue, "createdAt", cutoff.minusHours(1));
+        ReflectionTestUtils.setField(atCutoff, "createdAt", cutoff);
+        ReflectionTestUtils.setField(recent, "createdAt", cutoff.plusHours(1));
+        ReflectionTestUtils.setField(approved, "createdAt", cutoff.minusHours(1));
+        requestRepository.saveAllAndFlush(List.of(overdue, atCutoff, recent, approved));
+
+        assertThat(requestRepository.countByStatusAndCreatedAtBefore(RequestStatus.PENDING_VERIFICATION, cutoff))
+                .isEqualTo(1);
     }
 
     @Test
