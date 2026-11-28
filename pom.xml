@@ -33,6 +33,7 @@
         <java.version>25</java.version>
         <spring-modulith.version>2.1.1</spring-modulith.version>
         <playwright.version>1.64.0</playwright.version>
+        <shedlock.version>7.12.0</shedlock.version>
     </properties>
 
     <dependencies>
@@ -51,6 +52,16 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.javacrumbs.shedlock</groupId>
+            <artifactId>shedlock-spring</artifactId>
+            <version>${shedlock.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.javacrumbs.shedlock</groupId>
+            <artifactId>shedlock-provider-jdbc-template</artifactId>
+            <version>${shedlock.version}</version>
         </dependency>
 
         <dependency>

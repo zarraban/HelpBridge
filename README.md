@@ -1,5 +1,21 @@
 # HelpBridge
 
+## Фонові завдання
+
+- `instance-metrics` виконується щогодини на кожному інстансі. Лог містить завантаження CPU процесу, використання heap JVM, вільне місце на диску робочої директорії та час роботи.
+- `request-verification-reminder` виконується щогодини на п'ятій хвилині. Якщо є заявки `PENDING_VERIFICATION` віком понад 24 години, завдання пише в лог їх кількість і шлях `/requests`. ShedLock координує виконання через спільну БД.
+
+У dev таблицю `shedlock` створює Spring із `src/main/resources/schema.sql`. Для PostgreSQL виконайте цей SQL-скрипт один раз перед запуском і підключіть обидва інстанси до тієї самої БД з однаковим часовим поясом JVM.
+
+Для демонстрації задайте різні значення `--helpbridge.scheduling.instance-id=app-1` та `app-2` і різні порти. Нижче наведені спільні параметри для обох інстансів. Для перевірки нагадування створіть заявку й залиште її в стані очікування понад хвилину.
+
+```text
+--helpbridge.scheduling.instance-metrics.cron="*/10 * * * * *"
+--helpbridge.scheduling.request-reminder.cron="*/10 * * * * *"
+--helpbridge.scheduling.request-reminder.pending-age=PT1M
+--helpbridge.scheduling.request-reminder.lock-at-least-for=PT5S
+```
+
 ## Підсистема аудиту: збереження (лекція 10)
 
 Спільний контракт знаходиться в `com.example.help_bridge.common.audit`:
